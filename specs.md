@@ -14,6 +14,8 @@ The product's design philosophy is **"útil > fancy"**: every animation, screen,
 
 The unit of value is the **verse card**: a flashcard the user creates from a Bible reference, decorated with a chosen icon and color (visual recall cues), optionally tagged with a personal hint, and assigned to one or more collections.
 
+> **Important — read sections 15, 16, and 17 before implementing.** After the original spec was drafted, an expert review of the UX and memory-science design produced a set of binding refinements. Those refinements **supersede or extend** parts of sections 5, 6, 7, 8, 10, and 11 below. The original sections are preserved for context and rationale; where a refinement applies, the refinement wins. Each refinement explicitly cites the section it modifies.
+
 ---
 
 ## 2. Goals and non-goals
@@ -509,6 +511,320 @@ For unambiguous scope control, the following are **not** part of v1 and must not
 - Design intent and decisions: `versorefuerzo/chats/chat1.md`.
 - Original product brief: `about.md`.
 - External tools: `bible-passage-reference-parser`, API.Bible.
+
+---
+
+---
+
+## 15. Memory-science enhancements (BINDING — additions to §6)
+
+These additions strengthen the app's grounding in evidence-based memory techniques. They do not remove anything in §6; they add new modes/behaviors and adjust how the SRS scheduler weighs different practice types.
+
+### 15.1 First-letter mode (NEW practice mode — addition to §6.4)
+
+A new top-level practice mode joins Classic, Scramble, Match, Gap.
+
+- **What the user sees:** the verse rendered with **only the first letter of each word** plus original punctuation. Example: *"T l p e C q m f."* for *"Todo lo puedo en Cristo que me fortalece."*
+- **Interaction:** identical to Classic — user recites the full verse aloud or in their head, then taps `Revelar verso`. After reveal, the four SM-2 quality buttons appear.
+- **Why it's here:** first-letter cueing is the single most-validated technique for verse memorization specifically; it is the bridge between "I see the whole verse" and free recall. Used by virtually every successful Bible memorization app.
+- **Implementation note:** no new screen needed beyond a Classic-mode variant. Token transformation: keep the first character of each word, replace the rest with thin space or invisible spacer; preserve original punctuation, line breaks, and capitalization.
+- **Classification:** counts as a **RECALL** mode (advances the SM-2 schedule normally — see §15.4).
+- **Practice hub placement:** sits next to Classic, presented as a primary mode (not a mini-game).
+
+### 15.2 Typed-recall (option inside Classic mode — addition to §6.4.1)
+
+A second action available during a Classic session.
+
+- **Interaction:** in addition to the existing `Revelar verso` button, the user sees a secondary `Escribirlo` ("Type it") button.
+- Tapping `Escribirlo` swaps the front-of-card prompt for a multi-line text input. The user types the verse from memory and submits.
+- **Tolerant comparison** between the typed input and the canonical text:
+  - case-insensitive
+  - accent-insensitive (`á` matches `a`)
+  - punctuation-insensitive (commas, semicolons, em-dashes, etc. ignored)
+  - whitespace-normalized (collapses runs of spaces, ignores leading/trailing)
+  - Engineering may further allow common abbreviations (e.g., "Sr." for "Señor") but is not required to in v1
+- **Auto-grade based on similarity:**
+  - perfect match → SM-2 quality `5` (Fácil)
+  - ≥ 90% token overlap → quality `4` (Bien)
+  - ≥ 50% token overlap → quality `3` (Difícil)
+  - < 50% → quality `1` (Otra vez)
+- The user always sees the auto-graded result and the four manual quality buttons; manual override is allowed (and logged).
+- **Why it's here:** production effect — generating the answer is far stronger evidence of memory than self-reporting "Lo recordé." This is the rigorous mode for serious memorizers.
+- **Classification:** counts as a **RECALL** mode (§15.4) and advances SRS aggressively.
+
+### 15.3 Progressive cloze for "Fill the Gap" (supersedes the fixed "1–3 blanks" rule in §6.4.4)
+
+The screen and interaction in §6.4.4 are unchanged. Only the **content density evolves with the verse's `repetitions` count**:
+
+| Reps on this verse | Blank density |
+| --- | --- |
+| 0–2 | 1 blank (longest non-stopword) |
+| 3–5 | 2–3 blanks |
+| 6–8 | ~30–50% of words blanked |
+| 9+ | ~60–80% of words blanked |
+
+Engineering may tune the ramp; the spec only requires that the blank density grows monotonically with `repetitions`. As blank density crosses the **50% threshold**, the round is reclassified as a RECALL mode for SRS purposes (see §15.4). Multi-blank rounds present each blank in left-to-right order.
+
+### 15.4 Differential SRS weighting: recognition vs. recall (supersedes the SM-2 mappings in §6.4.2, §6.4.3, §6.4.4)
+
+The single most important change in this section. Not all practice is equal evidence of memory.
+
+**RECALL modes** (drive the schedule fully):
+
+- Classic flashcards (§6.4.1)
+- First-letter mode (§15.1)
+- Typed-recall variant of Classic (§15.2)
+- Fill the Gap when ≥ 50% of words are blanked (§15.3, late reps)
+
+**RECOGNITION modes** (touch but do not advance):
+
+- Word Scramble (§6.4.2)
+- Verse Match (§6.4.3)
+- Fill the Gap when < 50% of words are blanked (§15.3, early reps)
+
+**Behavior:**
+
+- **Recall modes** apply the full SM-2 update on each grade (ease factor and interval move per the algorithm).
+- **Recognition modes** mark the verse as "touched today" (resets the due-today indicator) and apply at most a small ease bump (`+0.05` ease on Easy/Good outcomes, no change on Hard/Again). They **do not advance the interval to the next stage**.
+- Practical consequence: a user who only ever plays Match and Scramble will keep seeing those verses in their daily queue. They will not be silently scheduled out to long intervals. Only producing the verse from memory (recall) advances the schedule.
+
+This is the crucial guardrail that prevents the gamified modes from overstating what the user has memorized.
+
+### 15.5 "Mastered" requires a successful unaided recall pass (supersedes §6.5)
+
+Strengthens the mastered definition so that the label means something.
+
+A verse's `status` is `mastered` when **all** of:
+
+1. `repetitions ≥ 4`, **and**
+2. derived `mastery ≥ 0.7`, **and**
+3. **at least one** Classic, First-letter, or Typed-recall session in the **last 30 days** completed *without using the hint* and graded `Bien` or `Fácil`
+
+Conditions (1) and (2) are unchanged from §6.5. Condition (3) is new. The check is a query against `practice_sessions` with `mode ∈ {classic, first_letter, typed} AND usedHint = false AND quality ≥ 4 AND startedAt ≥ now - 30 days`.
+
+The SRS scheduler itself is unaffected; this rule is a label-only guard.
+
+### 15.6 Interleaving is the default queue order (extension of §6.4)
+
+The "Todos" daily practice queue **interleaves verses across collections by default**. Implementation requirement:
+
+- Within the due-today set, verses are shuffled before being presented; **do not group by collection**.
+- If the user picks a specific collection from the source filter, ordering inside that filter still shuffles within the collection.
+- "Block by collection" is not in v1.
+
+Rationale: interleaved practice is more effortful per item but produces stronger long-term retention than blocked practice — well established in cognitive psychology and applicable to verse memorization.
+
+### 15.7 Long-verse chunking in Classic mode (NEW — addition to §6.4.1)
+
+Verses longer than 25 words are chunked progressively in **Classic mode** (the spec already chunks Word Scramble per §6.4.2; this extends the technique to the primary learning mode).
+
+- Chunks always break at natural punctuation (period, semicolon, colon, comma when no closer break exists).
+- 2 chunks for 25–50-word verses; 3 chunks for > 50-word verses.
+- Cumulative growth, never partial-only:
+  - Reps 0–2: practice chunk 1 alone
+  - Reps 3–5: practice chunks 1+2 together
+  - Reps 6+: practice the full verse
+- Chunking is **invisible to the user**: the front of the card looks the same; the back simply shows a shorter text in early reps and the full text once graduated.
+- A verse cannot reach `mastered` (§15.5) until it has been graded `Bien` or `Fácil` on the **full** verse (the final chunk stage), unaided, in the last 30 days.
+- Engineering owns the chunk-boundary algorithm; the spec only fixes the bullets above.
+
+### 15.8 Production-effect nudge (zero-cost addition to §6.4.1)
+
+On the user's **first ever Classic session**, show a one-time tooltip near the front of the card:
+
+> *"Recita el verso en voz alta — pronunciarlo mejora la memorización."*  / *"Recite the verse aloud — speaking it improves recall."*
+
+Dismissed by tapping `OK` or by completing the first card. Never shown again. No persistence beyond a `hasSeenAloudTip` boolean on the user record.
+
+---
+
+## 16. UX simplifications (BINDING — supersede specific earlier sections)
+
+These refinements reduce screens and UI states to make the daily flow faster and more honest. Where a refinement supersedes earlier text, treat the refinement as the implementation contract.
+
+### 16.1 Direct-to-Classic from Home (supersedes the navigation flow implied in §6.4)
+
+- Home's "X versos para hoy" hero CTA navigates **directly into a Classic session** for today's queue. It does NOT route through the Practice hub.
+- The Practice hub remains accessible via the `Practicar` bottom tab and exists for picking variant modes (First-letter, Scramble, Match, Gap).
+- Default daily flow: Home → tap CTA → Classic session. **Two taps to start practicing.**
+- The hub is for variety, not for the canonical daily action.
+
+### 16.2 Daily Streak Challenge as a separate mode is REMOVED (supersedes §6.4.5 and §8 row 13)
+
+- `ScreenStreakChallenge` is **not** part of v1. The dark-mode standalone screen with the big flame and "today's streak verse" is not implemented.
+- The streak motivation lives entirely on Home (the streak chip per §6.6, unchanged) and inside the Profile sheet (§16.3, may include a 7-day strip).
+- The streak is still extended by completing **any** practice session in **any** mode (per §6.6, unchanged).
+- The screen list in §8 shrinks from 15 to 14. The remaining canonical screens are: Login, Home (mobile + desktop), New verse, Card view (now 2 states — see §16.4), Library Colecciones, Library Todos, Collection detail, Practice hub, Classic session, First-letter session (§15.1), Word Scramble, Verse Match, Fill the Gap, Session summary, Profile sheet (§16.3).
+- Rationale: streak is a metaphor, not a destination. Forcing the user to navigate to a "streak screen" is friction without payoff.
+
+### 16.3 Three bottom tabs + avatar-as-sheet (supersedes §5)
+
+Mobile bottom navigation is reduced from 4 tabs to 3:
+
+| New tab | Destination |
+| --- | --- |
+| `Inicio` | Home |
+| `Practicar` | Practice hub |
+| `Biblioteca` | Library |
+
+The `Perfil` tab is removed. Profile and settings are accessed by **tapping the user avatar in the Home header**, which opens a bottom sheet containing:
+
+- Avatar, display name, email
+- Language toggle (ES / EN)
+- Sound effects toggle (default ON — see §16.8)
+- Optional 7-day streak strip + best-streak record
+- `Cerrar sesión` (sign-out)
+- `Eliminar cuenta` (delete account, with confirmation per §3.1)
+
+**Desktop equivalent:** the existing user card at the bottom of the sidebar (already in `desktop-screens.jsx :: DesktopSidebar`) is the entry point — clicking it opens the same content as a popover or modal.
+
+### 16.4 Unified post-reveal grading (supersedes §6.2 states 2 and 3)
+
+The Card View states collapse from three to two:
+
+- **`front`** — color-saturated face with reference, icon, version. Single primary CTA `Revelar verso` (and `Escribirlo` per §15.2 if the user is in a Classic session). A small `💡 Pista` button is also present at the front, available throughout, **independent of grading**.
+- **`revealed`** — white face with verse text, optional hint inline if the user tapped `💡 Pista` at any point. **Always** shows the four SM-2 quality buttons immediately: `Otra vez`, `Difícil`, `Bien`, `Fácil` with predicted intervals (`<1m`, `~6m`, `~1d`, `~4d`). The pre-grading "Lo recordé / Me rindo" pair is removed.
+
+The hint reveal is now **orthogonal to grading**: tapping `💡 Pista` (front or back) reveals the hint via the existing `vr-hint-appear` animation. Whether the hint was used is recorded but does not constrain grading (see §16.5).
+
+### 16.5 No quality-grade penalty for using the hint (supersedes the cap rules in §6.4.1 and §6.4.4)
+
+- Using the hint during practice **does not cap** the achievable quality grade.
+- The session record stores `usedHint: true` for analytics and for the `mastered` check in §15.5 (which excludes hint-aided sessions from counting toward mastery).
+- Rationale: the user grading themselves `Difícil` is already the honest signal. Forcing an additional cap discourages a feature that exists to help.
+
+### 16.6 Drop "Precisión" from the desktop stats row (supersedes the 4-stat list in §6.7 and §desktop-screens.jsx)
+
+The desktop home stats row shows **3** stats, not 4: `Versos totales`, `Memorizados`, `Aprendiendo`. The fourth ("Precisión") is removed because it requires a definition that adds explanation overhead without clear user value.
+
+### 16.7 Mini-game lives become "intentos" (tone fix — supersedes §6.4.2, §6.4.3, §6.4.4 framing)
+
+The mechanics are unchanged (3 attempts per game session, points, timer per §2 of your earlier decision). Only the framing changes:
+
+- All user-facing copy says **`intentos`** (Spanish) / **`tries`** (English), not `vidas` / `lives`.
+- When attempts run out the round ends with neutral copy: *"Buen intento — vuelve cuando quieras."* / *"Nice try — come back anytime."*
+- No "Game Over", "You lost", or punitive framing anywhere.
+- Heart iconography may stay as a visual indicator of remaining intentos.
+
+### 16.8 Sound effects default to ON (confirmation of §6.9; supersedes the per-screen suppression nuance)
+
+- Default state for sound effects is **ON**.
+- Toggle is exposed in the Profile sheet (§16.3).
+- Per §16.2, the Streak Challenge screen is removed — so the prior question of suppressing sounds on that screen is moot.
+- Rationale (per user decision): sounds reinforce the gamified mini-games and the celebratory feel of completing a session; users in quiet contexts can toggle off.
+
+### 16.9 Drop "SM-2" jargon from user-facing copy (polish — extension of §6.8)
+
+- All UI strings that reference "SM-2" are replaced with the plain phrase **"Repetición espaciada"** (or "Spaced repetition" in EN).
+- Specific replacement: in `ScreenClassicSession`, the small label *"Repetición espaciada (SM-2)"* becomes *"Repetición espaciada"*.
+- Engineering-facing labels, code, comments, analytics events, and this spec may continue to use SM-2 freely.
+
+---
+
+## 17. Polish & first-run details (additions, not replacements)
+
+These are additions to fill gaps the original spec left to engineering judgment. None remove existing requirements.
+
+### 17.1 Smart defaults on the New Verse form (additions to §6.1)
+
+The New Verse form's six fields acquire the following default behavior so a returning user can add a verse with minimal friction:
+
+| Field | Default behavior |
+| --- | --- |
+| `Referencia` | Required. No default. |
+| `Versión` | User's last-used version, falling back to the first version present in the runtime versions list (§9.2). |
+| `Color` | Auto-rotated through `cardColors`: the *N*th verse the user creates gets `cardColors[N % 8]`. User may override. |
+| `Ícono` | Auto-selected based on the book in the reference, via a default lookup table. Suggested seeds (engineering owns the full table): Salmos → `sheep`, Filipenses → `flame` (or `flameSmall`), Romanos → `cross`, Proverbios → `mountain`, Juan/Mateo/Marcos/Lucas → `dove`, Apocalipsis → `crown`, Génesis → `seed`, Éxodo → `mountain`, default fallback → `bible`. User may override. |
+| `Pista` | Empty by default. Remains optional. |
+| `Colecciones` | Empty by default. Optional polish: if the book name (e.g., "Romanos") matches an existing user collection, surface a small `Agregar a 'Romanos'?` suggestion chip pre-checked. |
+
+**Net effect:** *type a reference → tap Save* is a complete, valid flow. Customization remains one tap away for users who want it.
+
+### 17.2 Empty states (NEW — additions to §5 and §6)
+
+Each list-type destination must define explicit empty-state copy and CTA. Locale-aware per §6.8.
+
+| Destination | Condition | Copy + CTA |
+| --- | --- | --- |
+| Home | 0 verses total | Single warm card: *"Comienza con tu primer verso. Te sugerimos Juan 14:6."* — tap pre-fills the New Verse form with `Juan 14:6` + the user's default version. |
+| Home | 0 verses due today, library not empty | *"Todo al día. Vuelve mañana — o practica un verso aleatorio."* with secondary button `Practicar uno aleatorio`. |
+| Library / Colecciones | 0 collections | Card explaining what collections are; CTA `Crear primera colección`. |
+| Library / Todos los versos | 0 verses | Identical to the Home-empty case. |
+| Collection detail | 0 verses in collection | *"Aún no hay versos aquí. Agrega uno para empezar."* with inline FAB. |
+| Practice hub | 0 verses | *"Agrega tu primer verso para practicar."* with CTA to New Verse form. |
+
+### 17.3 Skip-card affordance (NEW — addition to §6.2 and §6.4.1)
+
+- During Card View and during any Classic / First-letter / Typed session, a small text-link `Saltar` is available at the bottom of the screen, visually de-emphasized.
+- Tapping defers the card to the **end of the current session** without recording a `practice_sessions` row for it.
+- A skipped card's SM-2 state, due date, and queue position remain unchanged.
+- No streak penalty: the streak still requires *at least one completed* session that day, so skipping cards alone doesn't extend the streak (skipping all cards leaves the user with zero completed sessions for the day).
+
+### 17.4 "Repasar ahora" button on Card View (NEW — addition to §6.2)
+
+- Card View shows a small `Repasar ahora` link (subtle, not a primary action).
+- Tapping starts a one-card Classic-mode session for that specific verse.
+- The result is recorded as a normal practice session; SM-2 update and streak contribution proceed exactly as in any Classic session.
+- Useful for power users who want to drill a specific verse out-of-schedule.
+
+### 17.5 Edit and Delete UX (clarification of §6.3)
+
+- Each `VerseRow` and each collection card exposes an overflow menu (`⋯`) on the right.
+- Verse menu: `Editar`, `Mover a colección…`, `Eliminar`.
+- Collection menu: `Editar`, `Eliminar`.
+- Long-press on mobile opens the same menu.
+- **Delete is undoable** — the action shows a Snackbar / Toast at the bottom: *"Verso eliminado · Deshacer"* / *"Verse deleted · Undo"* with a 5-second window. Tapping `Deshacer` restores the verse and all its collection memberships (or the collection and all its verse links).
+- After 5 seconds without undo, the delete is committed (hard-deleted, per §3.1).
+- Deleting a collection un-links its verses but does not delete them, per §4.2 (unchanged).
+- `Editar` opens the same New Verse form pre-populated with the entity's current values.
+
+### 17.6 Collection-tag color presets are unnamed (clarification of §7.5)
+
+Section 7.5 lists eight named keys (`Romanos`, `Salmos`, `Evangelios`, `Promesas`, `Mañana`, `Memorizados`, `Favoritos`, `Proverbios`) — these names are **prototype illustration only**, not required collections, and not visible to the user as defaults.
+
+What v1 ships:
+
+- Eight unnamed `{bg, fg, dot}` color presets, gathered from `tokens.jsx :: VR.collectionColors`.
+- Users name their own collections. At create time, the user picks one of the 8 presets via swatches.
+- **Optional smart suggestion:** if a collection's name matches a known book or theme (e.g., the user types "Salmos" or "Promesas"), the system may pre-select the matching preset color. The user always overrides.
+- No collections are pre-created on first sign-in. The Library starts empty (see §17.2).
+
+### 17.7 First-run onboarding (NEW — addition to §6 and §11)
+
+Right after the user's first successful Google sign-in, show a single onboarding screen:
+
+- App logo + welcome line: *"Memoriza la Palabra. Una tarjeta a la vez."* / *"Memorize the Word. One card at a time."*
+- Three short bullets:
+  1. *"Agrega versos por referencia"* / *"Add verses by reference"*
+  2. *"Personaliza con color, ícono y pista"* / *"Personalize with color, icon, and hint"*
+  3. *"Practica unos minutos al día"* / *"Practice a few minutes a day"*
+- Primary CTA: *"Agregar mi primer verso"* / *"Add my first verse"* — opens New Verse form pre-filled with `Juan 14:6` + the system default version (NBLA, or whatever is first in the runtime list).
+- Secondary text-link: `Saltar` / `Skip` — goes to Home empty state (§17.2).
+- One-time only. Persisted via a `hasCompletedOnboarding` boolean on the user record. Never shown again after first sign-in.
+
+### 17.8 Reduce-motion compliance reminder (clarification of §10.4)
+
+To remove ambiguity for engineering:
+
+- All **looping** animations from `animations.css` (`vr-flame`, `vr-twinkle`, `vr-glow-pulse`, `vr-sparkle`, `vr-float`, `vr-shimmer`) MUST be disabled when the OS-level `prefers-reduced-motion: reduce` media query is set. Replace with the static end-state.
+- **Transitional** animations (`vr-card-rise`, `vr-fade-up`, `vr-pop`, `vr-hint-appear`, `vr-flip-card`, `vr-tada`) MAY still play but at reduced amplitude — at minimum, halve any translation distance and disable any `scale` overshoot.
+- The `vr-flip-card` 3D rotation specifically: when reduced-motion is set, replace with a 200ms cross-fade between front and back faces.
+
+### 17.9 Updated acceptance criteria (additions to §11)
+
+Append the following to §11. None of the originals are removed. Continues numbering from §11's criterion 11.
+
+- **AC-12.** The user can complete a First-letter mode session against ≥ 3 verses and the verse's SM-2 state advances per §15.4.
+- **AC-13.** The user can complete a typed-recall round in Classic mode; tolerant comparison correctly auto-grades a verse with one accent missing (`fortalece` ↔ `fortaléce`) as `Bien` or better.
+- **AC-14.** A user who only ever plays Word Scramble or Verse Match on a verse does not see that verse's SM-2 interval advance to the next stage (per §15.4).
+- **AC-15.** A verse cannot reach `mastered` status (§15.5) without at least one unaided Classic / First-letter / Typed-recall session in the last 30 days graded `Bien` or higher.
+- **AC-16.** A long verse (Proverbios 3:5–6) presented in Classic mode appears chunked in early reps and as a single full verse from rep 6 onward (§15.7).
+- **AC-17.** The default daily queue interleaves verses across collections (§15.6) — verified by inspecting the order of `practice_sessions` for a session against a library spanning multiple collections.
+- **AC-18.** Tapping `💡 Pista` during practice does not cap the maximum quality grade (§16.5), but the session row records `usedHint: true`.
+- **AC-19.** The Profile bottom sheet (§16.3) opens from the avatar tap and exposes language, sound, sign-out, and delete-account.
+- **AC-20.** Deleting a verse from Library shows an undo toast for 5 seconds; tapping undo restores the verse and its collection memberships (§17.5).
+- **AC-21.** Empty states render correctly for: Home (0 verses), Home (0 due, library not empty), Library Colecciones (0 collections), Collection detail (0 verses) (§17.2).
+- **AC-22.** First-run onboarding is shown on first sign-in only; subsequent sign-ins go straight to Home (§17.7).
 
 ---
 
