@@ -1,0 +1,145 @@
+/* VersoRefuerzo — design tokens (ported from DesignBundle/tokens.jsx)
+   See specs.md §7 and §18.2. CSS variables consumed by every component. */
+
+:root {
+  /* font stacks (the *-loaded vars come from next/font in app/layout.tsx) */
+  --font-display:
+    var(--font-display-loaded), "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
+  --font-sans:
+    var(--font-sans-loaded), "Inter", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-serif:
+    var(--font-serif-loaded), "Lora", "Iowan Old Style", Georgia, serif;
+  --font-mono:
+    var(--font-mono-loaded), "JetBrains Mono", ui-monospace, monospace;
+
+  /* spacing */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-7: 32px;
+  --s-8: 40px;
+  --s-9: 56px;
+  --s-10: 72px;
+
+  /* radius */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 20px;
+  --r-2xl: 24px;
+  --r-3xl: 32px;
+  --r-full: 9999px;
+
+  /* solid colors */
+  --c-indigo-50: #eef2ff;
+  --c-indigo-100: #e0e7ff;
+  --c-indigo-200: #c7d2fe;
+  --c-indigo-400: #818cf8;
+  --c-indigo-500: #6366f1;
+  --c-indigo-600: #4f46e5;
+  --c-indigo-700: #4338ca;
+  --c-indigo-900: #312e81;
+  --c-indigo-950: #1e1b4b;
+  --c-violet-400: #a78bfa;
+  --c-violet-500: #8b5cf6;
+  --c-violet-600: #7c3aed;
+  --c-purple-500: #a855f7;
+  --c-pink-500: #ec4899;
+  --c-pink-400: #f472b6;
+  --c-amber-400: #fbbf24;
+  --c-amber-500: #f59e0b;
+  --c-emerald-400: #34d399;
+  --c-emerald-500: #10b981;
+  --c-teal-500: #14b8a6;
+  --c-sky-400: #38bdf8;
+  --c-sky-500: #0ea5e9;
+  --c-rose-500: #f43f5e;
+  --c-orange-500: #f97316;
+
+  /* neutrals */
+  --c-ink: #0f0e1a;
+  --c-text: #1f1b3a;
+  --c-muted: #6b6985;
+  --c-soft: #9d9bb5;
+  --c-line: #e8e6f2;
+  --c-bg: #faf9fe;
+  --c-card: #ffffff;
+  --c-card-soft: #f5f3fb;
+
+  /* brand gradients */
+  --brand-primary: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+  --brand-primary-soft: linear-gradient(135deg, #818cf8 0%, #a78bfa 100%);
+  --brand-sky: linear-gradient(135deg, #38bdf8 0%, #6366f1 100%);
+  --brand-sunrise: linear-gradient(135deg, #fbbf24 0%, #f472b6 50%, #a855f7 100%);
+  --brand-forest: linear-gradient(135deg, #34d399 0%, #14b8a6 100%);
+  --brand-ember: linear-gradient(135deg, #fb923c 0%, #ef4444 100%);
+  --brand-rose: linear-gradient(135deg, #f472b6 0%, #ec4899 100%);
+  --brand-night: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%);
+
+  /* card colors — 8 user-pickable presets (specs.md §7.3) */
+  --card-indigo-bg: linear-gradient(135deg, #6366f1, #8b5cf6);
+  --card-indigo-solid: #6366f1;
+  --card-indigo-tint: #eef2ff;
+  --card-violet-bg: linear-gradient(135deg, #8b5cf6, #a855f7);
+  --card-violet-solid: #8b5cf6;
+  --card-violet-tint: #f3e8ff;
+  --card-rose-bg: linear-gradient(135deg, #f472b6, #ec4899);
+  --card-rose-solid: #ec4899;
+  --card-rose-tint: #fce7f3;
+  --card-amber-bg: linear-gradient(135deg, #fbbf24, #f97316);
+  --card-amber-solid: #f59e0b;
+  --card-amber-tint: #fef3c7;
+  --card-emerald-bg: linear-gradient(135deg, #34d399, #14b8a6);
+  --card-emerald-solid: #10b981;
+  --card-emerald-tint: #d1fae5;
+  --card-sky-bg: linear-gradient(135deg, #38bdf8, #6366f1);
+  --card-sky-solid: #0ea5e9;
+  --card-sky-tint: #e0f2fe;
+  --card-crimson-bg: linear-gradient(135deg, #fb923c, #ef4444);
+  --card-crimson-solid: #ef4444;
+  --card-crimson-tint: #fee2e2;
+  --card-midnight-bg: linear-gradient(135deg, #312e81, #1e1b4b);
+  --card-midnight-solid: #312e81;
+  --card-midnight-tint: #e0e7ff;
+
+  /* collection-tag colors — 8 unnamed presets (specs.md §7.5, §17.6) */
+  --tag-rose-bg: #fce7f3;
+  --tag-rose-fg: #be185d;
+  --tag-rose-dot: #ec4899;
+  --tag-sky-bg: #e0f2fe;
+  --tag-sky-fg: #0369a1;
+  --tag-sky-dot: #0ea5e9;
+  --tag-amber-bg: #fef3c7;
+  --tag-amber-fg: #b45309;
+  --tag-amber-dot: #f59e0b;
+  --tag-emerald-bg: #d1fae5;
+  --tag-emerald-fg: #047857;
+  --tag-emerald-dot: #10b981;
+  --tag-violet-bg: #ede9fe;
+  --tag-violet-fg: #6d28d9;
+  --tag-violet-dot: #8b5cf6;
+  --tag-indigo-bg: #e0e7ff;
+  --tag-indigo-fg: #3730a3;
+  --tag-indigo-dot: #6366f1;
+  --tag-red-bg: #fee2e2;
+  --tag-red-fg: #b91c1c;
+  --tag-red-dot: #ef4444;
+  --tag-cyan-bg: #cffafe;
+  --tag-cyan-fg: #0e7490;
+  --tag-cyan-dot: #06b6d4;
+
+  /* shadows */
+  --shadow-xs: 0 1px 2px rgba(15, 14, 26, 0.04);
+  --shadow-sm:
+    0 2px 8px rgba(79, 70, 229, 0.06), 0 1px 2px rgba(15, 14, 26, 0.04);
+  --shadow-md:
+    0 8px 24px rgba(79, 70, 229, 0.08), 0 2px 6px rgba(15, 14, 26, 0.04);
+  --shadow-lg:
+    0 18px 40px rgba(79, 70, 229, 0.14), 0 6px 14px rgba(15, 14, 26, 0.06);
+  --shadow-xl:
+    0 32px 60px rgba(79, 70, 229, 0.22), 0 10px 24px rgba(15, 14, 26, 0.08);
+  --shadow-glow: 0 0 0 4px rgba(139, 92, 246, 0.18);
+}
