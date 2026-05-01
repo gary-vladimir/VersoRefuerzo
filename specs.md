@@ -16,6 +16,8 @@ The unit of value is the **verse card**: a flashcard the user creates from a Bib
 
 > **Important — read sections 15, 16, and 17 before implementing.** After the original spec was drafted, an expert review of the UX and memory-science design produced a set of binding refinements. Those refinements **supersede or extend** parts of sections 5, 6, 7, 8, 10, and 11 below. The original sections are preserved for context and rationale; where a refinement applies, the refinement wins. Each refinement explicitly cites the section it modifies.
 
+> **Important — the canonical visual reference is committed to this repo at `./DesignBundle/`.** Every implementer MUST read the files in that directory before writing UI code. They are the source of truth for visual design, layout, animation, and component composition. Section 18 lists each file and its role. Treat the bundle as a binding visual contract; this spec governs *behavior and scope*, the bundle governs *appearance and interaction patterns*.
+
 ---
 
 ## 2. Goals and non-goals
@@ -825,6 +827,96 @@ Append the following to §11. None of the originals are removed. Continues numbe
 - **AC-20.** Deleting a verse from Library shows an undo toast for 5 seconds; tapping undo restores the verse and its collection memberships (§17.5).
 - **AC-21.** Empty states render correctly for: Home (0 verses), Home (0 due, library not empty), Library Colecciones (0 collections), Collection detail (0 verses) (§17.2).
 - **AC-22.** First-run onboarding is shown on first sign-in only; subsequent sign-ins go straight to Home (§17.7).
+
+---
+
+---
+
+## 18. Local design bundle — REQUIRED READING
+
+> **This section is the single most important reference for any engineer building the UI.** The visual contract for v1 lives in plain HTML/CSS/JSX files committed to this repository at:
+>
+> ```text
+> /Users/gary/Documents/VersoRefuerzo/DesignBundle/
+> ```
+>
+> (relative to the repo root: **`./DesignBundle/`**)
+>
+> These files are not throwaway prototypes. They are the **canonical, authoritative source of truth** for visual design, color, typography, spacing, animation, component composition, and screen layout. Where this spec says "see `tokens.jsx`" or "see `mobile-screens.jsx :: ScreenHome`", the file in `./DesignBundle/` is what's being referenced.
+
+### 18.1 How to use the bundle
+
+1. **Open `./DesignBundle/VersoRefuerzo.html` in a browser** (it is self-contained — it loads React + Babel from CDN and renders all 14 v1 screens side-by-side on a design canvas). This is the fastest way to see what you are about to build, including animations.
+2. **Read the source files directly** — do not rely on screenshots. The HTML/CSS/JSX *is* the spec for visuals: every dimension, color, shadow, animation, and copy string is in there.
+3. **When implementing a screen, open the corresponding `*.jsx` file alongside this spec.** This spec tells you *what behaviors* the screen must support; the JSX tells you *what it must look and feel like*.
+4. **Match visuals pixel-faithfully** in whatever framework the team chooses (React, Next.js, etc.). Do not copy the prototype's internal structure verbatim — recreate the visual output.
+5. **Treat the bundle as read-only reference material.** If a discrepancy is found between the bundle and this spec, the spec wins on behavior/scope and the bundle wins on appearance. If the discrepancy can't be resolved, raise it in the project tracker rather than guessing.
+
+### 18.2 File-by-file purpose
+
+| File | Role | Read when implementing |
+| --- | --- | --- |
+| `./DesignBundle/VersoRefuerzo.html` | Entry point. Loads React/Babel from CDN, includes all the JSX scripts in dependency order, sets global `<body>` styles (`#FAF9FE` background, `Inter` body font, antialiasing). | Always — it tells you font imports, base color, and asset load order. |
+| `./DesignBundle/tokens.jsx` | **Design tokens.** All brand gradients, the 8 user-pickable card colors, the 8 collection-tag colors, spacing scale, radius scale, shadows, font stacks. Also the full ES/EN string table `T`. | Any UI work. Port these tokens verbatim into your styling system. |
+| `./DesignBundle/animations.css` | Named keyframes and animation classes (`vr-card-rise`, `vr-glow-pulse`, `vr-flame`, `vr-flip-card`, `vr-hint-appear`, `vr-stagger`, etc.). Each animation has a documented purpose. | Any screen with motion. Apply per §7.7 of this spec; respect the reduced-motion rules in §17.8. |
+| `./DesignBundle/icons.jsx` | The full SVG icon library (the 18 verse icons + UI icons like `play`, `back`, `close`, `flame`, `sparkles`, `google`, `home`, `library`, `forward`, `clock`, `book`, etc.). | Whenever you need an icon. Match stroke widths and proportions exactly. |
+| `./DesignBundle/components.jsx` | **Shared UI atoms.** `Button` (primary/soft/ghost/outline/danger/dark/google variants), `Tag`, **`VerseCard`** (sm/md/lg, front and back), `IconBubble`, `Stat`, `ProgressBar`, `SectionTitle`, `MobileTabBar`, `FAB`. Also `SAMPLE_VERSES` and `SAMPLE_COLLECTIONS` (mock data — use as fixture for storybook / dev only, **do not ship**). | Any UI work. These are the reusable building blocks every screen depends on. |
+| `./DesignBundle/mobile-screens.jsx` | All mobile-layout screens: `ScreenLogin`, `ScreenHome`, `ScreenNewVerse`, `ScreenCardView` (front / flipped / flipped-hint), `ScreenLibrary`, plus `VerseRow`, `FormLabel`. | Implementing any mobile screen. |
+| `./DesignBundle/desktop-screens.jsx` | Desktop-layout screens. `DesktopFrame` (browser-chrome wrapper), `DesktopSidebar` (240-px persistent left nav), `ScreenDesktopHome`. | Implementing any desktop layout. Use as the layout template for desktop variants of any screen not explicitly desktop-drawn (per §8). |
+| `./DesignBundle/games.jsx` | All practice-mode screens: `ScreenPracticeHub`, `ScreenClassicSession`, `ScreenWordScramble`, `ScreenVerseMatch`, `ScreenFillTheGap`, `ScreenStreakChallenge`. **Note:** `ScreenStreakChallenge` is dropped per §16.2; the file remains useful as visual reference for the dark-mode "night gradient" treatment that may be reused elsewhere. | Implementing any practice mode. Also reference for mini-game gamification chrome (timer pill, score pill, intentos indicator). |
+| `./DesignBundle/ios-frame.jsx` | Decorative iPhone bezel wrapper used by the design canvas to render mobile screens at `402×874`. | Not used in production — prototype-only chrome. Do not port. |
+| `./DesignBundle/design-canvas.jsx` | The multi-artboard canvas the prototype uses to lay out all screens side-by-side. | Not used in production — prototype-only. Do not port. |
+| `./DesignBundle/tweaks-panel.jsx` | A floating panel in the prototype that exposes the `lang` toggle and other knobs. | Not used in production — prototype-only. Do not port. |
+| `./DesignBundle/app.jsx` | The prototype's entry component. Composes the design canvas with all the artboards. Useful as an index of which screens exist and how they are grouped (Onboarding · Home · Verse cards · Add new verse · Library · Practice hub · Game modes · Visual system). | Read once for orientation; do not port. |
+
+### 18.3 Files that must be ported vs. files that are reference-only
+
+**MUST port to production code (these embody the v1 visual contract):**
+
+- `tokens.jsx` — port every value to your design-system variables / theme.
+- `animations.css` — port keyframes and helper classes into your global stylesheet (or the styling system equivalent).
+- `icons.jsx` — port each SVG icon definition; keep the same names.
+- `components.jsx` — re-implement these atoms (`Button`, `Tag`, `VerseCard`, `IconBubble`, `Stat`, `ProgressBar`, `MobileTabBar`, `FAB`) in your chosen framework, matching visual output exactly. Do not ship `SAMPLE_VERSES` / `SAMPLE_COLLECTIONS`.
+- All `*-screens.jsx` files — recreate each `Screen*` component as a route/page in your app, matching layout, copy (use the `T` string table for i18n), and animation triggers. Apply the §15–17 refinements where they override the prototype's behavior.
+
+**Reference-only (do NOT port to production):**
+
+- `VersoRefuerzo.html`, `app.jsx`, `design-canvas.jsx`, `ios-frame.jsx`, `tweaks-panel.jsx` — these exist to render the prototype; they have no production analogue.
+- `SAMPLE_VERSES` and `SAMPLE_COLLECTIONS` — fixture data only. Real verses come from API.Bible (§9.2) and the user's library.
+
+### 18.4 Discrepancy resolution between bundle and §15–17 refinements
+
+The bundle was authored before the §15–17 refinements. Where the bundle and the refinements disagree, **the refinements win**. Specific known discrepancies:
+
+| Bundle behavior | Refinement (binding) | Reference |
+| --- | --- | --- |
+| Card View has 3 states (`front`, `flipped`, `flipped-hint`) with a "Lo recordé / Me rindo" pre-grading layer | Card View has 2 states; always show the 4 SM-2 buttons after reveal; hint button is orthogonal | §16.4 |
+| `ScreenStreakChallenge` exists as a dedicated mode with its own dark-mode artboard | The standalone Streak Challenge screen is removed; streak motivation lives on Home | §16.2 |
+| 4 mobile bottom tabs (`Inicio`, `Practicar`, `Biblioteca`, `Perfil`) | 3 tabs; profile lives in a sheet behind the avatar | §16.3 |
+| Practice hub appears as the first stop after Home for daily practice | Home CTA goes directly to Classic; hub is for variety only | §16.1 |
+| Desktop home stats row has 4 stats including `Precisión` | 3 stats; `Precisión` removed | §16.6 |
+| Mini-games speak of "vidas" / "lives" (e.g., heart-icon row in `ScreenVerseMatch`) | "intentos" / "tries"; neutral end-of-round copy | §16.7 |
+| Classic session label reads "Repetición espaciada (SM-2)" | Drop the SM-2 jargon; just "Repetición espaciada" | §16.9 |
+| Practice hub lists 5 modes: Classic, Streak, Scramble, Match, Gap | 5 modes: Classic, **First-letter (NEW, §15.1)**, Scramble, Match, Gap. (Streak Challenge removed.) | §15.1, §16.2 |
+| `ScreenFillTheGap` uses fixed 1–3 blanks | Blank density grows with `repetitions` (progressive cloze) | §15.3 |
+| Hint use caps the SM-2 quality grade in some flows | No quality cap when hint is used; only `usedHint: true` is recorded | §16.5 |
+
+When in doubt, follow this spec for behavior and the bundle for appearance.
+
+### 18.5 Working with the bundle locally
+
+- The bundle is **self-contained** — open `./DesignBundle/VersoRefuerzo.html` directly in a browser; no build step, no server required. (It loads React, ReactDOM, and Babel-standalone from `unpkg.com`.)
+- The Tweaks panel (top-right of the canvas) toggles `lang` between Spanish and English — useful for verifying i18n parity.
+- Resize the browser window to roughly 1500–1700 px wide for the most readable canvas layout.
+- Edits to bundle files **do not** affect production code. The bundle exists as a reference, not as a build target.
+
+### 18.6 Summary for implementers
+
+1. **First task on day one:** open `./DesignBundle/VersoRefuerzo.html` in a browser, walk every screen, toggle ES/EN, and observe the animations.
+2. **Read `tokens.jsx` and `animations.css` cover-to-cover.** Port them.
+3. **For each route in your production app, open the matching `*-screens.jsx` or `games.jsx` component beside this spec** and implement.
+4. **Apply §15–17 refinements** wherever they override the prototype.
+5. **Do not invent visual decisions** that aren't grounded in the bundle or this spec. If a question is unanswered by both, raise it.
 
 ---
 
