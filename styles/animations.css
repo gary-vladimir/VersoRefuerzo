@@ -1,0 +1,123 @@
+/* VersoRefuerzo — global animations
+   All animations have purpose: feedback, focus direction, or transition.
+   Nothing decorative-only. */
+
+@keyframes vr-fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes vr-fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes vr-pop {
+  0%   { transform: scale(0.7); opacity: 0; }
+  60%  { transform: scale(1.08); }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes vr-flip-front {
+  0%   { transform: perspective(1200px) rotateY(0deg); }
+  100% { transform: perspective(1200px) rotateY(180deg); }
+}
+@keyframes vr-glow-pulse {
+  0%, 100% { box-shadow: 0 14px 30px rgba(99,102,241,0.45), 0 0 0 0 rgba(168,85,247,0.5); }
+  50%      { box-shadow: 0 14px 30px rgba(99,102,241,0.55), 0 0 0 12px rgba(168,85,247,0); }
+}
+@keyframes vr-flame {
+  0%, 100% { transform: scale(1) rotate(-2deg); }
+  50%      { transform: scale(1.06) rotate(2deg); }
+}
+@keyframes vr-sparkle {
+  0%, 100% { opacity: 0.4; transform: scale(0.8); }
+  50%      { opacity: 1; transform: scale(1.2); }
+}
+@keyframes vr-float {
+  0%, 100% { transform: translateY(0px); }
+  50%      { transform: translateY(-8px); }
+}
+@keyframes vr-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes vr-orbit-1 {
+  from { transform: rotate(0deg) translateX(120px) rotate(0deg); }
+  to   { transform: rotate(360deg) translateX(120px) rotate(-360deg); }
+}
+@keyframes vr-orbit-2 {
+  from { transform: rotate(0deg) translateX(170px) rotate(0deg); }
+  to   { transform: rotate(-360deg) translateX(170px) rotate(360deg); }
+}
+@keyframes vr-twinkle {
+  0%, 100% { opacity: 0.3; }
+  50%      { opacity: 1; }
+}
+@keyframes vr-progress-bar {
+  from { width: 0; }
+}
+@keyframes vr-slide-in-right {
+  from { transform: translateX(20px); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+@keyframes vr-card-rise {
+  0%   { transform: translateY(40px) scale(0.92); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+@keyframes vr-hint-appear {
+  0%   { opacity: 0; transform: translateY(-6px) scale(0.96); max-height: 0; padding-top: 0; padding-bottom: 0; margin-top: 0; }
+  100% { opacity: 1; transform: translateY(0) scale(1); max-height: 80px; }
+}
+@keyframes vr-tada {
+  0%, 100% { transform: scale(1); }
+  10%, 20% { transform: scale(0.95) rotate(-2deg); }
+  30%, 50%, 70%, 90% { transform: scale(1.05) rotate(2deg); }
+  40%, 60%, 80% { transform: scale(1.05) rotate(-2deg); }
+}
+
+.vr-fade-up { animation: vr-fadeUp .5s cubic-bezier(.2,.7,.2,1) both; }
+.vr-fade-in { animation: vr-fadeIn .4s ease both; }
+.vr-pop { animation: vr-pop .35s cubic-bezier(.2,.7,.2,1) both; }
+.vr-glow-pulse { animation: vr-glow-pulse 2.4s ease-in-out infinite; }
+.vr-flame { animation: vr-flame 1.6s ease-in-out infinite; transform-origin: 50% 80%; }
+.vr-sparkle { animation: vr-sparkle 2s ease-in-out infinite; }
+.vr-float { animation: vr-float 4s ease-in-out infinite; }
+.vr-twinkle { animation: vr-twinkle 2.4s ease-in-out infinite; }
+.vr-card-rise { animation: vr-card-rise .6s cubic-bezier(.2,.8,.2,1) both; }
+.vr-hint-appear { animation: vr-hint-appear .45s cubic-bezier(.2,.8,.2,1) both; overflow: hidden; }
+.vr-tada { animation: vr-tada 1.2s ease-in-out; }
+.vr-slide-right { animation: vr-slide-in-right .5s cubic-bezier(.2,.7,.2,1) both; }
+
+/* Stagger helpers */
+.vr-stagger > * { animation: vr-fadeUp .5s cubic-bezier(.2,.7,.2,1) both; }
+.vr-stagger > *:nth-child(1) { animation-delay: 0.04s; }
+.vr-stagger > *:nth-child(2) { animation-delay: 0.10s; }
+.vr-stagger > *:nth-child(3) { animation-delay: 0.16s; }
+.vr-stagger > *:nth-child(4) { animation-delay: 0.22s; }
+.vr-stagger > *:nth-child(5) { animation-delay: 0.28s; }
+.vr-stagger > *:nth-child(6) { animation-delay: 0.34s; }
+.vr-stagger > *:nth-child(7) { animation-delay: 0.40s; }
+.vr-stagger > *:nth-child(8) { animation-delay: 0.46s; }
+
+/* Card flip — uses transform-style preserve-3d */
+.vr-flip-host { perspective: 1200px; }
+.vr-flip-card {
+  position: relative; width: 100%; height: 100%;
+  transition: transform .7s cubic-bezier(.4, .1, .2, 1);
+  transform-style: preserve-3d;
+}
+.vr-flip-card.flipped { transform: rotateY(180deg); }
+.vr-flip-face {
+  position: absolute; inset: 0;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+.vr-flip-back { transform: rotateY(180deg); }
+
+/* Shimmering text gradient */
+.vr-shimmer-text {
+  background: linear-gradient(90deg, #C7D2FE 0%, #fff 50%, #C7D2FE 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: vr-shimmer 3.5s ease-in-out infinite;
+}
