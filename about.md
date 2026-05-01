@@ -31,5 +31,7 @@ El uso de servicios google e.g: cloud, firebase, cloudrun es preferido sobre ser
 
 Este proyecto deberá estar “low budget”, de preferencia 100% gratis. Para bases de datos se puede usar Neon por ejemplo.
 
-Fetch this design file, read its readme, and implement the relevant aspects of the design. <https://api.anthropic.com/v1/design/h/oKBC_lK0rFwKEp6N1Psfpg?open_file=VersoRefuerzo.html>
+La app estará principalmente en español, pero deberá de tener la capacidad de cambiar al Inglés.
+
+Fetch this design file, read its readme, and implement the relevant aspects of the design. <https://api.anthropic.com/v1/design/h/V0fpe9WyVcXxC_utZT7U2g?open_file=VersoRefuerzo.html>
 Implement: VersoRefuerzo.html
