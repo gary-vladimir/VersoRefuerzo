@@ -41,6 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="es"
       className={`${display.variable} ${sans.variable} ${serif.variable} ${mono.variable}`}
+      suppressHydrationWarning
     >
       <body>{children}</body>
     </html>
