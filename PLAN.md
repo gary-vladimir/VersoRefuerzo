@@ -70,6 +70,8 @@ Every contributor and CI/Codespaces session uses the same toolchain via `.devcon
 
 **Acceptance for the devcontainer (M0 sub-criterion):** "Open in container" → wait for postCreate → run `pnpm dev` → `http://localhost:3000` serves the M0 health page. No host-side Node install required.
 
+**Lockfile workflow.** `pnpm install` (in postCreate) generates `pnpm-lock.yaml` on first run if absent. After the first install, **commit the lockfile** — it's the durable record of the resolved dependency graph and is required by the production `Dockerfile` (which runs `pnpm install --frozen-lockfile`). The lockfile is NOT in `.gitignore`. Subsequent contributors get reproducible installs from the committed lockfile.
+
 ## Commit cadence policy
 
 Per user directive — commit small, often, with clear messages.
