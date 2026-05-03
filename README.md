@@ -118,15 +118,25 @@ Open `.env` and fill in:
 
 ## 7. Initialize the database
 
-The schema lives in `db/schema.ts`. For M1 only the `users` table is needed. Push it to Neon:
+The schema lives in `db/schema.ts` and reviewed migrations under `db/migrations/`.
+
+For a **fresh** database, apply the committed migrations:
+
+```bash
+pnpm db:migrate
+```
+
+(or run the SQL files manually if you don't have the script wired). This creates all tables in their reviewed final form.
+
+For a **scratch / dev** branch where you don't care about migration history:
 
 ```bash
 pnpm db:push
 ```
 
-This is idempotent. To inspect data later: `pnpm db:studio` (opens Drizzle Studio in your browser).
+`db:push` is idempotent and faster, but skips the migration history. Prefer it only on personal Neon dev branches; never on production.
 
-> A reviewed migration history (`db/migrations/`) will be added in a later commit. For now, `db:push` is the source of truth.
+To inspect data: `pnpm db:studio` (opens Drizzle Studio in your browser).
 
 ---
 
