@@ -1,12 +1,13 @@
 // /api/verses  — list and create. M3 will add filter params (collectionId, q,
 // status); for now GET simply returns all of the user's non-deleted verses.
 //
-// On POST we kick off the API.Bible fetch in the same request, but a fetch
-// failure does NOT block the verse from being created — the row exists, the
-// text just isn't cached yet. The Card View / practice modes that need the
-// text will retry through /api/bible/text when the user opens them. This
-// matches specs.md §6.1 step 4 ("the user is not blocked on this fetch on
-// save"), preserving AC-2.
+// On POST we await the API.Bible fetch so the verse text is cached by the
+// time the response returns. Cache hit is ~10ms; a cache miss costs one
+// API.Bible round-trip. If the fetch fails (network blip, 5xx) we leave the
+// verse row in place and surface `textPrimed: false` — the Card View / practice
+// modes will retry through /api/bible/text. We refuse versions that aren't
+// configured at deploy time (so a stale UI can't create a verse whose text
+// has no path to ever load).
 
 import { NextResponse, type NextRequest } from "next/server";
 import { and, asc, eq, isNull, inArray } from "drizzle-orm";
@@ -14,7 +15,7 @@ import { getServerUser } from "@/lib/auth/session";
 import { getDb } from "@/db/client";
 import { verses, verseCollections, collections } from "@/db/schema";
 import { NewVerseInput } from "@/lib/validation/schemas";
-import { getVerseText } from "@/lib/bible/apibible";
+import { getVerseText, availableVersions } from "@/lib/bible/apibible";
 
 export const runtime = "nodejs";
 
@@ -42,6 +43,18 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json(
       { error: "invalid_request", issues: parsed.error.issues },
+      { status: 400 },
+    );
+  }
+
+  // Reject versions that aren't configured at deploy time. The UI reads
+  // /api/bible/versions and only offers what's available, so this only
+  // triggers for stale clients or direct API callers — but it must, otherwise
+  // we'd persist a verse whose text can never be fetched.
+  const configured = availableVersions().map((v) => v.key);
+  if (!configured.includes(parsed.data.version)) {
+    return NextResponse.json(
+      { error: "version_unavailable", available: configured },
       { status: 400 },
     );
   }
