@@ -8,7 +8,10 @@
 //
 // Cookie validity is NOT verified here — middleware runs in the Edge runtime
 // and cannot use Firebase Admin or Drizzle. Cryptographic verification
-// happens server-side in `getServerUser()`.
+// happens server-side in `getServerUser()`. The signed-in-user-visiting-/login
+// case is also handled server-side by the login page itself, NOT here:
+// trusting cookie presence in middleware would loop expired sessions
+// indefinitely (login → home → fail verify → login).
 
 import { NextResponse, type NextRequest } from "next/server";
 
@@ -29,12 +32,6 @@ export function middleware(req: NextRequest) {
   if (!sessionCookie && !isPublic && !isApi) {
     const url = req.nextUrl.clone();
     url.pathname = "/login";
-    return NextResponse.redirect(url);
-  }
-
-  if (sessionCookie && pathname === "/login") {
-    const url = req.nextUrl.clone();
-    url.pathname = "/";
     return NextResponse.redirect(url);
   }
 
