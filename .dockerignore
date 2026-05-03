@@ -3,9 +3,11 @@ node_modules
 .git
 .github
 .devcontainer
+.pnpm-store
 DesignBundle
 tests
 *.md
+*.tsbuildinfo
 .env
 .env*.local
 coverage
