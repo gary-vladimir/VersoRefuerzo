@@ -9,12 +9,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { parseReference } from "@/lib/bible/reference";
 import {
-  CARD_COLOR_IDS,
-  COLLECTION_COLORS,
   type CardColorId,
   type CollectionColorId,
   type VerseIconId,
-  isCardColor,
   isVerseIcon,
 } from "@/lib/catalog";
 import { defaultColorForIndex, defaultIconForBook } from "@/lib/bible/defaults";
