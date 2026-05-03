@@ -35,7 +35,9 @@ export default function OnboardingActions({
     >
       <button
         type="button"
-        onClick={() => complete("/verses/new", "primary")}
+        // M2 will route this to "/verses/new"; until that route exists,
+        // both buttons land on Home so first-run users don't hit a 404.
+        onClick={() => complete("/", "primary")}
         disabled={loading !== null}
         style={{
           background: "var(--brand-primary)",
