@@ -35,9 +35,8 @@ export default function OnboardingActions({
     >
       <button
         type="button"
-        // M2 will route this to "/verses/new"; until that route exists,
-        // both buttons land on Home so first-run users don't hit a 404.
-        onClick={() => complete("/", "primary")}
+        // §17.7: opens New Verse pre-filled with Juan 14:6.
+        onClick={() => complete("/verses/new?ref=Juan%2014%3A6", "primary")}
         disabled={loading !== null}
         style={{
           background: "var(--brand-primary)",
