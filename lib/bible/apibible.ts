@@ -55,10 +55,26 @@ export type FetchResult = {
 };
 
 // Get the verse text. Returns from cache if present; otherwise calls API.Bible
-// once, persists the row, and returns. Concurrent first-fetches for the same
-// (ref, version) may double-call API.Bible — the second insert hits the PK
-// and we treat that as benign; the cache still ends up populated. A SELECT
-// on conflict avoids returning a duplicate-key error to the caller.
+// once and persists. AC-8 ("exactly one API.Bible call") is enforced as a
+// best effort because Neon's HTTP driver doesn't support interactive
+// transactions (no advisory lock across queries). We use two layers of
+// protection:
+//
+//   1. Process-local in-flight dedup: concurrent callers in the same Node
+//      process for the same (ref, version) await one shared fetch promise.
+//      This collapses every realistic burst on a single Cloud Run instance.
+//
+//   2. Cross-instance race: handled by ON CONFLICT DO NOTHING on insert.
+//      Two instances racing the *same* miss may both call API.Bible once
+//      each — rare in practice (instance fan-out for the same verse-version
+//      pair within milliseconds). Cache still ends up populated correctly.
+//
+// Stronger cross-instance serialization (Postgres advisory lock or row-state
+// machine) would require switching to the WebSocket-pool driver. Deferred
+// until v2 if quota usage shows the cross-instance race actually matters.
+
+const inFlight = new Map<string, Promise<FetchResult>>();
+
 export async function getVerseText(
   canonicalRef: string,
   version: VersionKey,
@@ -66,6 +82,20 @@ export async function getVerseText(
   if (!isValidUsfmRef(canonicalRef)) {
     throw new Error(`invalid canonical ref: ${canonicalRef}`);
   }
+  const key = `${canonicalRef}|${version}`;
+  const existing = inFlight.get(key);
+  if (existing) return existing;
+  const p = doGetVerseText(canonicalRef, version).finally(() => {
+    inFlight.delete(key);
+  });
+  inFlight.set(key, p);
+  return p;
+}
+
+async function doGetVerseText(
+  canonicalRef: string,
+  version: VersionKey,
+): Promise<FetchResult> {
   const db = getDb();
 
   const cached = await db
@@ -114,7 +144,6 @@ export async function getVerseText(
   }
   const copyright = json.data?.copyright?.trim() || null;
 
-  // ON CONFLICT DO NOTHING — concurrent inserts are fine; first writer wins.
   await db
     .insert(bibleTextCache)
     .values({ canonicalRef, version, text, copyrightAttribution: copyright })
