@@ -216,6 +216,20 @@ export default function LoginClient() {
       <p
         style={{
           marginTop: 16,
+          fontSize: 12,
+          color: "rgba(255,255,255,0.7)",
+          textAlign: "center",
+          position: "relative",
+          zIndex: 2,
+          maxWidth: 320,
+          lineHeight: 1.4,
+        }}
+      >
+        {t.privacy}
+      </p>
+      <p
+        style={{
+          marginTop: 4,
           fontSize: 11,
           color: "rgba(255,255,255,0.55)",
           textAlign: "center",
