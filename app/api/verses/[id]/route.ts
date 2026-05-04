@@ -13,7 +13,7 @@
 // has text immediately.
 
 import { NextResponse, type NextRequest } from "next/server";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import { getServerUser } from "@/lib/auth/session";
 import { getDb } from "@/db/client";
 import {
@@ -21,6 +21,7 @@ import {
   verseCollections,
   collections as collectionsTable,
   bibleTextCache,
+  INITIAL_SRS_STATE,
 } from "@/db/schema";
 import { PatchVerseInput } from "@/lib/validation/schemas";
 import { availableVersions, getVerseText } from "@/lib/bible/apibible";
@@ -128,6 +129,16 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     }
   }
 
+  // Did the user change the verse's identity (the underlying passage)? If so
+  // we must NOT carry the existing SM-2 state forward — that would let an
+  // unlearned passage inherit the old verse's mastery, ease, and due date,
+  // corrupting the M4 queue (M3 review P1).
+  const refChanged =
+    parsed.data.canonicalRef !== undefined && parsed.data.canonicalRef !== verse.canonicalRef;
+  const verChanged =
+    parsed.data.version !== undefined && parsed.data.version !== verse.version;
+  const identityChanged = refChanged || verChanged;
+
   const updateValues: Record<string, unknown> = { updatedAt: new Date() };
   if (parsed.data.icon !== undefined) updateValues.icon = parsed.data.icon;
   if (parsed.data.color !== undefined) updateValues.color = parsed.data.color;
@@ -137,6 +148,11 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   }
   if (parsed.data.canonicalRef !== undefined) updateValues.canonicalRef = parsed.data.canonicalRef;
   if (parsed.data.version !== undefined) updateValues.version = parsed.data.version;
+  if (identityChanged) {
+    updateValues.srsState = INITIAL_SRS_STATE;
+    updateValues.mastery = 0;
+    updateValues.status = "new";
+  }
 
   const updated = await db
     .update(verses)
@@ -145,20 +161,37 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     .returning();
 
   if (collectionIds !== undefined) {
-    await db.delete(verseCollections).where(eq(verseCollections.verseId, verse.id));
-    if (collectionIds.length > 0) {
+    // Diff-based replace so a partial failure can't wipe every link the
+    // verse used to belong to (M3 review P2). We add what's new before
+    // removing what's gone — worst case a transient is the user keeps both
+    // sets, which is far cheaper to recover from than losing all memberships.
+    const existingLinks = await db
+      .select({ collectionId: verseCollections.collectionId })
+      .from(verseCollections)
+      .where(eq(verseCollections.verseId, verse.id));
+    const have = new Set(existingLinks.map((l) => l.collectionId));
+    const want = new Set(collectionIds);
+    const toAdd = [...want].filter((id) => !have.has(id));
+    const toRemove = [...have].filter((id) => !want.has(id));
+    if (toAdd.length > 0) {
       await db
         .insert(verseCollections)
-        .values(collectionIds.map((cid) => ({ verseId: verse.id, collectionId: cid })));
+        .values(toAdd.map((cid) => ({ verseId: verse.id, collectionId: cid })));
+    }
+    if (toRemove.length > 0) {
+      await db
+        .delete(verseCollections)
+        .where(
+          and(
+            eq(verseCollections.verseId, verse.id),
+            inArray(verseCollections.collectionId, toRemove),
+          ),
+        );
     }
   }
 
   // Best-effort prime when the (ref, version) pair changed.
-  const refChanged =
-    parsed.data.canonicalRef !== undefined && parsed.data.canonicalRef !== verse.canonicalRef;
-  const verChanged =
-    parsed.data.version !== undefined && parsed.data.version !== verse.version;
-  if (refChanged || verChanged) {
+  if (identityChanged) {
     const ref = (parsed.data.canonicalRef ?? verse.canonicalRef) as string;
     const ver = (parsed.data.version ?? verse.version) as "NBLA" | "NVI" | "RVR1960";
     try {
