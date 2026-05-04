@@ -39,25 +39,37 @@ export type VerseFormStrings = Pick<
 
 export type VerseFormProps = {
   locale: "es" | "en";
+  mode?: "create" | "edit";
+  verseId?: string; // required when mode === 'edit'
   initialReference?: string;
   initialVersion?: string;
   initialColor?: CardColorId;
   initialIcon?: VerseIconId;
+  initialHint?: string;
+  initialCollectionIds?: string[];
   versions: string[]; // runtime allowlist intersection (§9.2)
   initialCollections: Collection[];
   existingVerseCount: number;
+  headerTitle?: string;
+  submitLabel?: string;
   strings: VerseFormStrings;
 };
 
 export function VerseForm({
   locale,
+  mode = "create",
+  verseId,
   initialReference = "",
   initialVersion,
   initialColor,
   initialIcon,
+  initialHint = "",
+  initialCollectionIds = [],
   versions,
   initialCollections,
   existingVerseCount,
+  headerTitle,
+  submitLabel,
   strings: t,
 }: VerseFormProps) {
   const router = useRouter();
@@ -71,11 +83,12 @@ export function VerseForm({
     initialColor ?? defaultColorForIndex(existingVerseCount),
   );
   // Icon has an effect that overrides on book-change; track user intent so we
-  // stop overriding once they've picked one explicitly.
+  // stop overriding once they've picked one explicitly. In edit mode we
+  // start as "touched" so the existing icon is never silently overridden.
   const [icon, setIcon] = useState<VerseIconId>(initialIcon ?? "bible");
-  const [iconTouched, setIconTouched] = useState(!!initialIcon);
-  const [hint, setHint] = useState("");
-  const [collectionIds, setCollectionIds] = useState<string[]>([]);
+  const [iconTouched, setIconTouched] = useState(!!initialIcon || mode === "edit");
+  const [hint, setHint] = useState(initialHint);
+  const [collectionIds, setCollectionIds] = useState<string[]>(initialCollectionIds);
   const [collections, setCollections] = useState<Collection[]>(initialCollections);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -116,8 +129,11 @@ export function VerseForm({
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const res = await fetch("/api/verses", {
-        method: "POST",
+      const isEdit = mode === "edit" && verseId;
+      const url = isEdit ? `/api/verses/${verseId}` : "/api/verses";
+      const method = isEdit ? "PATCH" : "POST";
+      const res = await fetch(url, {
+        method,
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           canonicalRef: parsed.canonical,
@@ -132,13 +148,15 @@ export function VerseForm({
         const j = await res.json().catch(() => ({}));
         throw new Error(j.error || `${res.status}`);
       }
-      // Persist last-used version (specs §17.1) — best effort.
-      fetch("/api/me", {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ lastVersion: version }),
-      }).catch(() => {});
-      router.push("/");
+      // Persist last-used version (specs §17.1) — best effort, create only.
+      if (!isEdit) {
+        fetch("/api/me", {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ lastVersion: version }),
+        }).catch(() => {});
+      }
+      router.push(isEdit && verseId ? `/verses/${verseId}` : "/");
       router.refresh();
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : "error");
@@ -198,7 +216,7 @@ export function VerseForm({
             color: "var(--c-text)",
           }}
         >
-          {t.newVerse}
+          {headerTitle ?? t.newVerse}
         </h1>
         <span style={{ width: 36 }} aria-hidden />
       </header>
@@ -487,7 +505,7 @@ export function VerseForm({
             opacity: submitting ? 0.7 : 1,
           }}
         >
-          {submitting ? "…" : t.save}
+          {submitting ? "…" : (submitLabel ?? t.save)}
         </button>
       </div>
     </main>
