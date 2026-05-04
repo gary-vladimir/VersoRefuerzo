@@ -6,7 +6,12 @@
 //   - icon tile in that color
 //   - reference (locale-aware), version label, and a one-line text preview
 //   - mastery bar + percent on the right
-//   - overflow menu (Editar, Mover, Eliminar) per §17.5
+//   - overflow menu with Editar + Eliminar
+//
+// The §17.5 spec also lists `Mover a colección…`; that flow is not in M3 —
+// the same change is reachable today through Editar → Colecciones field, so
+// shipping a separate move dialog is deferred until the data shows users
+// actually want it.
 //
 // The optional text preview comes from the joined cache row when available;
 // callers pass `null` if the cache hasn't been primed yet (the row still
