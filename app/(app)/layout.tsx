@@ -11,6 +11,7 @@
 import { redirect } from "next/navigation";
 import { headers, cookies } from "next/headers";
 import { getServerUser } from "@/lib/auth/session";
+import { ToastProvider } from "@/components/ui/Toast";
 
 export default async function AppLayout({
   children,
@@ -30,5 +31,5 @@ export default async function AppLayout({
     redirect("/onboarding");
   }
 
-  return <>{children}</>;
+  return <ToastProvider>{children}</ToastProvider>;
 }
