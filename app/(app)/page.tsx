@@ -6,6 +6,7 @@
 // "no verses at all" and "no verses due today" per §17.2.
 
 import Link from "next/link";
+import type { Route } from "next";
 import { redirect } from "next/navigation";
 import { and, asc, eq, inArray, isNull, lt } from "drizzle-orm";
 import { getServerUser } from "@/lib/auth/session";
@@ -227,7 +228,7 @@ function EmptyHero({
 }: {
   body: string;
   cta: string;
-  href: "/verses/new?ref=Juan%2014%3A6" | "/practice/classic";
+  href: Route;
 }) {
   return (
     <div

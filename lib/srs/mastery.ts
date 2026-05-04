@@ -8,8 +8,8 @@
 
 import type { SrsState, PracticeSession } from "@/db/schema";
 
-const RECALL_MODES = new Set(["classic", "first_letter", "typed"] as const);
-type RecallMode = (typeof RECALL_MODES extends Set<infer T> ? T : never);
+type RecallMode = "classic" | "first_letter" | "typed";
+const RECALL_MODES: ReadonlySet<RecallMode> = new Set(["classic", "first_letter", "typed"]);
 
 const UNAIDED_RECALL_WINDOW_DAYS = 30;
 
