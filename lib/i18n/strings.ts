@@ -109,6 +109,8 @@ export const T = {
     emptyCollectionVerses: "Aún no hay versos aquí. Agrega uno para empezar.",
     emptyAllVerses: "Aún no has agregado versos.",
     cardCopyrightFallback: "Texto via API.Bible",
+    versesForToday: (n: number) => (n === 1 ? "1 verso para hoy" : `${n} versos para hoy`),
+    keepStreakSubline: "Sigue tu racha · ~5 min",
   },
   en: {
     appName: "VersoRefuerzo",
@@ -207,6 +209,8 @@ export const T = {
     emptyCollectionVerses: "No verses here yet. Add one to get started.",
     emptyAllVerses: "You haven't added any verses yet.",
     cardCopyrightFallback: "Text via API.Bible",
+    versesForToday: (n: number) => (n === 1 ? "1 verse today" : `${n} verses today`),
+    keepStreakSubline: "Keep your streak · ~5 min",
   },
 } as const;
 
