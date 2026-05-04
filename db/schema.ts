@@ -1,7 +1,7 @@
 // VersoRefuerzo — database schema (Drizzle, Postgres on Neon)
 // See specs.md §4 and §9.4. Tables added incrementally per the milestones in PLAN.md.
 // M0: users.  M2: verses, collections, verseCollections, bibleTextCache.
-// M4: practiceSessions.
+// M4: practiceSessions and the SrsState transitions that drive its inserts.
 
 import { sql } from "drizzle-orm";
 import {
@@ -147,6 +147,60 @@ export const bibleTextCache = pgTable(
   }),
 );
 
+// One row per practice attempt — drives the SRS scheduler, the streak, and
+// the §15.5 "mastered" guard. Old rows are eligible for pruning past the
+// 90-day window (PLAN.md), but the most recent mastered-qualifying row per
+// verse is retained so the unaided-recall check stays queryable.
+export const PRACTICE_MODES = [
+  "classic",
+  "first_letter",
+  "typed",
+  "scramble",
+  "match",
+  "gap",
+] as const;
+export type PracticeMode = (typeof PRACTICE_MODES)[number];
+
+export const PRACTICE_OUTCOMES = [
+  "correct",
+  "partial",
+  "incorrect",
+  "gave_up",
+] as const;
+export type PracticeOutcome = (typeof PRACTICE_OUTCOMES)[number];
+
+export const practiceSessions = pgTable(
+  "practice_sessions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    verseId: uuid("verse_id")
+      .notNull()
+      .references(() => verses.id, { onDelete: "cascade" }),
+    mode: text("mode").$type<PracticeMode>().notNull(),
+    classification: text("classification").$type<"recall" | "recognition">().notNull(),
+    quality: integer("quality"), // 0..5, nullable for outcomes that don't grade
+    outcome: text("outcome").$type<PracticeOutcome>().notNull(),
+    durationMs: integer("duration_ms").notNull().default(0),
+    usedHint: boolean("used_hint").notNull().default(false),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    userStartedIdx: index("practice_sessions_user_started_idx").on(
+      t.userId,
+      t.startedAt,
+    ),
+    userVerseModeIdx: index("practice_sessions_user_verse_mode_idx").on(
+      t.userId,
+      t.verseId,
+      t.mode,
+      t.startedAt,
+    ),
+  }),
+);
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Collection = typeof collections.$inferSelect;
@@ -154,3 +208,5 @@ export type NewCollection = typeof collections.$inferInsert;
 export type Verse = typeof verses.$inferSelect;
 export type NewVerse = typeof verses.$inferInsert;
 export type BibleTextCacheRow = typeof bibleTextCache.$inferSelect;
+export type PracticeSession = typeof practiceSessions.$inferSelect;
+export type NewPracticeSession = typeof practiceSessions.$inferInsert;
