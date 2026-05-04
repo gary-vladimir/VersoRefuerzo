@@ -1,35 +1,102 @@
-// /api/verses  — list and create. M3 will add filter params (collectionId, q,
-// status); for now GET simply returns all of the user's non-deleted verses.
+// /api/verses  — list and create.
 //
-// On POST we await the API.Bible fetch so the verse text is cached by the
-// time the response returns. Cache hit is ~10ms; a cache miss costs one
-// API.Bible round-trip. If the fetch fails (network blip, 5xx) we leave the
-// verse row in place and surface `textPrimed: false` — the Card View / practice
-// modes will retry through /api/bible/text. We refuse versions that aren't
-// configured at deploy time (so a stale UI can't create a verse whose text
-// has no path to ever load).
+// GET supports three filters (specs.md §6.3):
+//   - collectionId: scope to a single user-owned collection
+//   - q: fuzzy match against canonicalRef / display ref / cached text
+//   - status: 'new' | 'learning' | 'mastered'
+//
+// GET also acts as the housekeeping sweep for soft-deleted rows (PLAN.md):
+// any verse whose `deletedAt` is older than UNDO_WINDOW_MS is hard-deleted
+// before the list is returned. No background workers, no in-memory timers —
+// the next read commits the delete. Recently-deleted rows are kept on disk
+// (just hidden) so /restore can resurrect them.
+//
+// POST creates a verse, awaits the API.Bible cache prime so the new verse
+// has text immediately, and surfaces `textPrimed: false` if the prime fails.
+// Versions outside availableVersions() are rejected (so a stale UI cannot
+// create a verse whose text has no path to ever load).
 
 import { NextResponse, type NextRequest } from "next/server";
-import { and, asc, eq, isNull, inArray } from "drizzle-orm";
+import { and, asc, eq, isNull, inArray, lt } from "drizzle-orm";
 import { getServerUser } from "@/lib/auth/session";
 import { getDb } from "@/db/client";
-import { verses, verseCollections, collections } from "@/db/schema";
+import {
+  verses,
+  verseCollections,
+  collections,
+  bibleTextCache,
+} from "@/db/schema";
 import { NewVerseInput } from "@/lib/validation/schemas";
 import { getVerseText, availableVersions } from "@/lib/bible/apibible";
+import { UNDO_WINDOW_MS } from "@/lib/constants";
 
 export const runtime = "nodejs";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const user = await getServerUser();
   if (!user) {
     return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
   }
   const db = getDb();
-  const rows = await db
-    .select()
-    .from(verses)
-    .where(and(eq(verses.userId, user.id), isNull(verses.deletedAt)))
-    .orderBy(asc(verses.createdAt));
+
+  // Housekeeping sweep — commit soft-deletes whose undo window has elapsed.
+  const cutoff = new Date(Date.now() - UNDO_WINDOW_MS);
+  await db
+    .delete(verses)
+    .where(and(eq(verses.userId, user.id), lt(verses.deletedAt, cutoff)));
+
+  const sp = req.nextUrl.searchParams;
+  const collectionId = sp.get("collectionId");
+  const q = sp.get("q")?.trim().toLowerCase() ?? "";
+  const status = sp.get("status");
+
+  const baseFilters = [eq(verses.userId, user.id), isNull(verses.deletedAt)];
+  if (status === "new" || status === "learning" || status === "mastered") {
+    baseFilters.push(eq(verses.status, status));
+  }
+
+  // Scope to a collection by joining verse_collections. Ownership of the
+  // collection is enforced via the userId match on verses (the linkage row
+  // can only point at a verse the user owns).
+  let rows;
+  if (collectionId) {
+    rows = await db
+      .select({ verse: verses })
+      .from(verses)
+      .innerJoin(verseCollections, eq(verseCollections.verseId, verses.id))
+      .where(and(...baseFilters, eq(verseCollections.collectionId, collectionId)))
+      .orderBy(asc(verses.createdAt));
+    rows = rows.map((r) => r.verse);
+  } else {
+    rows = await db
+      .select()
+      .from(verses)
+      .where(and(...baseFilters))
+      .orderBy(asc(verses.createdAt));
+  }
+
+  // Free-text filter: applied in JS over the small per-user list. Matches
+  // against canonicalRef and (where present) the cached text. Cheaper than
+  // wiring up a join + lower() per row.
+  if (q) {
+    const cached = await db
+      .select({ ref: bibleTextCache.canonicalRef, text: bibleTextCache.text })
+      .from(bibleTextCache)
+      .where(
+        inArray(
+          bibleTextCache.canonicalRef,
+          rows.map((r) => r.canonicalRef),
+        ),
+      );
+    const textByRef = new Map<string, string>();
+    for (const c of cached) textByRef.set(c.ref, c.text.toLowerCase());
+    rows = rows.filter((r) => {
+      if (r.canonicalRef.toLowerCase().includes(q)) return true;
+      const t = textByRef.get(r.canonicalRef);
+      return t ? t.includes(q) : false;
+    });
+  }
+
   return NextResponse.json({ verses: rows });
 }
 
@@ -47,10 +114,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Reject versions that aren't configured at deploy time. The UI reads
-  // /api/bible/versions and only offers what's available, so this only
-  // triggers for stale clients or direct API callers — but it must, otherwise
-  // we'd persist a verse whose text can never be fetched.
   const configured = availableVersions().map((v) => v.key);
   if (!configured.includes(parsed.data.version)) {
     return NextResponse.json(
@@ -62,9 +125,6 @@ export async function POST(req: NextRequest) {
   const db = getDb();
   const collectionIds = parsed.data.collectionIds ?? [];
 
-  // Ownership check for any provided collections — protects the §3.2 privacy
-  // invariant so a malicious client can't link a verse into a collection it
-  // doesn't own.
   if (collectionIds.length > 0) {
     const owned = await db
       .select({ id: collections.id })
@@ -94,7 +154,6 @@ export async function POST(req: NextRequest) {
       .values(collectionIds.map((cid) => ({ verseId: verse.id, collectionId: cid })));
   }
 
-  // Best-effort cache prime; do not block on failure.
   let textPrimed = false;
   try {
     await getVerseText(parsed.data.canonicalRef, parsed.data.version);
