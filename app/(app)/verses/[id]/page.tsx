@@ -88,7 +88,6 @@ export default async function CardViewPage({
         revealVerse: t.revealVerse,
         showHint: t.showHintShort,
         hint: t.hint,
-        practiceNow: t.practiceThisVerse,
         skip: t.skipCard,
         masteryPercent: t.masteryPercent,
         copyrightFallback: t.cardCopyrightFallback,

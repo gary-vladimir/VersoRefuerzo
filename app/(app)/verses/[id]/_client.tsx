@@ -22,7 +22,6 @@ type Strings = {
   revealVerse: string;
   showHint: string;
   hint: string;
-  practiceNow: string;
   skip: string;
   masteryPercent: (pct: number) => string;
   copyrightFallback: string;
