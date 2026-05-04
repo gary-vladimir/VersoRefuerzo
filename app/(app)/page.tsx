@@ -80,10 +80,25 @@ export default async function Home() {
         </Link>
       </header>
 
+      <p style={{ marginTop: "var(--s-7)" }}>
+        <Link
+          href="/library"
+          style={{
+            color: "var(--c-indigo-700)",
+            fontFamily: "var(--font-display)",
+            fontWeight: 700,
+            fontSize: 13,
+            textDecoration: "none",
+          }}
+        >
+          → {t.library}
+        </Link>
+      </p>
+
       {myVerses.length === 0 ? (
         <section
           style={{
-            marginTop: "var(--s-8)",
+            marginTop: "var(--s-6)",
             padding: "var(--s-7)",
             borderRadius: "var(--r-2xl)",
             background: "#fff",
@@ -101,9 +116,7 @@ export default async function Home() {
               lineHeight: 1.4,
             }}
           >
-            {locale === "es"
-              ? "Comienza con tu primer verso. Te sugerimos Juan 14:6."
-              : "Start with your first verse. We suggest John 14:6."}
+            {t.emptyHomeNoVerses}
           </p>
           <Link
             href="/verses/new?ref=Juan%2014%3A6"
@@ -136,14 +149,19 @@ export default async function Home() {
             const color = isCardColor(v.color) ? v.color : "indigo";
             const icon = isVerseIcon(v.icon) ? v.icon : "bible";
             return (
-              <VerseCard
+              <Link
                 key={v.id}
-                refDisplay={formatDisplay(v.canonicalRef, locale)}
-                version={v.version}
-                color={color}
-                icon={icon}
-                size="sm"
-              />
+                href={`/verses/${v.id}`}
+                style={{ textDecoration: "none", color: "inherit" }}
+              >
+                <VerseCard
+                  refDisplay={formatDisplay(v.canonicalRef, locale)}
+                  version={v.version}
+                  color={color}
+                  icon={icon}
+                  size="sm"
+                />
+              </Link>
             );
           })}
         </section>
@@ -158,7 +176,9 @@ export default async function Home() {
           fontStyle: "italic",
         }}
       >
-        M2 placeholder. La pantalla real de Inicio llega en M3 / M4.
+        {locale === "es"
+          ? "Vista provisional de Inicio. La hero pantalla con racha y CTA llega en M4."
+          : "Placeholder Home. The hero screen with streak and CTA lands in M4."}
       </p>
 
       <SignOutButton label={t.signOut} />
