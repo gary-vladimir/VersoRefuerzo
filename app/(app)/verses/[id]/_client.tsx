@@ -22,6 +22,7 @@ type Strings = {
   revealVerse: string;
   showHint: string;
   hint: string;
+  practiceNow: string;
   masteryPercent: (pct: number) => string;
   copyrightFallback: string;
   recite: string;
@@ -285,12 +286,28 @@ export function CardViewClient({
               💡 {t.showHint}
             </button>
           )}
-          {/* `Repasar ahora` opens a one-card Classic session — wired in M4. */}
+          {/* §17.4 — `Repasar ahora` opens a one-card Classic session
+              against this verse, recorded as a normal practice attempt. */}
+          <Link
+            href={{ pathname: "/practice/classic", query: { verse: verse.id } }}
+            style={{
+              background: "#fff",
+              border: "none",
+              borderRadius: 999,
+              padding: "8px 14px",
+              fontSize: 12,
+              fontWeight: 700,
+              color: "var(--c-indigo-700)",
+              boxShadow: "var(--shadow-xs)",
+              textDecoration: "none",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
+            ↻ {t.practiceNow}
+          </Link>
         </div>
-
-        {/* `Saltar` (specs §17.3) defers a card to the end of the active
-            practice session. There is no session here in M3, so the button
-            has no meaningful behavior; it lands in M4 with Classic. */}
       </div>
 
       <div

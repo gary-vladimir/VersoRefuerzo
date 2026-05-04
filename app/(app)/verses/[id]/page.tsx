@@ -1,12 +1,11 @@
 // /verses/[id] — Card View (specs.md §6.2 + §16.4 simplification).
 //
-// M3 scope: the visual flip plus hint reveal. Two states — `front` (colored
-// face with reference/version/icon and the `Revelar verso` CTA) and
-// `revealed` (white face with verse text and the optional inline hint).
-// The four SM-2 quality buttons specified by §16.4, the `Repasar ahora`
-// affordance from §17.4, and the in-session deferral semantics of `Saltar`
-// from §17.3 all depend on the Classic session shell, which lands in M4 —
-// they are intentionally NOT rendered here.
+// Two states — `front` (colored face with reference/version/icon and the
+// `Revelar verso` CTA) and `revealed` (white face with verse text and the
+// optional inline hint). The four SM-2 quality buttons live inside the
+// Classic session shell at /practice/classic, not here. Card View provides
+// the `Repasar ahora` (§17.4) link to start a one-card Classic session
+// against this specific verse.
 //
 // The `💡 Pista` button is always visible and is orthogonal to grading per
 // §16.5. If text isn't cached yet we lazy-fetch via /api/bible/text on first
@@ -86,6 +85,7 @@ export default async function CardViewPage({
         delete: t.delete,
         deleted: t.verseDeleted,
         undo: t.undo,
+        practiceNow: t.practiceThisVerse,
         revealVerse: t.revealVerse,
         showHint: t.showHintShort,
         hint: t.hint,
