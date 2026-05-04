@@ -6,6 +6,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import type { Route } from "next";
 import type { Collection, Verse } from "@/db/schema";
 import { VerseRow } from "@/components/verse/VerseRow";
 import { CollectionCard } from "@/components/verse/CollectionCard";
@@ -215,7 +216,7 @@ function EmptyCard({
   title: string;
   body: string;
   ctaLabel: string;
-  ctaHref: string;
+  ctaHref: Route;
 }) {
   return (
     <section
