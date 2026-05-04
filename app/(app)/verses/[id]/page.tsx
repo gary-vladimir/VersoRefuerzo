@@ -1,17 +1,18 @@
 // /verses/[id] — Card View (specs.md §6.2 + §16.4 simplification).
 //
-// Two states: `front` (color face, reference + version + icon, "Revelar verso"
-// CTA) and `revealed` (white face with the verse text and inline hint when
-// shown). Per §16.4 the post-reveal grading buttons are owned by the Classic
-// session in M4; M3 surfaces a simple "Ver de nuevo" loop and a "Repasar
-// ahora" link that will route into the upcoming Classic-session flow.
+// M3 scope: the visual flip plus hint reveal. Two states — `front` (colored
+// face with reference/version/icon and the `Revelar verso` CTA) and
+// `revealed` (white face with verse text and the optional inline hint).
+// The four SM-2 quality buttons specified by §16.4, the `Repasar ahora`
+// affordance from §17.4, and the in-session deferral semantics of `Saltar`
+// from §17.3 all depend on the Classic session shell, which lands in M4 —
+// they are intentionally NOT rendered here.
 //
-// The hint button (`💡 Pista`) is always visible — orthogonal to grading per
+// The `💡 Pista` button is always visible and is orthogonal to grading per
 // §16.5. If text isn't cached yet we lazy-fetch via /api/bible/text on first
 // reveal.
 
 import { notFound, redirect } from "next/navigation";
-import Link from "next/link";
 import { and, eq, isNull } from "drizzle-orm";
 import { getServerUser } from "@/lib/auth/session";
 import { getDb } from "@/db/client";
@@ -88,7 +89,6 @@ export default async function CardViewPage({
         revealVerse: t.revealVerse,
         showHint: t.showHintShort,
         hint: t.hint,
-        skip: t.skipCard,
         masteryPercent: t.masteryPercent,
         copyrightFallback: t.cardCopyrightFallback,
         recite:

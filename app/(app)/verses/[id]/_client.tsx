@@ -22,7 +22,6 @@ type Strings = {
   revealVerse: string;
   showHint: string;
   hint: string;
-  skip: string;
   masteryPercent: (pct: number) => string;
   copyrightFallback: string;
   recite: string;
@@ -289,24 +288,9 @@ export function CardViewClient({
           {/* `Repasar ahora` opens a one-card Classic session — wired in M4. */}
         </div>
 
-        <div style={{ textAlign: "center", marginTop: 18 }}>
-          <button
-            type="button"
-            onClick={() => router.back()}
-            style={{
-              background: "transparent",
-              border: "none",
-              color: "var(--c-soft)",
-              fontFamily: "var(--font-sans)",
-              fontWeight: 600,
-              fontSize: 12,
-              cursor: "pointer",
-              textDecoration: "underline",
-            }}
-          >
-            {t.skip}
-          </button>
-        </div>
+        {/* `Saltar` (specs §17.3) defers a card to the end of the active
+            practice session. There is no session here in M3, so the button
+            has no meaningful behavior; it lands in M4 with Classic. */}
       </div>
 
       <div
