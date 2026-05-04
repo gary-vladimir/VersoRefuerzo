@@ -1,10 +1,15 @@
-// /api/collections/[id]  — PATCH and DELETE.
+// /api/collections/[id]  — PATCH only.
 //
 // PATCH supports rename, recolor, and description edits. The case-insensitive
 // uniqueness rule from POST applies to renames too.
 //
-// DELETE removes the collection and its verse-collection links (the FK is
-// ON DELETE CASCADE) but leaves the verses themselves intact (specs.md §4.2).
+// DELETE is intentionally NOT exposed in M3. Per specs.md §17.5 a collection
+// delete must be undoable for 5 seconds and must restore every membership
+// link on undo — that needs a soft-delete column on `collections` plus a
+// /restore endpoint, which is a schema change that lands with the collection
+// edit/delete UI in a later milestone. Hard-delete + FK cascade today would
+// silently destroy the user's organization with no undo path. Better to not
+// offer the API at all than to offer a destructive one.
 
 import { NextResponse, type NextRequest } from "next/server";
 import { and, eq, ne, sql } from "drizzle-orm";
@@ -77,25 +82,3 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   return NextResponse.json({ collection: updated[0] });
 }
 
-export async function DELETE(_req: NextRequest, { params }: Params) {
-  const user = await getServerUser();
-  if (!user) {
-    return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
-  }
-  const { id } = await params;
-  const db = getDb();
-
-  const existing = await db
-    .select({ id: collections.id })
-    .from(collections)
-    .where(and(eq(collections.id, id), eq(collections.userId, user.id)))
-    .limit(1);
-  if (!existing[0]) {
-    return NextResponse.json({ error: "not_found" }, { status: 404 });
-  }
-
-  // Membership rows go via the verse_collections FK ON DELETE CASCADE; the
-  // verses themselves are untouched per specs.md §4.2.
-  await db.delete(collections).where(eq(collections.id, id));
-  return NextResponse.json({ ok: true });
-}
