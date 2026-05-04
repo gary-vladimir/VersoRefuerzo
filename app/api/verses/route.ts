@@ -76,11 +76,17 @@ export async function GET(req: NextRequest) {
   }
 
   // Free-text filter: applied in JS over the small per-user list. Matches
-  // against canonicalRef and (where present) the cached text. Cheaper than
-  // wiring up a join + lower() per row.
+  // against canonicalRef and (where present) the cached text. The cache
+  // is keyed by (ref, version) so we must key the lookup map the same way —
+  // otherwise a user who has the same passage in NBLA and NVI would get
+  // either wrong matches or missed matches (M3 review P2).
   if (q) {
     const cached = await db
-      .select({ ref: bibleTextCache.canonicalRef, text: bibleTextCache.text })
+      .select({
+        ref: bibleTextCache.canonicalRef,
+        version: bibleTextCache.version,
+        text: bibleTextCache.text,
+      })
       .from(bibleTextCache)
       .where(
         inArray(
@@ -88,11 +94,11 @@ export async function GET(req: NextRequest) {
           rows.map((r) => r.canonicalRef),
         ),
       );
-    const textByRef = new Map<string, string>();
-    for (const c of cached) textByRef.set(c.ref, c.text.toLowerCase());
+    const textByKey = new Map<string, string>();
+    for (const c of cached) textByKey.set(`${c.ref}|${c.version}`, c.text.toLowerCase());
     rows = rows.filter((r) => {
       if (r.canonicalRef.toLowerCase().includes(q)) return true;
-      const t = textByRef.get(r.canonicalRef);
+      const t = textByKey.get(`${r.canonicalRef}|${r.version}`);
       return t ? t.includes(q) : false;
     });
   }
