@@ -58,6 +58,7 @@ type Strings = {
   copyrightFallback: string;
   emptyQueue: string;
   emptyQueueCta: string;
+  saveFailed: string;
 };
 
 type Props = {
@@ -77,6 +78,7 @@ export function ClassicSession({ initialQueue, locale, showAloudTip, strings: t 
   );
   const [hintShown, setHintShown] = useState(false);
   const [aloudTipOpen, setAloudTipOpen] = useState(showAloudTip);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Per-session aggregates for the summary screen.
   const sessionStartRef = useRef<number>(Date.now());
@@ -180,11 +182,13 @@ export function ClassicSession({ initialQueue, locale, showAloudTip, strings: t 
 
   async function grade(q: Quality) {
     if (!current || phase === "submitting") return;
+    setSubmitError(null);
     setPhase("submitting");
     const durationMs = Date.now() - cardStartRef.current;
     const outcome = q >= 4 ? "correct" : q === 3 ? "partial" : "incorrect";
+    let ok = false;
     try {
-      await fetch("/api/practice/sessions", {
+      const res = await fetch("/api/practice/sessions", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -196,8 +200,17 @@ export function ClassicSession({ initialQueue, locale, showAloudTip, strings: t 
           usedHint: hintShown,
         }),
       });
+      ok = res.ok;
     } catch {
-      /* swallow — even on a network blip we should advance the local UI */
+      ok = false;
+    }
+    if (!ok) {
+      // Hold the user on this card with an error banner. Advancing on
+      // failure would tell the user the verse was reviewed while SM-2
+      // and streak silently desync (M4 review #2).
+      setSubmitError(t.saveFailed);
+      setPhase("revealed");
+      return;
     }
     reviewedRef.current += 1;
     advance();
@@ -580,6 +593,20 @@ export function ClassicSession({ initialQueue, locale, showAloudTip, strings: t 
             >
               {t.howWell}
             </p>
+            {submitError && (
+              <p
+                role="alert"
+                style={{
+                  margin: "0 0 10px",
+                  textAlign: "center",
+                  color: "#B91C1C",
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
+              >
+                {submitError}
+              </p>
+            )}
             <QualityButtons
               srs={current.srsState}
               locale={locale}

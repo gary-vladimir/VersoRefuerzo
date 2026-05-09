@@ -111,6 +111,7 @@ export const T = {
     cardCopyrightFallback: "Texto via API.Bible",
     versesForToday: (n: number) => (n === 1 ? "1 verso para hoy" : `${n} versos para hoy`),
     keepStreakSubline: "Sigue tu racha · ~5 min",
+    saveFailedRetry: "No se pudo guardar tu respuesta. Intenta de nuevo.",
   },
   en: {
     appName: "VersoRefuerzo",
@@ -211,6 +212,7 @@ export const T = {
     cardCopyrightFallback: "Text via API.Bible",
     versesForToday: (n: number) => (n === 1 ? "1 verse today" : `${n} verses today`),
     keepStreakSubline: "Keep your streak · ~5 min",
+    saveFailedRetry: "Couldn't save your answer. Try again.",
   },
 } as const;
 
