@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { applyPracticeForStreak, deriveEffectiveStreak } from "@/lib/streak/streak";
+import {
+  applyPracticeForStreak,
+  deriveEffectiveStreak,
+  isSameTzDay,
+} from "@/lib/streak/streak";
 
 describe("applyPracticeForStreak", () => {
   it("sets to 1 on first ever practice", () => {
@@ -104,5 +108,29 @@ describe("deriveEffectiveStreak", () => {
         now: new Date("2026-01-15T15:00:00Z"),
       }),
     ).toBe(0);
+  });
+});
+
+describe("isSameTzDay", () => {
+  const now = new Date("2026-01-15T15:00:00Z");
+
+  it("is false when when is null", () => {
+    expect(isSameTzDay(null, "America/Mexico_City", now)).toBe(false);
+    expect(isSameTzDay(undefined, "America/Mexico_City", now)).toBe(false);
+  });
+
+  it("is true for a timestamp earlier today in the user's tz", () => {
+    expect(isSameTzDay(new Date("2026-01-15T14:00:00Z"), "America/Mexico_City", now)).toBe(true);
+  });
+
+  it("is false for yesterday in the user's tz", () => {
+    expect(isSameTzDay(new Date("2026-01-14T14:00:00Z"), "America/Mexico_City", now)).toBe(false);
+  });
+
+  it("treats a UTC tomorrow as today when the user is several hours behind", () => {
+    // 02:00 UTC on Jan 16 is still 20:00 (= same day) in America/Mexico_City
+    expect(
+      isSameTzDay(new Date("2026-01-16T02:00:00Z"), "America/Mexico_City", now),
+    ).toBe(true);
   });
 });

@@ -92,3 +92,20 @@ export function deriveEffectiveStreak({
   if (last === today || last === yesterday) return state.currentStreak;
   return 0;
 }
+
+// Same-tz-day check used by the queue / stats / Home routes to suppress
+// verses that have already been practiced today (specs.md §15.4 second
+// clause: recognition modes should reset the due-today indicator). We
+// compare in the user's own timezone so a verse practiced after midnight
+// UTC but still "yesterday" locally doesn't get incorrectly hidden.
+export function isSameTzDay(
+  when: Date | string | null | undefined,
+  tz: string | null,
+  now: Date = new Date(),
+): boolean {
+  if (!when) return false;
+  const zone = tz?.trim() ? tz : "UTC";
+  const today = dayjs(now).tz(zone).format("YYYY-MM-DD");
+  const day = dayjs(when).tz(zone).format("YYYY-MM-DD");
+  return day === today;
+}
