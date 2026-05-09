@@ -14,9 +14,20 @@ type Props = {
   disabled?: boolean;
   onGrade: (q: Quality) => void;
   labels: { again: string; hard: string; good: string; easy: string };
+  // When set, the matching button is visually emphasized as the system's
+  // suggestion (typed-recall auto-grade per §15.2). The user can still
+  // tap any button to override.
+  highlightQuality?: Quality;
 };
 
-export function QualityButtons({ srs, locale, disabled, onGrade, labels }: Props) {
+export function QualityButtons({
+  srs,
+  locale,
+  disabled,
+  onGrade,
+  labels,
+  highlightQuality,
+}: Props) {
   const preview = previewIntervals(srs, locale);
   const cells: Array<{
     label: string;
@@ -38,24 +49,29 @@ export function QualityButtons({ srs, locale, disabled, onGrade, labels }: Props
         gap: 6,
       }}
     >
-      {cells.map((c) => (
+      {cells.map((c) => {
+        const suggested = highlightQuality === c.quality;
+        return (
         <button
           key={c.quality}
           type="button"
           disabled={disabled}
           onClick={() => onGrade(c.quality)}
           aria-label={`${c.label} (${c.sub})`}
+          aria-pressed={suggested || undefined}
           style={{
-            background: "#fff",
+            background: suggested ? `${c.edge}15` : "#fff",
             borderRadius: "var(--r-lg)",
             padding: "12px 4px",
-            boxShadow: "var(--shadow-sm)",
+            boxShadow: suggested
+              ? `0 0 0 2px ${c.edge}, var(--shadow-sm)`
+              : "var(--shadow-sm)",
             textAlign: "center",
             border: "none",
             borderTop: `3px solid ${c.edge}`,
             cursor: disabled ? "wait" : "pointer",
             opacity: disabled ? 0.6 : 1,
-            transition: "transform .12s",
+            transition: "transform .12s, box-shadow .15s",
           }}
         >
           <div style={{ fontSize: 18 }}>{c.icon}</div>
@@ -81,7 +97,8 @@ export function QualityButtons({ srs, locale, disabled, onGrade, labels }: Props
             {c.sub}
           </div>
         </button>
-      ))}
+        );
+      })}
     </div>
   );
 }

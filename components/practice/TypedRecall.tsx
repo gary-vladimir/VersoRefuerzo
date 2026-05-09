@@ -168,6 +168,7 @@ export function TypedRecall({
             locale={locale}
             disabled={disabled}
             onGrade={onGrade}
+            highlightQuality={result.quality}
             labels={{ again: t.again, hard: t.hard, good: t.good, easy: t.easy }}
           />
         </>
