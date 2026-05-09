@@ -15,6 +15,13 @@
       "when": 1777929615139,
       "tag": "0001_practice_sessions",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1778354806147,
+      "tag": "0002_was_full_verse",
+      "breakpoints": true
     }
   ]
 }

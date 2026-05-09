@@ -185,6 +185,10 @@ export const practiceSessions = pgTable(
     outcome: text("outcome").$type<PracticeOutcome>().notNull(),
     durationMs: integer("duration_ms").notNull().default(0),
     usedHint: boolean("used_hint").notNull().default(false),
+    // True when the practiced text was the full verse (final chunk stage).
+    // Required by the §15.7 mastered guard: a long verse cannot graduate
+    // unless an unaided RECALL pass happened on the full verse.
+    wasFullVerse: boolean("was_full_verse").notNull().default(true),
     startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
