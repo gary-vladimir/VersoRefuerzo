@@ -1,30 +1,31 @@
 "use client";
 
-// Classic session runtime (specs.md §6.4.1, §16.4).
+// Classic / First-letter / Typed-recall session runtime (specs.md §6.4.1,
+// §15.1, §15.2, §16.4).
 //
-// State machine:
-//   queue: QueueItem[]   immutable in-memory copy of what /api/practice/queue returned
-//   pos:   index into queue
-//   phase: 'front' | 'revealed' | 'submitting' | 'done'
-//   hintShown: boolean (orthogonal to grading per §16.5)
+// One component drives all three RECALL modes — the spec calls them
+// variants of the Classic shell. `sessionMode` toggles what the front face
+// shows:
 //
-// Skip (§17.3) splices the current item to the end of the local queue
-// without touching the server.
+//   classic       → reference + icon + recite copy + Reveal + Escribirlo
+//   first_letter  → reference + first-letter rendering + Reveal
 //
-// Aloud tip (§15.8) shows on the very first card of the user's first ever
-// Classic session, dismissed by tap or by completing the card. We persist
-// `hasSeenAloudTip = true` via PATCH /api/me when dismissed so it never
-// shows again.
+// Inside `classic`, tapping `Escribirlo` enters the typed sub-flow which
+// records its session row with `mode: 'typed'`. First-letter sessions
+// don't expose Escribirlo because the spec keeps typed-recall scoped to
+// the Classic flow.
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { isCardColor, isVerseIcon, type CardColorId, type VerseIconId } from "@/lib/catalog";
 import { formatDisplay } from "@/lib/bible/reference";
+import { firstLetterRender } from "@/lib/bible/tokenize";
 import { VerseIcon } from "@/components/icons/VerseIcons";
 import type { SrsState } from "@/db/schema";
 import { QualityButtons } from "./QualityButtons";
 import { HintButton } from "./HintButton";
 import { SkipLink } from "./SkipLink";
+import { TypedRecall } from "./TypedRecall";
 import type { Quality } from "@/lib/srs/sm2";
 
 export type QueueItem = {
@@ -44,6 +45,7 @@ type Strings = {
   recall: string;
   reciteAloud: string;
   reveal: string;
+  writeIt: string;
   howWell: string;
   again: string;
   hard: string;
@@ -59,21 +61,41 @@ type Strings = {
   emptyQueue: string;
   emptyQueueCta: string;
   saveFailed: string;
+  // Typed-recall sub-flow strings (used inside Classic mode).
+  typedPrompt: string;
+  typedPlaceholder: string;
+  typedSubmit: string;
+  typedCancel: string;
+  typedYourEntry: string;
+  typedCanonical: string;
+  typedAutoGraded: string;
+  typedMatchPercent: (n: number) => string;
 };
+
+export type SessionMode = "classic" | "first_letter";
 
 type Props = {
   initialQueue: QueueItem[];
   locale: "es" | "en";
+  sessionMode?: SessionMode;
   showAloudTip: boolean;
   strings: Strings;
 };
 
-export function ClassicSession({ initialQueue, locale, showAloudTip, strings: t }: Props) {
+export function ClassicSession({
+  initialQueue,
+  locale,
+  sessionMode = "classic",
+  showAloudTip,
+  strings: t,
+}: Props) {
   const router = useRouter();
+
+  type Phase = "front" | "revealed" | "typed" | "submitting" | "done";
 
   const [queue, setQueue] = useState<QueueItem[]>(initialQueue);
   const [pos, setPos] = useState(0);
-  const [phase, setPhase] = useState<"front" | "revealed" | "submitting" | "done">(
+  const [phase, setPhase] = useState<Phase>(
     initialQueue.length === 0 ? "done" : "front",
   );
   const [hintShown, setHintShown] = useState(false);
@@ -180,12 +202,23 @@ export function ClassicSession({ initialQueue, locale, showAloudTip, strings: t 
     setPhase("revealed");
   }
 
-  async function grade(q: Quality) {
+  function enterTyped() {
+    dismissAloudTip();
+    setSubmitError(null);
+    setPhase("typed");
+  }
+
+  async function grade(q: Quality, modeOverride?: "typed") {
     if (!current || phase === "submitting") return;
     setSubmitError(null);
     setPhase("submitting");
     const durationMs = Date.now() - cardStartRef.current;
     const outcome = q >= 4 ? "correct" : q === 3 ? "partial" : "incorrect";
+    // Mode column on practice_sessions: typed sub-flow always logs as
+    // 'typed', otherwise we use the session-level mode (classic or
+    // first_letter). Both classic and first_letter still apply the same
+    // SM-2 update server-side because they're both RECALL.
+    const apiMode = modeOverride ?? sessionMode;
     let ok = false;
     try {
       const res = await fetch("/api/practice/sessions", {
@@ -193,7 +226,7 @@ export function ClassicSession({ initialQueue, locale, showAloudTip, strings: t 
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           verseId: current.id,
-          mode: "classic",
+          mode: apiMode,
           quality: q,
           outcome,
           durationMs,
@@ -205,11 +238,9 @@ export function ClassicSession({ initialQueue, locale, showAloudTip, strings: t 
       ok = false;
     }
     if (!ok) {
-      // Hold the user on this card with an error banner. Advancing on
-      // failure would tell the user the verse was reviewed while SM-2
-      // and streak silently desync (M4 review #2).
+      // Hold the user on this card with an error banner (M4 review #2).
       setSubmitError(t.saveFailed);
-      setPhase("revealed");
+      setPhase(modeOverride === "typed" ? "typed" : "revealed");
       return;
     }
     reviewedRef.current += 1;
@@ -338,7 +369,45 @@ export function ClassicSession({ initialQueue, locale, showAloudTip, strings: t 
           }}
         />
 
-        {phase === "front" || phase === "submitting" || phase === "revealed" ? (
+        {phase === "typed" ? (
+          <div
+            className="vr-card-rise"
+            style={{
+              width: "100%",
+              maxWidth: 360,
+              padding: 16,
+              borderRadius: "var(--r-3xl)",
+              background: "var(--c-card-soft)",
+              boxShadow: "var(--shadow-xl)",
+            }}
+          >
+            <TypedRecall
+              canonicalText={current.chunk.text}
+              srs={current.srsState}
+              locale={locale}
+              disabled={phase === "submitting"}
+              onCancel={() => {
+                setSubmitError(null);
+                setPhase("front");
+              }}
+              onGrade={(q) => grade(q, "typed")}
+              strings={{
+                prompt: t.typedPrompt,
+                placeholder: t.typedPlaceholder,
+                submit: t.typedSubmit,
+                cancel: t.typedCancel,
+                yourEntry: t.typedYourEntry,
+                canonical: t.typedCanonical,
+                autoGraded: t.typedAutoGraded,
+                matchPercent: t.typedMatchPercent,
+                again: t.again,
+                hard: t.hard,
+                good: t.good,
+                easy: t.easy,
+              }}
+            />
+          </div>
+        ) : (
           <div
             key={current.id + ":" + phase}
             className="vr-card-rise"
@@ -391,7 +460,7 @@ export function ClassicSession({ initialQueue, locale, showAloudTip, strings: t 
                     flexDirection: "column",
                     alignItems: "center",
                     justifyContent: "center",
-                    gap: 24,
+                    gap: 18,
                   }}
                 >
                   <VerseIcon id={icon} size={70} color="#fff" strokeWidth={1.6} />
@@ -399,7 +468,7 @@ export function ClassicSession({ initialQueue, locale, showAloudTip, strings: t 
                     style={{
                       fontFamily: "var(--font-display)",
                       fontWeight: 800,
-                      fontSize: 36,
+                      fontSize: 32,
                       letterSpacing: "-1px",
                       textAlign: "center",
                       lineHeight: 1.1,
@@ -407,19 +476,36 @@ export function ClassicSession({ initialQueue, locale, showAloudTip, strings: t 
                   >
                     {refDisplay}
                   </div>
-                  <p
-                    style={{
-                      fontSize: 13,
-                      opacity: 0.85,
-                      textAlign: "center",
-                      fontStyle: "italic",
-                      maxWidth: 220,
-                      lineHeight: 1.4,
-                      margin: 0,
-                    }}
-                  >
-                    {t.reciteAloud}
-                  </p>
+                  {sessionMode === "first_letter" ? (
+                    <p
+                      lang={locale}
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontWeight: 600,
+                        fontSize: 18,
+                        textAlign: "center",
+                        lineHeight: 1.6,
+                        margin: 0,
+                        letterSpacing: "0.5px",
+                      }}
+                    >
+                      {firstLetterRender(current.chunk.text, { thin: false })}
+                    </p>
+                  ) : (
+                    <p
+                      style={{
+                        fontSize: 13,
+                        opacity: 0.85,
+                        textAlign: "center",
+                        fontStyle: "italic",
+                        maxWidth: 220,
+                        lineHeight: 1.4,
+                        margin: 0,
+                      }}
+                    >
+                      {t.reciteAloud}
+                    </p>
+                  )}
                 </div>
 
                 {hintShown && current.hint && (
@@ -549,7 +635,7 @@ export function ClassicSession({ initialQueue, locale, showAloudTip, strings: t 
               </>
             )}
           </div>
-        ) : null}
+        )}
       </section>
 
       <footer style={{ padding: "20px 16px 32px" }}>
@@ -576,11 +662,33 @@ export function ClassicSession({ initialQueue, locale, showAloudTip, strings: t 
             >
               👁 {t.reveal}
             </button>
+            {sessionMode === "classic" && (
+              <button
+                type="button"
+                onClick={enterTyped}
+                style={{
+                  width: "100%",
+                  height: 44,
+                  background: "#fff",
+                  color: "var(--c-indigo-700)",
+                  border: "none",
+                  borderRadius: "var(--r-full)",
+                  fontFamily: "var(--font-display)",
+                  fontWeight: 700,
+                  fontSize: 14,
+                  cursor: "pointer",
+                  boxShadow: "var(--shadow-xs)",
+                  marginBottom: 12,
+                }}
+              >
+                ✎ {t.writeIt}
+              </button>
+            )}
             <div style={{ textAlign: "center" }}>
               <SkipLink onSkip={skipCard} label={t.skip} />
             </div>
           </>
-        ) : (
+        ) : phase === "typed" ? null : (
           <>
             <p
               style={{
