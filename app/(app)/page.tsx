@@ -17,6 +17,7 @@ import {
 } from "@/db/schema";
 import { T } from "@/lib/i18n/strings";
 import { UNDO_WINDOW_MS } from "@/lib/constants";
+import { deriveEffectiveStreak } from "@/lib/streak/streak";
 import { StreakChip } from "@/components/home/StreakChip";
 import { TodayCTA } from "@/components/home/TodayCTA";
 import { VerseRow } from "@/components/verse/VerseRow";
@@ -107,7 +108,16 @@ export default async function Home() {
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <StreakChip current={user.currentStreak} />
+          <StreakChip
+            current={deriveEffectiveStreak({
+              state: {
+                currentStreak: user.currentStreak,
+                bestStreak: user.bestStreak,
+                lastStreakAt: (user.lastStreakAt ?? null) as string | null,
+              },
+              tz: user.timezone,
+            })}
+          />
           <Link
             href="/verses/new"
             style={{
@@ -143,7 +153,7 @@ export default async function Home() {
           <EmptyHero
             body={t.emptyHomeNoneDue}
             cta={t.practiceRandom}
-            href="/practice/classic"
+            href="/practice/classic?random=1"
           />
         ) : (
           <TodayCTA
