@@ -31,6 +31,8 @@ import {
 import { applyRecallGrade, applyRecognitionTouch, type Quality } from "@/lib/srs/sm2";
 import { deriveMastery, deriveStatus, findLastUnaidedRecall } from "@/lib/srs/mastery";
 import { stageForReps, planChunks } from "@/lib/srs/chunk";
+import { densityForReps, isRecallDensity } from "@/lib/srs/cloze";
+import { wordsOnly } from "@/lib/bible/tokenize";
 import { applyPracticeForStreak } from "@/lib/streak/streak";
 
 export const runtime = "nodejs";
@@ -83,21 +85,27 @@ export async function POST(req: NextRequest) {
   }
 
   const now = new Date();
-  const isRecall = RECALL_MODES.has(data.mode);
-  const classification: "recall" | "recognition" = isRecall ? "recall" : "recognition";
 
-  // The chunk *stage* the user practiced is derived deterministically from
-  // the verse's pre-grade rep count (specs.md §15.7 / chunk.stageForReps),
-  // which is exactly what the queue route renders. Storing a separate
-  // `srsState.chunkStage` and only updating it on Classic let typed and
-  // first-letter recall sessions on a long verse silently record
-  // wasFullVerse=false while the user was looking at the full text
-  // (M5 review #1). One source of truth fixes that for every recall mode.
-  //
-  // Recognition modes (Scramble/Match/Gap) always run on the full text
-  // per §15.3 and §6.4.2, so they trivially count as full-verse passes.
+  // §15.4 + §15.3: classification is mostly fixed by mode, but Fill the Gap
+  // *promotes* to RECALL once the cloze density crosses 50% (which only
+  // happens once the user's hit ~6 reps on this verse). The promotion is
+  // computed server-side from the verse's repetition count + cached text
+  // length so the client can't cheat the schedule by lying about density.
   const cachedText = await loadCachedText(db, verse.canonicalRef, verse.version);
   const totalChunks = cachedText ? planChunks(cachedText).chunks.length : 1;
+  let isRecall = RECALL_MODES.has(data.mode);
+  if (data.mode === "gap" && cachedText) {
+    const totalWords = wordsOnly(cachedText).length;
+    const density = densityForReps(verse.srsState.repetitions, totalWords);
+    if (isRecallDensity(density)) isRecall = true;
+  }
+  const classification: "recall" | "recognition" = isRecall ? "recall" : "recognition";
+
+  // The chunk *stage* the user practiced is derived from the verse's
+  // pre-grade rep count (specs.md §15.7 / chunk.stageForReps) so every
+  // recall mode agrees with what the queue route rendered (M5 review #1).
+  // Recognition modes (Scramble/Match/low-density Gap) always run on the
+  // full text per §15.3 and §6.4.2.
   const practicedStage = isRecall
     ? stageForReps(verse.srsState.repetitions, totalChunks)
     : totalChunks - 1;
