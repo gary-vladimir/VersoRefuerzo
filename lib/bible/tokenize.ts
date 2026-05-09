@@ -87,14 +87,15 @@ export function firstLetterRender(
 ): string {
   const thin = opts.thin ?? true;
   const filler = thin ? " " : "";
-  const tokens = tokenize(text);
-  return tokens
-    .map((tok) => {
-      const first = tok.word.charAt(0);
-      const rest = tok.word.length > 1 ? filler.repeat(tok.word.length - 1) : "";
-      return `${tok.prefix}${first}${rest}${tok.suffix}`;
-    })
-    .join(" ");
+  // We do an in-place regex replace so every byte that is NOT a word —
+  // whitespace (including newlines) and punctuation — survives at its
+  // original offset (M5 review #3). Each word becomes its first letter
+  // optionally followed by `length-1` thin-space fillers.
+  return text.replace(WORD_RE, (word) => {
+    const first = word.charAt(0);
+    if (word.length === 1 || filler === "") return first;
+    return first + filler.repeat(word.length - 1);
+  });
 }
 
 // Convenience: just the words (lowercased, no punctuation), useful for

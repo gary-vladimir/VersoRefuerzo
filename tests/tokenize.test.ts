@@ -52,6 +52,16 @@ describe("firstLetterRender", () => {
     });
     expect(out).toBe("Y s e c, l v y l v.");
   });
+
+  it("preserves newlines and multi-space gaps (§15.1)", () => {
+    const out = firstLetterRender("Yo soy\nel camino.", { thin: false });
+    expect(out).toBe("Y s\ne c.");
+  });
+
+  it("leaves quotes and other punctuation in place", () => {
+    const out = firstLetterRender('"Hola" — dijo Pedro.', { thin: false });
+    expect(out).toBe('"H" — d P.');
+  });
 });
 
 describe("wordsOnly", () => {
