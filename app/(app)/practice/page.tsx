@@ -2,10 +2,9 @@
 //
 // Surface for picking a practice mode. The Home hero CTA still goes
 // directly to Classic per §16.1, so the hub exists for variety and
-// discoverability of the other modes. M5 ships Classic and First-letter;
-// Word Scramble, Verse Match, and Fill the Gap are §15.4 recognition
-// modes that arrive in M6 and render as disabled tiles here so the user
-// knows they exist.
+// discoverability of the other modes. All five modes are live here:
+// Classic and First-letter (RECALL), plus the §15.4 recognition mini-
+// games Word Scramble, Verse Match, and Fill the Gap.
 
 import Link from "next/link";
 import type { Route } from "next";
@@ -43,22 +42,19 @@ export default async function PracticeHubPage() {
     {
       title: t.practiceModeWordScramble,
       description: t.scrambleDesc,
-      href: null,
-      badge: t.miniGameComingSoon,
+      href: "/practice/scramble",
       glyph: "🧩",
     },
     {
       title: t.practiceModeMatch,
       description: t.matchDesc,
-      href: null,
-      badge: t.miniGameComingSoon,
+      href: "/practice/match",
       glyph: "🔗",
     },
     {
       title: t.practiceModeGap,
       description: t.gapDesc,
-      href: null,
-      badge: t.miniGameComingSoon,
+      href: "/practice/gap",
       glyph: "⬜",
     },
   ];
