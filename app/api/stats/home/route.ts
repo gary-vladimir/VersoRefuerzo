@@ -12,6 +12,7 @@ import { and, count, eq, isNull } from "drizzle-orm";
 import { getServerUser } from "@/lib/auth/session";
 import { getDb } from "@/db/client";
 import { verses as versesTable } from "@/db/schema";
+import { deriveEffectiveStreak } from "@/lib/streak/streak";
 
 export const runtime = "nodejs";
 
@@ -51,12 +52,25 @@ export async function GET() {
     .from(versesTable)
     .where(baseFilter);
 
+  // Effective streak: §6.6 says missing a day resets the counter to zero
+  // at the start of the next day, but the persisted value only updates
+  // when the user records a new session. Derive on read so the surface
+  // matches the spec.
+  const currentStreak = deriveEffectiveStreak({
+    state: {
+      currentStreak: user.currentStreak,
+      bestStreak: user.bestStreak,
+      lastStreakAt: (user.lastStreakAt ?? null) as string | null,
+    },
+    tz: user.timezone,
+  });
+
   return NextResponse.json({
     totalVerses,
     mastered,
     learning,
     dueToday,
-    currentStreak: user.currentStreak,
+    currentStreak,
     bestStreak: user.bestStreak,
   });
 }
