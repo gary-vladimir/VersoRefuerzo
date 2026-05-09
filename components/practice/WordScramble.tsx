@@ -15,6 +15,7 @@ import Link from "next/link";
 import { isCardColor, isVerseIcon, type CardColorId, type VerseIconId } from "@/lib/catalog";
 import { formatDisplay } from "@/lib/bible/reference";
 import { tokenize, type Token } from "@/lib/bible/tokenize";
+import { segmentTokens } from "@/lib/srs/scramble";
 import { VerseIcon } from "@/components/icons/VerseIcons";
 import type { Verse } from "@/db/schema";
 
@@ -30,6 +31,9 @@ type Strings = {
   backHub: string;
   exit: string;
   intentosLeft: (n: number) => string;
+  segmentLabel: (current: number, total: number) => string;
+  saveFailed: string;
+  retry: string;
 };
 
 type Props = {
@@ -48,33 +52,64 @@ export function WordScramble({ verse, text, copyright, locale, strings: t }: Pro
   const icon: VerseIconId = isVerseIcon(verse.icon) ? verse.icon : "bible";
   const refDisplay = formatDisplay(verse.canonicalRef, locale);
 
-  // Build the chip pool once per mount. Kept in a ref so we keep the same
-  // shuffle through the round; React's strict-mode double-mount in dev
-  // would otherwise reshuffle and confuse the user.
-  const tokens = useMemo<Token[]>(() => tokenize(text), [text]);
-  const initialChips = useRef<Chip[] | null>(null);
-  if (initialChips.current === null) {
-    initialChips.current = shuffle(
-      tokens.map((tok, i) => ({ tokenIndex: i, raw: tok.raw, correctOrder: i })),
+  // Segments. Verses ≤ 25 word tokens collapse to a single segment per
+  // §6.4.2; longer verses get split into ordered sub-segments at natural
+  // punctuation. The user plays them in order with one shared intentos
+  // budget for the whole verse.
+  const allTokens = useMemo<Token[]>(() => tokenize(text), [text]);
+  const segments = useMemo<Token[][]>(() => segmentTokens(allTokens), [allTokens]);
+
+  // Per-segment shuffle, frozen for the lifetime of the component so the
+  // pool doesn't reshuffle on React strict-mode double-mount in dev.
+  const segmentChipsRef = useRef<Chip[][] | null>(null);
+  if (segmentChipsRef.current === null) {
+    segmentChipsRef.current = segments.map((segTokens) =>
+      shuffle(
+        segTokens.map((tok, i) => ({
+          tokenIndex: i,
+          raw: tok.raw,
+          correctOrder: i,
+        })),
+      ),
     );
   }
+
   const startedAtRef = useRef<number>(Date.now());
   const submittedRef = useRef(false);
 
-  const [pool, setPool] = useState<Chip[]>(initialChips.current!);
+  const [segIdx, setSegIdx] = useState(0);
+  const [pool, setPool] = useState<Chip[]>(segmentChipsRef.current![0] ?? []);
   const [placed, setPlaced] = useState<Chip[]>([]);
   const [intentos, setIntentos] = useState(STARTING_INTENTOS);
   const [bouncedIndex, setBouncedIndex] = useState<number | null>(null);
   const [done, setDone] = useState<"win" | "lose" | null>(null);
+  const [submitFailed, setSubmitFailed] = useState(false);
 
   const expectedNext = placed.length;
-  const total = tokens.length;
+  const segmentTotal = segments[segIdx]?.length ?? 0;
 
   function tap(chip: Chip) {
     if (done) return;
     if (chip.correctOrder === expectedNext) {
-      setPool((p) => p.filter((c) => c !== chip));
-      setPlaced((p) => [...p, chip]);
+      const nextPlaced = [...placed, chip];
+      const nextPool = pool.filter((c) => c !== chip);
+      setPlaced(nextPlaced);
+      setPool(nextPool);
+      // Segment finished?
+      if (nextPlaced.length === segmentTotal) {
+        const nextSeg = segIdx + 1;
+        if (nextSeg >= segments.length) {
+          // All segments done → round resolution will fire via useEffect.
+        } else {
+          // Brief pause so the user sees the last placement before we
+          // swap in the next segment.
+          window.setTimeout(() => {
+            setSegIdx(nextSeg);
+            setPool(segmentChipsRef.current![nextSeg] ?? []);
+            setPlaced([]);
+          }, 350);
+        }
+      }
     } else {
       setBouncedIndex(chip.correctOrder);
       window.setTimeout(() => setBouncedIndex(null), 280);
@@ -82,17 +117,19 @@ export function WordScramble({ verse, text, copyright, locale, strings: t }: Pro
     }
   }
 
-  // End-of-round resolution.
+  // End-of-round resolution. Win when we've placed all tokens of the last
+  // segment; lose when intentos runs out.
   useEffect(() => {
     if (done) return;
-    if (placed.length === total && total > 0) setDone("win");
-    else if (intentos <= 0) setDone("lose");
-  }, [placed.length, intentos, total, done]);
+    const isLastSegment = segIdx === segments.length - 1;
+    if (isLastSegment && placed.length === segmentTotal && segmentTotal > 0) {
+      setDone("win");
+    } else if (intentos <= 0) {
+      setDone("lose");
+    }
+  }, [placed.length, intentos, segIdx, segments.length, segmentTotal, done]);
 
-  // POST session once when the round ends.
-  useEffect(() => {
-    if (!done || submittedRef.current) return;
-    submittedRef.current = true;
+  async function postSession() {
     const durationMs = Date.now() - startedAtRef.current;
     const lostIntentos = STARTING_INTENTOS - intentos;
     let outcome: "correct" | "partial" | "incorrect";
@@ -107,24 +144,39 @@ export function WordScramble({ verse, text, copyright, locale, strings: t }: Pro
       outcome = "incorrect";
       quality = 1;
     }
-    fetch("/api/practice/sessions", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        verseId: verse.id,
-        mode: "scramble",
-        quality,
-        outcome,
-        durationMs,
-        usedHint: false,
-      }),
-    }).catch(() => {
-      // Recognition-class — failure is annoying but doesn't block UI;
-      // the streak update lives on the same request, so a missed POST
-      // means no streak credit for this round. The user can still play
-      // another round.
-    });
-  }, [done, intentos, verse.id]);
+    try {
+      const res = await fetch("/api/practice/sessions", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          verseId: verse.id,
+          mode: "scramble",
+          quality,
+          outcome,
+          durationMs,
+          usedHint: false,
+        }),
+      });
+      setSubmitFailed(!res.ok);
+    } catch {
+      setSubmitFailed(true);
+    }
+  }
+
+  // POST session once when the round ends. The submittedRef guard makes
+  // strict-mode dev double-mount safe; failures clear the guard so the
+  // retry button can re-invoke postSession.
+  useEffect(() => {
+    if (!done || submittedRef.current) return;
+    submittedRef.current = true;
+    void postSession();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [done]);
+
+  function retry() {
+    setSubmitFailed(false);
+    void postSession();
+  }
 
   return (
     <main
@@ -214,6 +266,22 @@ export function WordScramble({ verse, text, copyright, locale, strings: t }: Pro
           ))}
         </span>
       </header>
+
+      {segments.length > 1 && (
+        <p
+          style={{
+            margin: "0 16px 8px",
+            fontSize: 10,
+            color: "var(--c-muted)",
+            fontWeight: 800,
+            letterSpacing: 0.6,
+            textTransform: "uppercase",
+            textAlign: "right",
+          }}
+        >
+          {t.segmentLabel(segIdx + 1, segments.length)}
+        </p>
+      )}
 
       {/* Drop zone — placed chips. */}
       <section
@@ -330,6 +398,34 @@ export function WordScramble({ verse, text, copyright, locale, strings: t }: Pro
           >
             {t.niceTry}
           </p>
+          {submitFailed && (
+            <p
+              role="alert"
+              style={{
+                margin: "0 0 12px",
+                fontSize: 12,
+                fontWeight: 700,
+                color: "#B91C1C",
+              }}
+            >
+              {t.saveFailed}{" "}
+              <button
+                type="button"
+                onClick={retry}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "var(--c-indigo-700)",
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                  font: "inherit",
+                  padding: 0,
+                }}
+              >
+                {t.retry}
+              </button>
+            </p>
+          )}
           <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
             <button
               type="button"
