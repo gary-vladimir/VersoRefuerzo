@@ -38,7 +38,7 @@ type Props = {
   locale: "es" | "en";
   disabled?: boolean;
   onCancel: () => void;
-  onGrade: (q: Quality, hadInput: boolean) => void;
+  onGrade: (q: Quality) => void;
   strings: Strings;
 };
 
@@ -167,7 +167,7 @@ export function TypedRecall({
             srs={srs}
             locale={locale}
             disabled={disabled}
-            onGrade={(q) => onGrade(q, true)}
+            onGrade={onGrade}
             labels={{ again: t.again, hard: t.hard, good: t.good, easy: t.easy }}
           />
         </>

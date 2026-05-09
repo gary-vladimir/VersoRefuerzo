@@ -91,13 +91,18 @@ export function ClassicSession({
 }: Props) {
   const router = useRouter();
 
-  type Phase = "front" | "revealed" | "typed" | "submitting" | "done";
+  type Phase = "front" | "revealed" | "submitting" | "done";
 
   const [queue, setQueue] = useState<QueueItem[]>(initialQueue);
   const [pos, setPos] = useState(0);
   const [phase, setPhase] = useState<Phase>(
     initialQueue.length === 0 ? "done" : "front",
   );
+  // Whether the typed-recall sub-flow is active. Tracked separately from
+  // `phase` so the textarea + result stay mounted across the submit POST
+  // (otherwise a failed save unmounts the panel and the user loses what
+  // they typed).
+  const [typedActive, setTypedActive] = useState(false);
   const [hintShown, setHintShown] = useState(false);
   const [aloudTipOpen, setAloudTipOpen] = useState(showAloudTip);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -205,7 +210,12 @@ export function ClassicSession({
   function enterTyped() {
     dismissAloudTip();
     setSubmitError(null);
-    setPhase("typed");
+    setTypedActive(true);
+  }
+
+  function exitTyped() {
+    setSubmitError(null);
+    setTypedActive(false);
   }
 
   async function grade(q: Quality, modeOverride?: "typed") {
@@ -239,11 +249,14 @@ export function ClassicSession({
     }
     if (!ok) {
       // Hold the user on this card with an error banner (M4 review #2).
+      // typedActive stays true so the textarea + result panel survive the
+      // failed POST.
       setSubmitError(t.saveFailed);
-      setPhase(modeOverride === "typed" ? "typed" : "revealed");
+      setPhase(typedActive ? "front" : "revealed");
       return;
     }
     reviewedRef.current += 1;
+    setTypedActive(false);
     advance();
   }
 
@@ -253,6 +266,7 @@ export function ClassicSession({
     } else {
       setPos(pos + 1);
       setPhase("front");
+      setTypedActive(false);
     }
   }
 
@@ -266,6 +280,7 @@ export function ClassicSession({
     setQueue(rest);
     // pos stays where it is; the next card slides in naturally.
     setPhase("front");
+    setTypedActive(false);
   }
 
   function exit() {
@@ -369,7 +384,7 @@ export function ClassicSession({
           }}
         />
 
-        {phase === "typed" ? (
+        {typedActive ? (
           <div
             className="vr-card-rise"
             style={{
@@ -381,15 +396,26 @@ export function ClassicSession({
               boxShadow: "var(--shadow-xl)",
             }}
           >
+            {submitError && (
+              <p
+                role="alert"
+                style={{
+                  margin: "0 0 10px",
+                  textAlign: "center",
+                  color: "#B91C1C",
+                  fontSize: 12,
+                  fontWeight: 700,
+                }}
+              >
+                {submitError}
+              </p>
+            )}
             <TypedRecall
               canonicalText={current.chunk.text}
               srs={current.srsState}
               locale={locale}
               disabled={phase === "submitting"}
-              onCancel={() => {
-                setSubmitError(null);
-                setPhase("front");
-              }}
+              onCancel={exitTyped}
               onGrade={(q) => grade(q, "typed")}
               strings={{
                 prompt: t.typedPrompt,
@@ -639,7 +665,7 @@ export function ClassicSession({
       </section>
 
       <footer style={{ padding: "20px 16px 32px" }}>
-        {phase === "front" ? (
+        {typedActive ? null : phase === "front" ? (
           <>
             <button
               type="button"
@@ -688,7 +714,7 @@ export function ClassicSession({
               <SkipLink onSkip={skipCard} label={t.skip} />
             </div>
           </>
-        ) : phase === "typed" ? null : (
+        ) : (
           <>
             <p
               style={{
