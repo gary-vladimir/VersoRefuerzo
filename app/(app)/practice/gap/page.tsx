@@ -15,8 +15,6 @@ import { chooseBlanks } from "@/lib/srs/cloze";
 import { fallbackPoolFor } from "@/lib/bible/fallback-distractors";
 import { FillTheGap } from "@/components/practice/FillTheGap";
 
-const MIN_LIBRARY_FOR_REAL_DISTRACTORS = 5;
-
 // Mirrors the cloze stopword set, just inlined here so the page can drop
 // stopwords from the *distractor* pool too. Picking "el" or "la" as a
 // distractor for "vida" would let the user solve by elimination.
@@ -50,32 +48,44 @@ export default async function GapPage() {
   // Build the per-blank distractor lists. A distractor must:
   //   - not be the correct answer (case-insensitive)
   //   - not equal any other blank's correct answer in this round
-  //   - prefer the user's own verse vocabulary when the library is big
-  //     enough, otherwise pull from the curated fallback bundle.
+  //   - have ≥ 2 letters, not be numeric-only, not be a stopword
+  //
+  // Source order: the user's own verse vocabulary first (so wrong answers
+  // are plausible), then the curated fallback pool to top up. We always
+  // top up — the M6 review #2 bug was using the user pool exclusively
+  // when it had ≥ 5 entries, which left some blanks with < 3 distractors
+  // after filtering. This ensures every blank gets a 4-button row.
   const correctSet = new Set(
-    plan.blankIndices.map((i) =>
-      plan.tokens[i]!.word.toLowerCase(),
-    ),
+    plan.blankIndices.map((i) => plan.tokens[i]!.word.toLowerCase()),
   );
-  const baseDistractorPool =
-    pool.wordPool.length >= MIN_LIBRARY_FOR_REAL_DISTRACTORS
-      ? pool.wordPool
-      : [
-          ...pool.wordPool,
-          ...fallbackPoolFor(locale).map((w) => w.toLowerCase()),
-        ];
   const stopwords = locale === "es" ? ES_STOP : EN_STOP;
+
+  function isValid(w: string, correct: string): boolean {
+    return (
+      !correctSet.has(w) &&
+      w !== correct &&
+      w.length >= 2 &&
+      !/^\d+$/.test(w) &&
+      !stopwords.has(w)
+    );
+  }
+
+  const userPool = pool.wordPool;
+  const fallbackPool = fallbackPoolFor(locale).map((w) => w.toLowerCase());
+
   const distractorsPerBlank: string[][] = plan.blankIndices.map((tokIdx) => {
     const correct = plan.tokens[tokIdx]!.word.toLowerCase();
-    const candidates = baseDistractorPool.filter(
-      (w) =>
-        !correctSet.has(w) &&
-        w !== correct &&
-        w.length >= 2 &&
-        !/^\d+$/.test(w) &&
-        !stopwords.has(w),
-    );
-    return shuffle(candidates).slice(0, 3);
+    const fromUser = shuffle(userPool.filter((w) => isValid(w, correct)));
+    const fromFallback = shuffle(fallbackPool.filter((w) => isValid(w, correct)));
+    const out: string[] = [];
+    const seen = new Set<string>();
+    for (const w of [...fromUser, ...fromFallback]) {
+      if (seen.has(w)) continue;
+      seen.add(w);
+      out.push(w);
+      if (out.length >= 3) break;
+    }
+    return out;
   });
 
   return (
@@ -96,8 +106,9 @@ export default async function GapPage() {
         showFirstLetter:
           locale === "es" ? "Mostrar primera letra" : "Show first letter",
         good: locale === "es" ? "¡Perfecto!" : "Perfect!",
-        partial: locale === "es" ? "¡Bien hecho!" : "Well done!",
         failed: locale === "es" ? "Casi" : "Almost",
+        saveFailed: t.saveFailedRetry,
+        retry: locale === "es" ? "Reintentar" : "Retry",
       }}
     />
   );
