@@ -46,7 +46,7 @@ describe("deriveStatus", () => {
     expect(
       deriveStatus({
         srs,
-        lastUnaidedRecall: { startedAt: recent, quality: 4 },
+        lastUnaidedRecall: { startedAt: recent, quality: 4, wasFullVerse: true },
         now: NOW,
       }),
     ).toBe("mastered");
@@ -55,7 +55,7 @@ describe("deriveStatus", () => {
     expect(
       deriveStatus({
         srs,
-        lastUnaidedRecall: { startedAt: stale, quality: 4 },
+        lastUnaidedRecall: { startedAt: stale, quality: 4, wasFullVerse: true },
         now: NOW,
       }),
     ).toBe("learning");
@@ -67,7 +67,19 @@ describe("deriveStatus", () => {
     expect(
       deriveStatus({
         srs,
-        lastUnaidedRecall: { startedAt: recent, quality: 3 },
+        lastUnaidedRecall: { startedAt: recent, quality: 3, wasFullVerse: true },
+        now: NOW,
+      }),
+    ).toBe("learning");
+  });
+
+  it("rejects a chunk-only pass from satisfying the guard (§15.7)", () => {
+    const srs = { ...INITIAL_SRS_STATE, repetitions: 6, interval: 30 };
+    const recent = new Date(NOW.getTime() - 5 * 24 * 60 * 60 * 1000);
+    expect(
+      deriveStatus({
+        srs,
+        lastUnaidedRecall: { startedAt: recent, quality: 5, wasFullVerse: false },
         now: NOW,
       }),
     ).toBe("learning");
@@ -86,6 +98,7 @@ describe("findLastUnaidedRecall", () => {
       outcome: "correct",
       durationMs: 0,
       usedHint: false,
+      wasFullVerse: true,
       startedAt: NOW,
       ...over,
     } as PracticeSession;
@@ -101,6 +114,9 @@ describe("findLastUnaidedRecall", () => {
     ).toBeNull();
     expect(
       findLastUnaidedRecall([row({ quality: 2 })]),
+    ).toBeNull();
+    expect(
+      findLastUnaidedRecall([row({ wasFullVerse: false })]),
     ).toBeNull();
   });
 

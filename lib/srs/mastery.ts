@@ -28,9 +28,11 @@ export type Status = "new" | "learning" | "mastered";
 export type MasteryInputs = {
   srs: SrsState;
   // The most recent unaided RECALL session on the verse (Classic, First-
-  // letter, or Typed) graded `Bien` or higher, or null if none exists.
-  // Caller computes this once per verse from the practice_sessions table.
-  lastUnaidedRecall: { startedAt: Date; quality: number } | null;
+  // letter, or Typed) graded `Bien` or higher AND practiced on the full
+  // verse (final chunk stage per §15.7), or null if none exists. Caller
+  // computes this once per verse from the practice_sessions table via
+  // findLastUnaidedRecall.
+  lastUnaidedRecall: { startedAt: Date; quality: number; wasFullVerse: boolean } | null;
   now?: Date;
 };
 
@@ -45,7 +47,10 @@ export function deriveStatus({
   const meetsBaseline = srs.repetitions >= 4 && mastery >= 0.7;
   if (!meetsBaseline) return "learning";
 
-  // §15.5 guard: must have an unaided recall pass within the window.
+  // §15.5 + §15.7 guard: must have an unaided recall pass on the FULL
+  // verse within the window. The full-verse requirement is what stops a
+  // long verse from being marked mastered while the user has only ever
+  // practiced chunks 1+2.
   if (!lastUnaidedRecall) return "learning";
   const windowStart = new Date(now);
   windowStart.setUTCDate(
@@ -53,11 +58,14 @@ export function deriveStatus({
   );
   if (lastUnaidedRecall.startedAt < windowStart) return "learning";
   if (lastUnaidedRecall.quality < 4) return "learning";
+  if (!lastUnaidedRecall.wasFullVerse) return "learning";
   return "mastered";
 }
 
 // Helper for the API route that pulls the qualifying session out of the
 // per-verse session log. Returns the most recent matching row, or null.
+// The qualifying row must be a RECALL mode pass, unaided, graded Bien+,
+// AND on the full verse (§15.7).
 export function findLastUnaidedRecall(
   sessions: PracticeSession[],
 ): MasteryInputs["lastUnaidedRecall"] {
@@ -66,8 +74,9 @@ export function findLastUnaidedRecall(
     if (!RECALL_MODES.has(s.mode as RecallMode)) continue;
     if (s.usedHint) continue;
     if (s.quality === null || s.quality < 4) continue;
+    if (!s.wasFullVerse) continue;
     if (!best || s.startedAt > best.startedAt) {
-      best = { startedAt: s.startedAt, quality: s.quality };
+      best = { startedAt: s.startedAt, quality: s.quality, wasFullVerse: s.wasFullVerse };
     }
   }
   return best;
