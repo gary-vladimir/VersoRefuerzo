@@ -14,13 +14,15 @@ import {
   collections as collectionsTable,
   bibleTextCache,
 } from "@/db/schema";
+// `bibleTextCache` is used both for the per-verse text join and the
+// random-mode candidate filter.
 import { buildDueQueue, dailySeed } from "@/lib/srs/queue";
 import { planChunks, stageForReps } from "@/lib/srs/chunk";
 import { UNDO_WINDOW_MS } from "@/lib/constants";
 import { T } from "@/lib/i18n/strings";
 import { ClassicSession, type QueueItem } from "@/components/practice/ClassicSession";
 
-type SearchParams = Promise<{ verse?: string }>;
+type SearchParams = Promise<{ verse?: string; random?: string }>;
 
 export default async function ClassicPage({
   searchParams,
@@ -39,7 +41,32 @@ export default async function ClassicPage({
     .where(and(eq(versesTable.userId, user.id), lt(versesTable.deletedAt, cutoff)));
 
   const sp = await searchParams;
-  const oneVerseId = sp.verse?.trim() || null;
+  let oneVerseId = sp.verse?.trim() || null;
+  const isRandom = sp.random === "1" || sp.random === "true";
+
+  // Random mode: pick one owned verse with cached text. Used by the §17.2
+  // empty-day CTA "Practica un verso aleatorio" — without this, the CTA
+  // would land on the empty due-today queue (M4 review #3).
+  if (isRandom && !oneVerseId) {
+    const candidates = await db
+      .select({
+        id: versesTable.id,
+        canonicalRef: versesTable.canonicalRef,
+        version: versesTable.version,
+      })
+      .from(versesTable)
+      .innerJoin(
+        bibleTextCache,
+        and(
+          eq(bibleTextCache.canonicalRef, versesTable.canonicalRef),
+          eq(bibleTextCache.version, versesTable.version),
+        ),
+      )
+      .where(and(eq(versesTable.userId, user.id), isNull(versesTable.deletedAt)));
+    if (candidates.length > 0) {
+      oneVerseId = candidates[Math.floor(Math.random() * candidates.length)]!.id;
+    }
+  }
 
   let verses;
   if (oneVerseId) {
@@ -100,15 +127,21 @@ export default async function ClassicPage({
     cacheByKey.set(`${c.ref}|${c.version}`, { text: c.text, copyright: c.copyright });
   }
 
+  // Drop verses without cached text — practicing against a blank back face
+  // would let the user grade something they can't read (M4 review #5).
+  const versesWithText = verses.filter((v) =>
+    cacheByKey.has(`${v.canonicalRef}|${v.version}`),
+  );
+
   // Single-verse mode (Repasar ahora) bypasses the due-today filter.
   const ordered = oneVerseId
-    ? verses.map((v) => ({
+    ? versesWithText.map((v) => ({
         id: v.id,
         dueAt: v.srsState.dueAt,
         collectionIds: linksByVerse.get(v.id) ?? [],
       }))
     : buildDueQueue(
-        verses.map((v) => ({
+        versesWithText.map((v) => ({
           id: v.id,
           srsState: v.srsState,
           collectionIds: linksByVerse.get(v.id) ?? [],
@@ -116,12 +149,11 @@ export default async function ClassicPage({
         dailySeed(user.id),
       );
 
-  const versesById = new Map(verses.map((v) => [v.id, v]));
+  const versesById = new Map(versesWithText.map((v) => [v.id, v]));
   const queue: QueueItem[] = ordered.map((q) => {
     const v = versesById.get(q.id)!;
-    const cache = cacheByKey.get(`${v.canonicalRef}|${v.version}`) ?? null;
-    const fullText = cache?.text ?? "";
-    const plan = planChunks(fullText);
+    const cache = cacheByKey.get(`${v.canonicalRef}|${v.version}`)!;
+    const plan = planChunks(cache.text);
     const stage = stageForReps(v.srsState.repetitions, plan.chunks.length);
     return {
       id: v.id,
@@ -130,8 +162,8 @@ export default async function ClassicPage({
       icon: v.icon,
       color: v.color,
       hint: v.hint,
-      text: fullText,
-      copyright: cache?.copyright ?? null,
+      text: cache.text,
+      copyright: cache.copyright,
       srsState: v.srsState,
       chunk: {
         stage,
@@ -172,6 +204,7 @@ export default async function ClassicPage({
             ? "No hay versos para hoy. Vuelve mañana o agrega uno nuevo."
             : "Nothing due today. Come back tomorrow or add a new verse.",
         emptyQueueCta: t.home,
+        saveFailed: t.saveFailedRetry,
       }}
     />
   );

@@ -116,10 +116,19 @@ export async function GET(req: NextRequest) {
     cacheByKey.set(`${c.ref}|${c.version}`, { text: c.text, copyright: c.copyright });
   }
 
-  // Build the due queue using the SRS primitive.
+  // Skip verses whose text isn't cached yet (M4 review #5 / specs §6.1).
+  // Practicing against blank text would let the user grade a verse they
+  // can't actually see; better to surface the count separately and let
+  // them retry/refresh once the cache primes. The cache only misses on
+  // network failures during create — common operation is hot.
+  const versesWithText = verses.filter((v) =>
+    cacheByKey.has(`${v.canonicalRef}|${v.version}`),
+  );
+  const skippedNoText = verses.length - versesWithText.length;
+
   const seed = dailySeed(user.id);
   const ordered = buildDueQueue(
-    verses.map((v) => ({
+    versesWithText.map((v) => ({
       id: v.id,
       srsState: v.srsState,
       collectionIds: linksByVerse.get(v.id) ?? [],
@@ -127,13 +136,12 @@ export async function GET(req: NextRequest) {
     seed,
   );
 
-  const versesById = new Map(verses.map((v) => [v.id, v]));
+  const versesById = new Map(versesWithText.map((v) => [v.id, v]));
 
   const queue = ordered.map((q) => {
     const v = versesById.get(q.id)!;
-    const cache = cacheByKey.get(`${v.canonicalRef}|${v.version}`) ?? null;
-    const fullText = cache?.text ?? "";
-    const plan = planChunks(fullText);
+    const cache = cacheByKey.get(`${v.canonicalRef}|${v.version}`)!;
+    const plan = planChunks(cache.text);
     const stage = stageForReps(v.srsState.repetitions, plan.chunks.length);
     return {
       id: v.id,
@@ -142,8 +150,8 @@ export async function GET(req: NextRequest) {
       icon: v.icon,
       color: v.color,
       hint: v.hint,
-      text: fullText,
-      copyright: cache?.copyright ?? null,
+      text: cache.text,
+      copyright: cache.copyright,
       srsState: v.srsState,
       mastery: v.mastery,
       status: v.status,
@@ -156,5 +164,5 @@ export async function GET(req: NextRequest) {
     };
   });
 
-  return NextResponse.json({ queue });
+  return NextResponse.json({ queue, skippedNoText });
 }
