@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
       }
     }
   } else {
-    nextSrs = applyRecognitionTouch(verse.srsState, data.outcome === "correct", now);
+    nextSrs = applyRecognitionTouch(verse.srsState, data.outcome === "correct");
   }
 
   // 3. Insert the session row.

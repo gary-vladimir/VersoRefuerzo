@@ -70,24 +70,20 @@ export function applyRecallGrade(
 }
 
 // Recognition modes (§15.4): no interval advancement, small ease bump on
-// success only. Re-stamp `dueAt` to "today" so the indicator on Home
-// reflects that the user has touched the verse, but never push it out.
+// success only. We deliberately do NOT touch `dueAt` — the original M4
+// behavior pulled future-due verses back to "now" so they'd reappear in
+// the daily queue, but that silently regressed the schedule for any verse
+// the user practiced out-of-band via Scramble/Match (M4 review #7). The
+// "touched today" indicator §15.4 mentions will be driven from a separate
+// per-verse last-practiced timestamp when M6 lands, not by hijacking dueAt.
 export function applyRecognitionTouch(
   prev: SrsState,
   succeeded: boolean,
-  now: Date = new Date(),
 ): SrsState {
   const easeFactor = succeeded
     ? clamp(prev.easeFactor + 0.05, MIN_EASE, MAX_EASE)
     : prev.easeFactor;
-  // Keep the verse due today: if it was already due, don't move it. If it
-  // was scheduled out, pull it back to "now" so the user sees it again
-  // tomorrow at the latest.
-  const dueAt =
-    new Date(prev.dueAt).getTime() <= now.getTime()
-      ? prev.dueAt
-      : now.toISOString();
-  return { ...prev, easeFactor, dueAt };
+  return { ...prev, easeFactor };
 }
 
 // Predicted display intervals for the four quality buttons. Used by the

@@ -59,24 +59,24 @@ describe("applyRecallGrade", () => {
 describe("applyRecognitionTouch", () => {
   it("does not advance interval or repetitions", () => {
     const seed = { ...INITIAL_SRS_STATE, interval: 5, repetitions: 3 };
-    const next = applyRecognitionTouch(seed, true, NOW);
+    const next = applyRecognitionTouch(seed, true);
     expect(next.interval).toBe(seed.interval);
     expect(next.repetitions).toBe(seed.repetitions);
   });
 
   it("bumps ease on success only", () => {
     const seed = { ...INITIAL_SRS_STATE, easeFactor: 2.5 };
-    const ok = applyRecognitionTouch(seed, true, NOW);
-    const fail = applyRecognitionTouch(seed, false, NOW);
+    const ok = applyRecognitionTouch(seed, true);
+    const fail = applyRecognitionTouch(seed, false);
     expect(ok.easeFactor).toBeGreaterThan(seed.easeFactor);
     expect(fail.easeFactor).toBe(seed.easeFactor);
   });
 
-  it("pulls a future-due verse to today", () => {
+  it("does not regress dueAt for a future-scheduled verse", () => {
     const future = new Date(NOW.getTime() + 10 * 24 * 60 * 60 * 1000).toISOString();
     const seed = { ...INITIAL_SRS_STATE, dueAt: future };
-    const next = applyRecognitionTouch(seed, true, NOW);
-    expect(new Date(next.dueAt).getTime()).toBe(NOW.getTime());
+    const next = applyRecognitionTouch(seed, true);
+    expect(next.dueAt).toBe(future);
   });
 });
 
