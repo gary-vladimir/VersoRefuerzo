@@ -127,4 +127,13 @@ describe("findLastUnaidedRecall", () => {
     expect(result?.startedAt).toEqual(NOW);
     expect(result?.quality).toBe(5);
   });
+
+  it("accepts typed and first-letter recall passes", () => {
+    expect(
+      findLastUnaidedRecall([row({ mode: "typed" })])?.wasFullVerse,
+    ).toBe(true);
+    expect(
+      findLastUnaidedRecall([row({ mode: "first_letter" })])?.wasFullVerse,
+    ).toBe(true);
+  });
 });
