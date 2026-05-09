@@ -17,6 +17,21 @@ import { FillTheGap } from "@/components/practice/FillTheGap";
 
 const MIN_LIBRARY_FOR_REAL_DISTRACTORS = 5;
 
+// Mirrors the cloze stopword set, just inlined here so the page can drop
+// stopwords from the *distractor* pool too. Picking "el" or "la" as a
+// distractor for "vida" would let the user solve by elimination.
+const ES_STOP = new Set([
+  "el", "la", "los", "las", "un", "una", "y", "o", "de", "del", "al", "a",
+  "en", "por", "para", "con", "sin", "que", "no", "es", "se", "su", "lo",
+  "le", "les", "mi", "tu", "este", "esta", "eso", "esto",
+]);
+const EN_STOP = new Set([
+  "the", "a", "an", "and", "or", "of", "in", "on", "at", "to", "for",
+  "with", "from", "by", "as", "is", "are", "was", "were", "be", "i", "you",
+  "he", "she", "it", "we", "they", "my", "your", "his", "her", "its",
+  "this", "that", "no", "not",
+]);
+
 export default async function GapPage() {
   const user = await getServerUser();
   if (!user) redirect("/login");
@@ -49,6 +64,7 @@ export default async function GapPage() {
           ...pool.wordPool,
           ...fallbackPoolFor(locale).map((w) => w.toLowerCase()),
         ];
+  const stopwords = locale === "es" ? ES_STOP : EN_STOP;
   const distractorsPerBlank: string[][] = plan.blankIndices.map((tokIdx) => {
     const correct = plan.tokens[tokIdx]!.word.toLowerCase();
     const candidates = baseDistractorPool.filter(
@@ -56,7 +72,8 @@ export default async function GapPage() {
         !correctSet.has(w) &&
         w !== correct &&
         w.length >= 2 &&
-        !/^\d+$/.test(w),
+        !/^\d+$/.test(w) &&
+        !stopwords.has(w),
     );
     return shuffle(candidates).slice(0, 3);
   });
