@@ -12,11 +12,12 @@
 // provides (other verses in the user's library, or the curated fallback
 // when the library is too small). The component stays UI-only.
 //
-// Outcome mapping per spec §6.4.4 + §15.4:
-//   correct, no hint   → quality 5 / outcome 'correct'
-//   correct, used hint → quality 3 / outcome 'partial'
-//   failed             → quality 1 / outcome 'incorrect'
-// Density >= 50% gets server-side reclassified into RECALL automatically.
+// Outcome mapping per §16.5 (which supersedes the older §6.4.4 cap):
+//   correct → quality 5 / outcome 'correct' (regardless of hint use)
+//   failed  → quality 1 / outcome 'incorrect'
+// `usedHint` is recorded on the row so the §15.5 mastered guard can
+// filter hinted sessions out of the unaided-recall window. Density >= 50%
+// gets server-side reclassified into RECALL automatically.
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -36,8 +37,9 @@ type Strings = {
   exit: string;
   showFirstLetter: string;
   good: string;
-  partial: string;
   failed: string;
+  saveFailed: string;
+  retry: string;
 };
 
 type Props = {
@@ -75,6 +77,7 @@ export function FillTheGap({
   const [hintRevealed, setHintRevealed] = useState<Record<number, boolean>>({});
   const [wrongFlash, setWrongFlash] = useState(false);
   const [done, setDone] = useState<"win" | "lose" | null>(null);
+  const [submitFailed, setSubmitFailed] = useState(false);
 
   // Prepare the option set for the active blank: correct word + 3
   // distractors, shuffled. We freeze each blank's option order so the
@@ -122,35 +125,44 @@ export function FillTheGap({
   }, [intentos, done]);
 
   // POST once when the round resolves.
+  // Quality is decoupled from `usedHint` per §16.5: a hinted-but-correct
+  // round still grades as a win (quality 5). The `usedHint` flag goes on
+  // the session row regardless, and the §15.5 mastered guard already
+  // filters hinted rows out of the unaided-recall check downstream.
+  async function postSession(): Promise<boolean> {
+    const durationMs = Date.now() - startedAtRef.current;
+    const outcome: "correct" | "incorrect" = done === "win" ? "correct" : "incorrect";
+    const quality = done === "win" ? 5 : 1;
+    try {
+      const res = await fetch("/api/practice/sessions", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          verseId: verse.id,
+          mode: "gap",
+          quality,
+          outcome,
+          durationMs,
+          usedHint,
+        }),
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }
+
   useEffect(() => {
     if (!done || submittedRef.current) return;
     submittedRef.current = true;
-    const durationMs = Date.now() - startedAtRef.current;
-    let outcome: "correct" | "partial" | "incorrect";
-    let quality: number;
-    if (done === "win" && !usedHint) {
-      outcome = "correct";
-      quality = 5;
-    } else if (done === "win") {
-      outcome = "partial";
-      quality = 3;
-    } else {
-      outcome = "incorrect";
-      quality = 1;
-    }
-    fetch("/api/practice/sessions", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        verseId: verse.id,
-        mode: "gap",
-        quality,
-        outcome,
-        durationMs,
-        usedHint,
-      }),
-    }).catch(() => {});
-  }, [done, usedHint, verse.id]);
+    void postSession().then((ok) => setSubmitFailed(!ok));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [done]);
+
+  function retry() {
+    setSubmitFailed(false);
+    void postSession().then((ok) => setSubmitFailed(!ok));
+  }
 
   return (
     <main
@@ -362,7 +374,7 @@ export function FillTheGap({
                 done === "win" ? "var(--c-emerald-500)" : "var(--c-rose-500)",
             }}
           >
-            {done === "win" ? (usedHint ? t.partial : t.good) : t.failed}
+            {done === "win" ? t.good : t.failed}
           </p>
           <p
             style={{
@@ -375,6 +387,34 @@ export function FillTheGap({
           >
             {t.niceTry}
           </p>
+          {submitFailed && (
+            <p
+              role="alert"
+              style={{
+                margin: "0 0 12px",
+                fontSize: 12,
+                fontWeight: 700,
+                color: "#B91C1C",
+              }}
+            >
+              {t.saveFailed}{" "}
+              <button
+                type="button"
+                onClick={retry}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "var(--c-indigo-700)",
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                  font: "inherit",
+                  padding: 0,
+                }}
+              >
+                {t.retry}
+              </button>
+            </p>
+          )}
           <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
             <button
               type="button"
