@@ -105,6 +105,11 @@ export const verses = pgTable(
     mastery: real("mastery").notNull().default(0),
     status: text("status").$type<"new" | "learning" | "mastered">().notNull().default("new"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }), // soft-delete (§17.5)
+    // Set on every recorded practice attempt (any mode). Drives the §15.4
+    // "touched today" indicator so a verse the user practiced via Scramble /
+    // Match / low-density Gap stops appearing in the due-today queue for
+    // the rest of the day, even though `dueAt` itself didn't move.
+    lastPracticedAt: timestamp("last_practiced_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
