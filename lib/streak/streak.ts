@@ -72,3 +72,23 @@ export function applyPracticeForStreak({
     lastStreakAt: today,
   };
 }
+
+// Display-time streak. The persisted `currentStreak` only changes when the
+// user practices again, so a user who misses a day and reloads Home before
+// practicing would otherwise see yesterday's stale streak (M4 review #6).
+// This helper returns 0 when the last practice is older than yesterday in
+// the user's tz; the persisted value is left unchanged so the next session
+// can still reset it from the original gap.
+export function deriveEffectiveStreak({
+  state,
+  tz,
+  now = new Date(),
+}: StreakInputs): number {
+  if (!state.lastStreakAt) return 0;
+  const zone = tz?.trim() ? tz : "UTC";
+  const today = dayjs(now).tz(zone).format("YYYY-MM-DD");
+  const yesterday = dayjs(now).tz(zone).subtract(1, "day").format("YYYY-MM-DD");
+  const last = dayjs.tz(state.lastStreakAt, zone).format("YYYY-MM-DD");
+  if (last === today || last === yesterday) return state.currentStreak;
+  return 0;
+}

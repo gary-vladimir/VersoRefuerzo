@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { applyPracticeForStreak } from "@/lib/streak/streak";
+import { applyPracticeForStreak, deriveEffectiveStreak } from "@/lib/streak/streak";
 
 describe("applyPracticeForStreak", () => {
   it("sets to 1 on first ever practice", () => {
@@ -62,5 +62,47 @@ describe("applyPracticeForStreak", () => {
       now: new Date("2026-01-15T18:00:00Z"),
     });
     expect(next.lastStreakAt).toBe("2026-01-15");
+  });
+});
+
+describe("deriveEffectiveStreak", () => {
+  it("is 0 when nothing has been practiced", () => {
+    expect(
+      deriveEffectiveStreak({
+        state: { currentStreak: 0, bestStreak: 0, lastStreakAt: null },
+        tz: "America/Mexico_City",
+        now: new Date("2026-01-15T15:00:00Z"),
+      }),
+    ).toBe(0);
+  });
+
+  it("returns the stored streak when practice was today", () => {
+    expect(
+      deriveEffectiveStreak({
+        state: { currentStreak: 7, bestStreak: 7, lastStreakAt: "2026-01-15" },
+        tz: "America/Mexico_City",
+        now: new Date("2026-01-15T15:00:00Z"),
+      }),
+    ).toBe(7);
+  });
+
+  it("returns the stored streak when practice was yesterday (still alive)", () => {
+    expect(
+      deriveEffectiveStreak({
+        state: { currentStreak: 7, bestStreak: 7, lastStreakAt: "2026-01-14" },
+        tz: "America/Mexico_City",
+        now: new Date("2026-01-15T15:00:00Z"),
+      }),
+    ).toBe(7);
+  });
+
+  it("returns 0 when a day has been missed", () => {
+    expect(
+      deriveEffectiveStreak({
+        state: { currentStreak: 12, bestStreak: 30, lastStreakAt: "2026-01-13" },
+        tz: "America/Mexico_City",
+        now: new Date("2026-01-15T15:00:00Z"),
+      }),
+    ).toBe(0);
   });
 });
