@@ -189,17 +189,30 @@ export default async function Home() {
             >
               {t.versesCount(allVerses.length)}
             </div>
-            <Link
-              href="/library"
-              style={{
-                fontSize: 11,
-                color: "var(--c-muted)",
-                fontWeight: 600,
-                textDecoration: "none",
-              }}
-            >
-              {t.library} →
-            </Link>
+            <div style={{ display: "flex", gap: 12 }}>
+              <Link
+                href="/practice"
+                style={{
+                  fontSize: 11,
+                  color: "var(--c-muted)",
+                  fontWeight: 600,
+                  textDecoration: "none",
+                }}
+              >
+                {t.practice} →
+              </Link>
+              <Link
+                href="/library"
+                style={{
+                  fontSize: 11,
+                  color: "var(--c-muted)",
+                  fontWeight: 600,
+                  textDecoration: "none",
+                }}
+              >
+                {t.library} →
+              </Link>
+            </div>
           </div>
           <div
             className="vr-stagger"
