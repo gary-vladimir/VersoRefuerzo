@@ -1,8 +1,10 @@
 "use client";
 
-// Card View client — owns flip state, hint visibility, and lazy text fetch.
-// The grading row that lives below the card in M4 is intentionally rendered
-// as a placeholder here so the layout doesn't shift when M4 wires SM-2.
+// Card View client — owns flip state, hint visibility, lazy text fetch, and
+// post-reveal grading per specs.md §16.4 + AC-4. Grading a card here POSTs
+// to /api/practice/sessions just like the Classic session does (mode:
+// 'classic'), so SRS state and streak update consistently regardless of
+// whether the user is in a session or browsing a single card from Library.
 
 import { useState } from "react";
 import Link from "next/link";
@@ -11,6 +13,8 @@ import { isCardColor, isVerseIcon, COLLECTION_COLORS } from "@/lib/catalog";
 import { formatDisplay } from "@/lib/bible/reference";
 import { VerseIcon } from "@/components/icons/VerseIcons";
 import { useToast } from "@/components/ui/Toast";
+import { QualityButtons } from "@/components/practice/QualityButtons";
+import type { Quality } from "@/lib/srs/sm2";
 import type { Verse } from "@/db/schema";
 
 type Strings = {
@@ -27,6 +31,13 @@ type Strings = {
   copyrightFallback: string;
   recite: string;
   loading: string;
+  howWell: string;
+  again: string;
+  hard: string;
+  good: string;
+  easy: string;
+  saveFailed: string;
+  graded: string;
 };
 
 type CollectionLink = { id: string; name: string; colorKey: string };
@@ -54,6 +65,11 @@ export function CardViewClient({
   const [hintShown, setHintShown] = useState(false);
   const [text, setText] = useState<string | null>(initialText);
   const [textLoading, setTextLoading] = useState(false);
+  const [grading, setGrading] = useState(false);
+  const [gradeError, setGradeError] = useState<string | null>(null);
+  const [graded, setGraded] = useState(false);
+  // Per-reveal start time so the recorded session has a sensible duration.
+  const [revealedAt, setRevealedAt] = useState<number | null>(null);
 
   const color = isCardColor(verse.color) ? verse.color : "indigo";
   const icon = isVerseIcon(verse.icon) ? verse.icon : "bible";
@@ -78,7 +94,45 @@ export function CardViewClient({
 
   async function reveal() {
     setRevealed(true);
+    setRevealedAt(Date.now());
+    setGraded(false);
+    setGradeError(null);
     void ensureText();
+  }
+
+  async function grade(q: Quality) {
+    if (grading || graded || !text) return;
+    setGrading(true);
+    setGradeError(null);
+    const durationMs = revealedAt != null ? Date.now() - revealedAt : 0;
+    const outcome = q >= 4 ? "correct" : q === 3 ? "partial" : "incorrect";
+    let ok = false;
+    try {
+      const res = await fetch("/api/practice/sessions", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          verseId: verse.id,
+          mode: "classic",
+          quality: q,
+          outcome,
+          durationMs,
+          usedHint: hintShown,
+        }),
+      });
+      ok = res.ok;
+    } catch {
+      ok = false;
+    }
+    setGrading(false);
+    if (!ok) {
+      setGradeError(t.saveFailed);
+      return;
+    }
+    setGraded(true);
+    // Refresh so the parent server data (next-due, mastery, status) reflects
+    // the new SRS state on next visit / on Library re-renders.
+    router.refresh();
   }
 
   async function handleDelete() {
@@ -237,18 +291,58 @@ export function CardViewClient({
               👁 {t.revealVerse}
             </button>
           </>
-        ) : (
+        ) : graded ? (
           <p
             style={{
               textAlign: "center",
-              fontSize: 12,
-              color: "var(--c-muted)",
+              fontSize: 13,
+              color: "var(--c-emerald-500)",
               margin: "0 0 14px",
-              fontWeight: 500,
+              fontWeight: 700,
             }}
           >
-            {locale === "es" ? "¿Cómo te fue?" : "How did it go?"}
+            ✓ {t.graded}
           </p>
+        ) : (
+          <>
+            <p
+              style={{
+                textAlign: "center",
+                fontSize: 12,
+                color: "var(--c-muted)",
+                margin: "0 0 10px",
+                fontWeight: 600,
+              }}
+            >
+              {t.howWell}
+            </p>
+            {gradeError && (
+              <p
+                role="alert"
+                style={{
+                  margin: "0 0 10px",
+                  textAlign: "center",
+                  color: "#B91C1C",
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
+              >
+                {gradeError}
+              </p>
+            )}
+            <QualityButtons
+              srs={verse.srsState}
+              locale={locale}
+              disabled={grading || !text}
+              onGrade={grade}
+              labels={{
+                again: t.again,
+                hard: t.hard,
+                good: t.good,
+                easy: t.easy,
+              }}
+            />
+          </>
         )}
 
         <div

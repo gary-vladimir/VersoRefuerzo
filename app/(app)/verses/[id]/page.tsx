@@ -96,6 +96,13 @@ export default async function CardViewPage({
             ? "Recita el verso en voz alta. Cuando estés listo…"
             : "Recite it aloud. When you're ready…",
         loading: t.loadingText,
+        howWell: locale === "es" ? "¿Qué tan bien lo recordaste?" : "How well did you remember?",
+        again: t.again,
+        hard: t.hard,
+        good: t.good,
+        easy: t.easy,
+        saveFailed: t.saveFailedRetry,
+        graded: locale === "es" ? "Guardado" : "Saved",
       }}
     />
   );
