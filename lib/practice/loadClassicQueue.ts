@@ -23,6 +23,7 @@ import {
 } from "@/db/schema";
 import { buildDueQueue, dailySeed } from "@/lib/srs/queue";
 import { planChunks, stageForReps } from "@/lib/srs/chunk";
+import { isSameTzDay } from "@/lib/streak/streak";
 import { UNDO_WINDOW_MS } from "@/lib/constants";
 import type { QueueItem } from "@/components/practice/ClassicSession";
 
@@ -122,6 +123,14 @@ export async function loadClassicQueue(
     cacheByKey.has(`${v.canonicalRef}|${v.version}`),
   );
 
+  // 4a. Suppress verses already practiced today in the user's tz so the
+  // §15.4 "touched today" indicator actually clears. Single-verse mode
+  // (Repasar ahora / random) bypasses this — the user explicitly asked
+  // to drill that verse.
+  const candidatesForQueue = oneVerseId
+    ? versesWithText
+    : versesWithText.filter((v) => !isSameTzDay(v.lastPracticedAt, user.timezone));
+
   const ordered = oneVerseId
     ? versesWithText.map((v) => ({
         id: v.id,
@@ -129,7 +138,7 @@ export async function loadClassicQueue(
         collectionIds: linksByVerse.get(v.id) ?? [],
       }))
     : buildDueQueue(
-        versesWithText.map((v) => ({
+        candidatesForQueue.map((v) => ({
           id: v.id,
           srsState: v.srsState,
           collectionIds: linksByVerse.get(v.id) ?? [],

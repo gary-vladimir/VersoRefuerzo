@@ -12,7 +12,7 @@ import { and, count, eq, isNull } from "drizzle-orm";
 import { getServerUser } from "@/lib/auth/session";
 import { getDb } from "@/db/client";
 import { verses as versesTable } from "@/db/schema";
-import { deriveEffectiveStreak } from "@/lib/streak/streak";
+import { deriveEffectiveStreak, isSameTzDay } from "@/lib/streak/streak";
 
 export const runtime = "nodejs";
 
@@ -31,6 +31,7 @@ export async function GET() {
     .select({
       status: versesTable.status,
       srsState: versesTable.srsState,
+      lastPracticedAt: versesTable.lastPracticedAt,
     })
     .from(versesTable)
     .where(baseFilter);
@@ -42,7 +43,11 @@ export async function GET() {
   for (const r of rows) {
     if (r.status === "mastered") mastered++;
     else if (r.status === "learning") learning++;
-    if (new Date(r.srsState.dueAt).getTime() <= cutoff) dueToday++;
+    // §15.4 "touched today" suppression must apply here too so the Home
+    // hero count matches what the queue actually surfaces.
+    const isDue = new Date(r.srsState.dueAt).getTime() <= cutoff;
+    const touchedToday = isSameTzDay(r.lastPracticedAt, user.timezone);
+    if (isDue && !touchedToday) dueToday++;
   }
 
   // Sanity: the count() query is one cheap statement and double-checks the

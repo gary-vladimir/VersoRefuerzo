@@ -22,6 +22,7 @@ import {
 } from "@/db/schema";
 import { buildDueQueue, dailySeed } from "@/lib/srs/queue";
 import { planChunks, stageForReps } from "@/lib/srs/chunk";
+import { isSameTzDay } from "@/lib/streak/streak";
 import { UNDO_WINDOW_MS } from "@/lib/constants";
 
 export const runtime = "nodejs";
@@ -126,9 +127,15 @@ export async function GET(req: NextRequest) {
   );
   const skippedNoText = verses.length - versesWithText.length;
 
+  // §15.4 "touched today" suppression: a verse the user already practiced
+  // today (any mode) drops off the queue for the rest of the day.
+  const candidatesForQueue = versesWithText.filter(
+    (v) => !isSameTzDay(v.lastPracticedAt, user.timezone),
+  );
+
   const seed = dailySeed(user.id);
   const ordered = buildDueQueue(
-    versesWithText.map((v) => ({
+    candidatesForQueue.map((v) => ({
       id: v.id,
       srsState: v.srsState,
       collectionIds: linksByVerse.get(v.id) ?? [],

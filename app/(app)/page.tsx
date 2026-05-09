@@ -17,7 +17,7 @@ import {
 } from "@/db/schema";
 import { T } from "@/lib/i18n/strings";
 import { UNDO_WINDOW_MS } from "@/lib/constants";
-import { deriveEffectiveStreak } from "@/lib/streak/streak";
+import { deriveEffectiveStreak, isSameTzDay } from "@/lib/streak/streak";
 import { StreakChip } from "@/components/home/StreakChip";
 import { TodayCTA } from "@/components/home/TodayCTA";
 import { VerseRow } from "@/components/verse/VerseRow";
@@ -48,7 +48,9 @@ export default async function Home() {
   const endOfToday = new Date();
   endOfToday.setUTCHours(23, 59, 59, 999);
   const dueVerses = allVerses.filter(
-    (v) => new Date(v.srsState.dueAt).getTime() <= endOfToday.getTime(),
+    (v) =>
+      new Date(v.srsState.dueAt).getTime() <= endOfToday.getTime() &&
+      !isSameTzDay(v.lastPracticedAt, user.timezone),
   );
 
   const recent = [...allVerses]

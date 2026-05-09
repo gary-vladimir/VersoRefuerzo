@@ -155,13 +155,18 @@ export async function POST(req: NextRequest) {
   const mastery = deriveMastery(nextSrs);
   const status = deriveStatus({ srs: nextSrs, lastUnaidedRecall: lastUnaided, now });
 
-  // 5. Persist the verse.
+  // 5. Persist the verse. lastPracticedAt is bumped for every recorded
+  // attempt — recall modes also need it so a Classic pass on a verse that
+  // was already due-today doesn't keep showing in tomorrow's queue from a
+  // stale timestamp; the suppression check is `isSameTzDay`, not boolean
+  // truthiness, so it's safe to overwrite on recall too.
   const updatedVerse = await db
     .update(versesTable)
     .set({
       srsState: nextSrs,
       mastery,
       status,
+      lastPracticedAt: now,
       updatedAt: now,
     })
     .where(eq(versesTable.id, verse.id))
