@@ -31,6 +31,8 @@ type Strings = {
   ranOut: string;
   references: string;
   hints: string;
+  saveFailed: (n: number) => string;
+  retry: string;
 };
 
 type Props = {
@@ -73,36 +75,71 @@ export function VerseMatch({ verses, locale, strings: t }: Props) {
   const [wrongFlash, setWrongFlash] = useState<{ left: string; right: string } | null>(null);
   const [done, setDone] = useState<"win" | "lose" | null>(null);
   const startedAtRef = useRef<number>(Date.now());
-  const submittedRef = useRef<Set<string>>(new Set());
 
-  function postPair(verseId: string, quality: 2 | 4) {
-    const key = `${verseId}|${Date.now()}|${quality}`;
-    if (submittedRef.current.has(key)) return;
-    submittedRef.current.add(key);
-    fetch("/api/practice/sessions", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        verseId,
-        mode: "match",
-        quality,
-        outcome: quality === 4 ? "correct" : "incorrect",
-        durationMs: Date.now() - startedAtRef.current,
-        usedHint: false,
-      }),
-    }).catch(() => {});
+  // Per-pair POSTs are tracked in a small in-memory queue so a transient
+  // failure can be retried explicitly from the end-of-round card. Each
+  // failed pair survives the round and the user can flush them with one
+  // tap (M6 review #5).
+  type PendingPair = { verseId: string; quality: 2 | 4; durationMs: number };
+  const failedQueueRef = useRef<PendingPair[]>([]);
+  const [failedCount, setFailedCount] = useState(0);
+
+  async function sendPair(p: PendingPair): Promise<boolean> {
+    try {
+      const res = await fetch("/api/practice/sessions", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          verseId: p.verseId,
+          mode: "match",
+          quality: p.quality,
+          outcome: p.quality === 4 ? "correct" : "incorrect",
+          durationMs: p.durationMs,
+          usedHint: false,
+        }),
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }
+
+  async function postPair(verseId: string, quality: 2 | 4) {
+    const pair: PendingPair = {
+      verseId,
+      quality,
+      durationMs: Date.now() - startedAtRef.current,
+    };
+    const ok = await sendPair(pair);
+    if (!ok) {
+      failedQueueRef.current.push(pair);
+      setFailedCount(failedQueueRef.current.length);
+    }
+  }
+
+  async function retryFailed() {
+    const pending = failedQueueRef.current;
+    failedQueueRef.current = [];
+    setFailedCount(0);
+    const stillFailed: PendingPair[] = [];
+    for (const p of pending) {
+      const ok = await sendPair(p);
+      if (!ok) stillFailed.push(p);
+    }
+    failedQueueRef.current = stillFailed;
+    setFailedCount(stillFailed.length);
   }
 
   function tryResolve(left: string, right: string) {
     if (left === right) {
       setMatched((m) => new Set([...m, left]));
-      postPair(left, 4);
+      void postPair(left, 4);
     } else {
       setWrongFlash({ left, right });
       window.setTimeout(() => setWrongFlash(null), 320);
       setIntentos((n) => n - 1);
-      postPair(left, 2);
-      if (left !== right) postPair(right, 2);
+      void postPair(left, 2);
+      if (left !== right) void postPair(right, 2);
     }
     setSelectedLeft(null);
     setSelectedRight(null);
@@ -314,6 +351,34 @@ export function VerseMatch({ verses, locale, strings: t }: Props) {
           >
             {t.niceTry}
           </p>
+          {failedCount > 0 && (
+            <p
+              role="alert"
+              style={{
+                margin: "0 0 12px",
+                fontSize: 12,
+                fontWeight: 700,
+                color: "#B91C1C",
+              }}
+            >
+              {t.saveFailed(failedCount)}{" "}
+              <button
+                type="button"
+                onClick={retryFailed}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "var(--c-indigo-700)",
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                  font: "inherit",
+                  padding: 0,
+                }}
+              >
+                {t.retry}
+              </button>
+            </p>
+          )}
           <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
             <button
               type="button"
@@ -328,7 +393,40 @@ export function VerseMatch({ verses, locale, strings: t }: Props) {
           </div>
         </section>
       )}
+
+      {/* §9.3 attribution: when any card uses the cached-text fallback hint
+          we surface a compact, deduplicated copyright row at the bottom. */}
+      <Attribution items={items} verses={verses} />
     </main>
+  );
+}
+
+function Attribution({
+  items,
+  verses,
+}: {
+  items: { id: string; verse: { hint: string | null }; hint: string }[];
+  verses: Props["verses"];
+}) {
+  const usesFallback = items.some((it) => !it.verse.hint?.trim());
+  if (!usesFallback) return null;
+  const copyrights = new Set<string>();
+  for (const v of verses) {
+    if (v.copyright) copyrights.add(v.copyright);
+  }
+  if (copyrights.size === 0) return null;
+  return (
+    <p
+      style={{
+        margin: "16px 16px 0",
+        fontSize: 9,
+        color: "var(--c-soft)",
+        fontStyle: "italic",
+        textAlign: "center",
+      }}
+    >
+      {[...copyrights].join(" · ")}
+    </p>
   );
 }
 

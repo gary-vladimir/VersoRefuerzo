@@ -36,6 +36,11 @@ export default async function MatchPage() {
         ranOut: locale === "es" ? "Casi" : "Almost",
         references: locale === "es" ? "Referencias" : "References",
         hints: locale === "es" ? "Pistas" : "Hints",
+        saveFailed: (n) =>
+          locale === "es"
+            ? `${n} ${n === 1 ? "intento no se guardó" : "intentos no se guardaron"}.`
+            : `${n} ${n === 1 ? "attempt didn't save" : "attempts didn't save"}.`,
+        retry: locale === "es" ? "Reintentar" : "Retry",
       }}
     />
   );
