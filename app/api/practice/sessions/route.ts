@@ -86,28 +86,30 @@ export async function POST(req: NextRequest) {
   const isRecall = RECALL_MODES.has(data.mode);
   const classification: "recall" | "recognition" = isRecall ? "recall" : "recognition";
 
+  // We need the chunk count for two things: writing back the next chunkStage
+  // on a successful Classic pass (§15.7), and recording wasFullVerse on the
+  // session row so the §15.7 mastered guard can reject chunk-only passes.
+  // Recognition modes (Scramble/Match/Gap) always run on the full text per
+  // §15.3 and §6.4.2, so they trivially count as full-verse sessions.
+  const cachedText = await loadCachedText(db, verse.canonicalRef, verse.version);
+  const plan = cachedText ? planChunks(cachedText) : null;
+  const totalChunks = plan?.chunks.length ?? 1;
+  const practicedStage = isRecall ? verse.srsState.chunkStage : totalChunks - 1;
+  const wasFullVerse = practicedStage >= totalChunks - 1;
+
   // 1. Compute next SRS state.
   let nextSrs: SrsState;
   if (isRecall) {
     const q = (data.quality ?? 0) as Quality;
     nextSrs = applyRecallGrade(verse.srsState, q, now);
     // 2. Advance the chunk stage on a successful Classic-class recall pass.
-    if (data.mode === "classic" && q >= 3) {
-      // Reps in `nextSrs` already incremented; use that to compute the
-      // stage for the *next* render. We need the chunk count from text —
-      // which lives in the cache. If we don't have it (rare), keep stage.
-      try {
-        const text = await loadCachedText(db, verse.canonicalRef, verse.version);
-        if (text) {
-          const plan = planChunks(text);
-          nextSrs = {
-            ...nextSrs,
-            chunkStage: stageForReps(nextSrs.repetitions, plan.chunks.length),
-          };
-        }
-      } catch {
-        /* keep prior stage on error */
-      }
+    // Reps in `nextSrs` already incremented; use that to compute the stage
+    // for the *next* render.
+    if (data.mode === "classic" && q >= 3 && plan) {
+      nextSrs = {
+        ...nextSrs,
+        chunkStage: stageForReps(nextSrs.repetitions, plan.chunks.length),
+      };
     }
   } else {
     nextSrs = applyRecognitionTouch(verse.srsState, data.outcome === "correct");
@@ -123,6 +125,7 @@ export async function POST(req: NextRequest) {
     outcome: data.outcome,
     durationMs: data.durationMs,
     usedHint: data.usedHint,
+    wasFullVerse,
     startedAt: now,
   });
 
