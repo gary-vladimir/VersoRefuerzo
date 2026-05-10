@@ -28,14 +28,39 @@ div::-webkit-scrollbar {
   display: none;
 }
 
-/* Responsive helpers — mobile bottom tab bar shows < 1024px,
-   the desktop sidebar shows at >= 1024px. The 1024 breakpoint matches
-   specs.md §10.3 ("Desktop ≥ 1024px"). */
-.vr-mobile-only { display: flex; }
-.vr-desktop-only { display: none; }
+/* Responsive layout — specs.md §10.3 ("Desktop ≥ 1024 px").
+   `!important` is intentional: components must not override these
+   visibility rules from inline `style={{ display: ... }}`, which would
+   otherwise win and cause both nav surfaces to render at once
+   (M7 review #1). */
+.vr-mobile-only {
+  display: flex;
+}
+.vr-desktop-only {
+  display: none;
+}
 @media (min-width: 1024px) {
-  .vr-mobile-only { display: none; }
-  .vr-desktop-only { display: flex; }
+  .vr-mobile-only {
+    display: none !important;
+  }
+  .vr-desktop-only {
+    display: flex !important;
+  }
+}
+
+/* Authed-app main column. Mobile reserves room for the bottom tab bar;
+   desktop reserves the 240-px sidebar gutter and drops the bottom
+   padding (no tab bar there). Owned by CSS so AppShell doesn't have to
+   set inline padding that the desktop rule wouldn't be able to win. */
+.vr-app-main {
+  min-height: 100dvh;
+  padding-bottom: 88px;
+}
+@media (min-width: 1024px) {
+  .vr-app-main {
+    padding-left: 240px;
+    padding-bottom: 0;
+  }
 }
 
 /* The reduced-motion stack lives in styles/animations.css; this file

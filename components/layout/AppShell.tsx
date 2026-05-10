@@ -54,17 +54,10 @@ export function AppShell({ user, children }: Props) {
         }}
       />
 
-      <div
-        // Reserve the sidebar gutter on desktop. Mobile flows full-width
-        // and the bottom tab bar adds its own safe-area padding.
-        style={{
-          minHeight: "100dvh",
-          paddingBottom: 80,
-        }}
-        className="vr-app-main"
-      >
-        {children}
-      </div>
+      {/* min-height + the mobile tab-bar gutter + the desktop sidebar
+          gutter all live in app/globals.css under .vr-app-main so the
+          desktop media-query wins (M7 review #1). */}
+      <div className="vr-app-main">{children}</div>
 
       <BottomTabBar
         strings={{ home: t.home, practice: t.practice, library: t.library }}
@@ -75,12 +68,6 @@ export function AppShell({ user, children }: Props) {
         open={profileOpen}
         onClose={() => setProfileOpen(false)}
       />
-
-      <style>{`
-        @media (min-width: 1024px) {
-          .vr-app-main { padding-left: 240px; padding-bottom: 0; }
-        }
-      `}</style>
     </ProfileSheetContext.Provider>
   );
 }

@@ -45,7 +45,8 @@ export function BottomTabBar({ strings: t }: { strings: Strings }) {
         borderTop: "1px solid var(--c-line)",
         backdropFilter: "blur(8px)",
         padding: "8px 12px calc(8px + env(safe-area-inset-bottom))",
-        display: "flex",
+        // display:flex is owned by .vr-mobile-only so the desktop media
+        // query can hide this element — inline styles would beat it.
         justifyContent: "space-around",
       }}
     >

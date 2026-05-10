@@ -64,7 +64,8 @@ export function DesktopSidebar({ user, onProfileClick, strings: t }: Props) {
         background: "#fff",
         borderRight: "1px solid var(--c-line)",
         padding: "24px 16px",
-        display: "flex",
+        // display:flex is owned by .vr-desktop-only so this element is
+        // hidden on mobile; inline styles would override the media rule.
         flexDirection: "column",
         gap: 18,
         zIndex: 40,
