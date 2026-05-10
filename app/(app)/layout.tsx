@@ -12,6 +12,7 @@ import { redirect } from "next/navigation";
 import { headers, cookies } from "next/headers";
 import { getServerUser } from "@/lib/auth/session";
 import { ToastProvider } from "@/components/ui/Toast";
+import { AppShell } from "@/components/layout/AppShell";
 
 export default async function AppLayout({
   children,
@@ -31,5 +32,15 @@ export default async function AppLayout({
     redirect("/onboarding");
   }
 
-  return <ToastProvider>{children}</ToastProvider>;
+  // Onboarding lives outside the shell — it's a single full-screen step
+  // before the user has anything to navigate to.
+  if (pathname === "/onboarding") {
+    return <ToastProvider>{children}</ToastProvider>;
+  }
+
+  return (
+    <ToastProvider>
+      <AppShell user={user}>{children}</AppShell>
+    </ToastProvider>
+  );
 }

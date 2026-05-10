@@ -28,16 +28,15 @@ div::-webkit-scrollbar {
   display: none;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .vr-flame,
-  .vr-twinkle,
-  .vr-glow-pulse,
-  .vr-sparkle,
-  .vr-float,
-  .vr-shimmer-text {
-    animation: none !important;
-  }
-  .vr-flip-card {
-    transition: opacity 0.2s ease !important;
-  }
+/* Responsive helpers — mobile bottom tab bar shows < 1024px,
+   the desktop sidebar shows at >= 1024px. The 1024 breakpoint matches
+   specs.md §10.3 ("Desktop ≥ 1024px"). */
+.vr-mobile-only { display: flex; }
+.vr-desktop-only { display: none; }
+@media (min-width: 1024px) {
+  .vr-mobile-only { display: none; }
+  .vr-desktop-only { display: flex; }
 }
+
+/* The reduced-motion stack lives in styles/animations.css; this file
+   only owns layout helpers and root resets. */
