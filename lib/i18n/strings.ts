@@ -132,6 +132,13 @@ export const T = {
     practiceModeWordScramble: "Palabras revueltas",
     practiceModeMatch: "Empareja versos",
     practiceModeGap: "Completa el verso",
+    // Profile sheet (§16.3, §6.8, §6.9, §17.8)
+    profileTitle: "Tu perfil",
+    language: "Idioma",
+    soundEffects: "Efectos de sonido",
+    deleteAccountConfirm: "¿Eliminar tu cuenta? Esto borra tus versos, colecciones y racha. No se puede deshacer.",
+    deleteAccountConfirmCta: "Sí, eliminar",
+    deleteAccountCancel: "Cancelar",
   },
   en: {
     appName: "VersoRefuerzo",
@@ -252,6 +259,12 @@ export const T = {
     practiceModeWordScramble: "Word scramble",
     practiceModeMatch: "Verse match",
     practiceModeGap: "Fill the gap",
+    profileTitle: "Your profile",
+    language: "Language",
+    soundEffects: "Sound effects",
+    deleteAccountConfirm: "Delete your account? This wipes your verses, collections, and streak. It can't be undone.",
+    deleteAccountConfirmCta: "Yes, delete",
+    deleteAccountCancel: "Cancel",
   },
 } as const;
 
