@@ -25,6 +25,7 @@ import Link from "next/link";
 import { isCardColor, isVerseIcon, type CardColorId, type VerseIconId } from "@/lib/catalog";
 import { formatDisplay } from "@/lib/bible/reference";
 import { VerseIcon } from "@/components/icons/VerseIcons";
+import { play } from "@/lib/sounds/player";
 import type { Verse } from "@/db/schema";
 import type { BlankPlan } from "@/lib/srs/cloze";
 
@@ -100,6 +101,7 @@ export function FillTheGap({
     const tokIdx = plan.blankIndices[active]!;
     const correct = plan.tokens[tokIdx]!.word;
     if (eqLoose(option, correct)) {
+      play("pluck");
       setSolved((s) => new Set([...s, active]));
       const next = active + 1;
       if (next >= plan.blankIndices.length) {
@@ -108,6 +110,7 @@ export function FillTheGap({
         setActive(next);
       }
     } else {
+      play("thud");
       setWrongFlash(true);
       window.setTimeout(() => setWrongFlash(false), 280);
       setIntentos((n) => n - 1);
@@ -155,6 +158,7 @@ export function FillTheGap({
   useEffect(() => {
     if (!done || submittedRef.current) return;
     submittedRef.current = true;
+    play(done === "win" ? "chime" : "thud");
     void postSession().then((ok) => setSubmitFailed(!ok));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [done]);

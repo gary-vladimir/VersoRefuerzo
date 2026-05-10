@@ -2,9 +2,13 @@
 
 // Session summary (specs.md row 14 / §6.7).
 // Visual language borrows from the night-gradient salvaged from the dropped
-// Streak Challenge screen.
+// Streak Challenge screen. Plays the §6.9 chime on mount and the flame
+// crackle when the streak chip is non-zero (i.e. the user just extended
+// or kept their streak by completing the round).
 
+import { useEffect } from "react";
 import Link from "next/link";
+import { play } from "@/lib/sounds/player";
 
 type Strings = {
   title: string;
@@ -26,6 +30,16 @@ export function SessionSummary({ reviewed, elapsedMs, streak, strings: t }: Prop
   const totalSeconds = Math.max(0, Math.round(elapsedMs / 1000));
   const m = Math.floor(totalSeconds / 60);
   const s = totalSeconds % 60;
+
+  // §6.9 cues: chime on mount, flame on streak presence. The flame plays
+  // a beat after the chime so the two don't overlap.
+  useEffect(() => {
+    play("chime");
+    if (streak && streak > 0) {
+      const t = window.setTimeout(() => play("flame"), 220);
+      return () => window.clearTimeout(t);
+    }
+  }, [streak]);
 
   return (
     <main

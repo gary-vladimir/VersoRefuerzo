@@ -14,6 +14,7 @@ import { formatDisplay } from "@/lib/bible/reference";
 import { VerseIcon } from "@/components/icons/VerseIcons";
 import { useToast } from "@/components/ui/Toast";
 import { QualityButtons } from "@/components/practice/QualityButtons";
+import { play } from "@/lib/sounds/player";
 import type { Quality } from "@/lib/srs/sm2";
 import type { Verse } from "@/db/schema";
 
@@ -93,6 +94,7 @@ export function CardViewClient({
   }
 
   async function reveal() {
+    play("flip");
     setRevealed(true);
     setRevealedAt(Date.now());
     setGraded(false);
@@ -129,6 +131,7 @@ export function CardViewClient({
       setGradeError(t.saveFailed);
       return;
     }
+    play(q >= 3 ? "pluck" : "thud");
     setGraded(true);
     // Refresh so the parent server data (next-due, mastery, status) reflects
     // the new SRS state on next visit / on Library re-renders.

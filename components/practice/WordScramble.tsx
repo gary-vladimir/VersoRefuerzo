@@ -17,6 +17,7 @@ import { formatDisplay } from "@/lib/bible/reference";
 import { tokenize, type Token } from "@/lib/bible/tokenize";
 import { segmentTokens } from "@/lib/srs/scramble";
 import { VerseIcon } from "@/components/icons/VerseIcons";
+import { play } from "@/lib/sounds/player";
 import type { Verse } from "@/db/schema";
 
 const STARTING_INTENTOS = 3;
@@ -91,6 +92,7 @@ export function WordScramble({ verse, text, copyright, locale, strings: t }: Pro
   function tap(chip: Chip) {
     if (done) return;
     if (chip.correctOrder === expectedNext) {
+      play("pluck");
       const nextPlaced = [...placed, chip];
       const nextPool = pool.filter((c) => c !== chip);
       setPlaced(nextPlaced);
@@ -111,6 +113,7 @@ export function WordScramble({ verse, text, copyright, locale, strings: t }: Pro
         }
       }
     } else {
+      play("thud");
       setBouncedIndex(chip.correctOrder);
       window.setTimeout(() => setBouncedIndex(null), 280);
       setIntentos((n) => n - 1);
@@ -165,10 +168,13 @@ export function WordScramble({ verse, text, copyright, locale, strings: t }: Pro
 
   // POST session once when the round ends. The submittedRef guard makes
   // strict-mode dev double-mount safe; failures clear the guard so the
-  // retry button can re-invoke postSession.
+  // retry button can re-invoke postSession. The chime/flame cues fire
+  // on the resolution itself — even if the POST then fails, the round
+  // happened locally and deserves the audio confirmation.
   useEffect(() => {
     if (!done || submittedRef.current) return;
     submittedRef.current = true;
+    play(done === "win" ? "chime" : "thud");
     void postSession();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [done]);

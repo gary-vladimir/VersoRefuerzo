@@ -22,6 +22,7 @@ import { formatDisplay } from "@/lib/bible/reference";
 import { firstLetterRender } from "@/lib/bible/tokenize";
 import { VerseIcon } from "@/components/icons/VerseIcons";
 import type { SrsState } from "@/db/schema";
+import { play } from "@/lib/sounds/player";
 import { QualityButtons } from "./QualityButtons";
 import { HintButton } from "./HintButton";
 import { SkipLink } from "./SkipLink";
@@ -204,6 +205,7 @@ export function ClassicSession({
 
   function reveal() {
     dismissAloudTip();
+    play("flip");
     setPhase("revealed");
   }
 
@@ -255,6 +257,8 @@ export function ClassicSession({
       setPhase(typedActive ? "front" : "revealed");
       return;
     }
+    // §6.9 audio cues: pluck on a passing grade, thud on Otra vez.
+    play(q >= 3 ? "pluck" : "thud");
     reviewedRef.current += 1;
     setTypedActive(false);
     advance();

@@ -18,6 +18,7 @@ import { isCardColor, isVerseIcon, type CardColorId, type VerseIconId } from "@/
 import { formatDisplay } from "@/lib/bible/reference";
 import { wordsOnly } from "@/lib/bible/tokenize";
 import { VerseIcon } from "@/components/icons/VerseIcons";
+import { play } from "@/lib/sounds/player";
 import type { Verse } from "@/db/schema";
 
 const STARTING_INTENTOS = 3;
@@ -132,9 +133,11 @@ export function VerseMatch({ verses, locale, strings: t }: Props) {
 
   function tryResolve(left: string, right: string) {
     if (left === right) {
+      play("pluck");
       setMatched((m) => new Set([...m, left]));
       void postPair(left, 4);
     } else {
+      play("thud");
       setWrongFlash({ left, right });
       window.setTimeout(() => setWrongFlash(null), 320);
       setIntentos((n) => n - 1);
@@ -163,6 +166,12 @@ export function VerseMatch({ verses, locale, strings: t }: Props) {
     if (matched.size === items.length && items.length > 0) setDone("win");
     else if (intentos <= 0) setDone("lose");
   }, [matched, intentos, items.length, done]);
+
+  // §6.9 chime/thud on the round resolution — fires once per round.
+  useEffect(() => {
+    if (!done) return;
+    play(done === "win" ? "chime" : "thud");
+  }, [done]);
 
   return (
     <main
