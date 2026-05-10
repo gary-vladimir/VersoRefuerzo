@@ -21,7 +21,7 @@ import { deriveEffectiveStreak, isSameTzDay } from "@/lib/streak/streak";
 import { StreakChip } from "@/components/home/StreakChip";
 import { TodayCTA } from "@/components/home/TodayCTA";
 import { VerseRow } from "@/components/verse/VerseRow";
-import SignOutButton from "./_signout-button";
+import { HeaderAvatar } from "@/components/layout/HeaderAvatar";
 
 export default async function Home() {
   const user = await getServerUser();
@@ -120,26 +120,7 @@ export default async function Home() {
               tz: user.timezone,
             })}
           />
-          <Link
-            href="/verses/new"
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: "50%",
-              background: "var(--brand-rose)",
-              color: "#fff",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontFamily: "var(--font-display)",
-              fontWeight: 800,
-              fontSize: 18,
-              textDecoration: "none",
-            }}
-            aria-label={t.addVerse}
-          >
-            +
-          </Link>
+          <HeaderAvatar user={user} />
         </div>
       </header>
 
@@ -239,9 +220,35 @@ export default async function Home() {
         </section>
       )}
 
-      <div style={{ padding: "32px 20px 0" }}>
-        <SignOutButton label={t.signOut} />
-      </div>
+      {/* Mobile FAB for New Verse — replaces the header `+` button now
+          that the avatar slot is taken by ProfileSheet. Hidden on desktop
+          where the sidebar already shows Agregar verso. */}
+      <Link
+        href="/verses/new"
+        aria-label={t.addVerse}
+        className="vr-mobile-only"
+        style={{
+          position: "fixed",
+          right: 20,
+          bottom: "calc(80px + env(safe-area-inset-bottom))",
+          width: 56,
+          height: 56,
+          borderRadius: "50%",
+          background: "var(--brand-primary)",
+          color: "#fff",
+          alignItems: "center",
+          justifyContent: "center",
+          fontFamily: "var(--font-display)",
+          fontWeight: 800,
+          fontSize: 28,
+          textDecoration: "none",
+          boxShadow:
+            "0 12px 24px rgba(99,102,241,0.40), inset 0 1px 0 rgba(255,255,255,0.2)",
+          zIndex: 30,
+        }}
+      >
+        +
+      </Link>
     </main>
   );
 }
