@@ -121,3 +121,51 @@
   -webkit-text-fill-color: transparent;
   animation: vr-shimmer 3.5s ease-in-out infinite;
 }
+
+/* Reduced-motion compliance — specs.md §17.8.
+   Looping decorative animations are disabled outright.
+   Transitional animations may still play but at reduced amplitude.
+   The 3D card flip degenerates to a 200ms cross-fade. */
+@media (prefers-reduced-motion: reduce) {
+  .vr-glow-pulse,
+  .vr-flame,
+  .vr-sparkle,
+  .vr-float,
+  .vr-twinkle {
+    animation: none !important;
+  }
+  .vr-shimmer-text {
+    animation: none !important;
+    background: none;
+    -webkit-text-fill-color: inherit;
+    color: #C7D2FE;
+  }
+  .vr-card-rise,
+  .vr-fade-up,
+  .vr-pop,
+  .vr-hint-appear,
+  .vr-tada {
+    animation-duration: .25s !important;
+    animation-timing-function: ease !important;
+  }
+  /* Cross-fade replacement for vr-flip-card: drop perspective + 3D
+     transform, fade between the two faces instead. */
+  .vr-flip-host { perspective: none; }
+  .vr-flip-card,
+  .vr-flip-card.flipped {
+    transform: none !important;
+    transition: opacity .2s ease;
+  }
+  .vr-flip-face {
+    transition: opacity .2s ease;
+  }
+  .vr-flip-card .vr-flip-back {
+    opacity: 0;
+  }
+  .vr-flip-card.flipped .vr-flip-face:not(.vr-flip-back) {
+    opacity: 0;
+  }
+  .vr-flip-card.flipped .vr-flip-back {
+    opacity: 1;
+  }
+}
