@@ -23,38 +23,48 @@ SERVICE="${SERVICE:-versorefuerzo}"
 REPO="${REPO:-versorefuerzo}"
 IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/${SERVICE}:$(date -u +%Y%m%d-%H%M%S)"
 
+# Required NEXT_PUBLIC_* values — these are public Firebase web config
+# values that get baked into the client bundle at build time. Not
+# secrets, but they must be present at `gcloud builds submit` time.
+: "${NEXT_PUBLIC_FIREBASE_API_KEY:?missing NEXT_PUBLIC_FIREBASE_API_KEY}"
+: "${NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN:?missing NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}"
+: "${NEXT_PUBLIC_FIREBASE_PROJECT_ID:?missing NEXT_PUBLIC_FIREBASE_PROJECT_ID}"
+: "${NEXT_PUBLIC_FIREBASE_APP_ID:?missing NEXT_PUBLIC_FIREBASE_APP_ID}"
+: "${FIREBASE_PROJECT_ID:?missing FIREBASE_PROJECT_ID}"
+
 # Server-only secrets resolved at runtime from Secret Manager. The names
 # on the LHS are the env vars the app reads; RHS is the Secret Manager
 # secret name. Keep these in sync with README §6 and lib/auth/firebase-admin.
-SECRETS="DATABASE_URL=DATABASE_URL:latest"
-SECRETS+=",FIREBASE_CLIENT_EMAIL=FIREBASE_CLIENT_EMAIL:latest"
-SECRETS+=",FIREBASE_PRIVATE_KEY=FIREBASE_PRIVATE_KEY:latest"
-SECRETS+=",APIBIBLE_KEY=APIBIBLE_KEY:latest"
+SECRETS="DATABASE_URL=DATABASE_URL:latest,"
+SECRETS+="FIREBASE_CLIENT_EMAIL=FIREBASE_CLIENT_EMAIL:latest,"
+SECRETS+="FIREBASE_PRIVATE_KEY=FIREBASE_PRIVATE_KEY:latest,"
+SECRETS+="APIBIBLE_KEY=APIBIBLE_KEY:latest"
 
 # Plain env vars (non-secret). FIREBASE_PROJECT_ID is also referenced by
 # the admin SDK; APIBIBLE_ID_* tells the app which Bibles the deployed key
 # can serve (specs §9.2).
-SET_ENV="FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:?},"
+SET_ENV="FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID},"
 SET_ENV+="APIBIBLE_ID_NBLA=${APIBIBLE_ID_NBLA:-},"
 SET_ENV+="APIBIBLE_ID_NVI=${APIBIBLE_ID_NVI:-},"
 SET_ENV+="APIBIBLE_ID_RVR1960=${APIBIBLE_ID_RVR1960:-}"
 
-# NEXT_PUBLIC_* are baked into the client bundle at build time. These
-# are not secrets — Firebase web config is intentionally public — but
-# they must be present at `gcloud builds submit` time, not at deploy.
-BUILD_ARGS=(
-  "--substitutions=_FIREBASE_API_KEY=${NEXT_PUBLIC_FIREBASE_API_KEY:?},"
-  "_FIREBASE_AUTH_DOMAIN=${NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN:?},"
-  "_FIREBASE_PROJECT_ID=${NEXT_PUBLIC_FIREBASE_PROJECT_ID:?},"
-  "_FIREBASE_APP_ID=${NEXT_PUBLIC_FIREBASE_APP_ID:?}"
-)
+# One substitutions string passed via a single --substitutions flag.
+# `gcloud builds submit` rejects multiple --substitutions flags and
+# treats stray --build-arg-style positionals as filename arguments,
+# which is what the M7 review caught.
+SUBSTITUTIONS="_IMAGE=${IMAGE}"
+SUBSTITUTIONS+=",_REGION=${REGION}"
+SUBSTITUTIONS+=",_FIREBASE_API_KEY=${NEXT_PUBLIC_FIREBASE_API_KEY}"
+SUBSTITUTIONS+=",_FIREBASE_AUTH_DOMAIN=${NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}"
+SUBSTITUTIONS+=",_FIREBASE_PROJECT_ID=${NEXT_PUBLIC_FIREBASE_PROJECT_ID}"
+SUBSTITUTIONS+=",_FIREBASE_APP_ID=${NEXT_PUBLIC_FIREBASE_APP_ID}"
 
 echo "==> Building image $IMAGE"
 gcloud builds submit \
-  --config=scripts/cloudbuild.yaml \
   --project="$PROJECT_ID" \
-  "${BUILD_ARGS[@]/#/}" \
-  --substitutions="_IMAGE=$IMAGE,_REGION=$REGION,_FIREBASE_API_KEY=${NEXT_PUBLIC_FIREBASE_API_KEY},_FIREBASE_AUTH_DOMAIN=${NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN},_FIREBASE_PROJECT_ID=${NEXT_PUBLIC_FIREBASE_PROJECT_ID},_FIREBASE_APP_ID=${NEXT_PUBLIC_FIREBASE_APP_ID}"
+  --config=scripts/cloudbuild.yaml \
+  --substitutions="$SUBSTITUTIONS" \
+  .
 
 echo "==> Deploying $IMAGE to Cloud Run"
 gcloud run deploy "$SERVICE" \
@@ -65,5 +75,8 @@ gcloud run deploy "$SERVICE" \
   --set-env-vars="$SET_ENV" \
   --set-secrets="$SECRETS"
 
-echo "==> Done. Visit:"
-gcloud run services describe "$SERVICE" --project="$PROJECT_ID" --region="$REGION" --format='value(status.url)'
+echo "==> Done. Service URL:"
+gcloud run services describe "$SERVICE" \
+  --project="$PROJECT_ID" \
+  --region="$REGION" \
+  --format='value(status.url)'
