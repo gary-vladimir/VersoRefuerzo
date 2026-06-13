@@ -109,3 +109,19 @@ export function isSameTzDay(
   const day = dayjs(when).tz(zone).format("YYYY-MM-DD");
   return day === today;
 }
+
+// Current local hour (0-23) in the user's tz — drives the time-of-day
+// greeting on Home.
+export function localHour(tz: string | null, now: Date = new Date()): number {
+  const zone = tz?.trim() ? tz : "UTC";
+  return dayjs(now).tz(zone).hour();
+}
+
+// A sequential day number (days since the Unix epoch) for the user's LOCAL
+// date. Increments by exactly 1 each calendar day in their tz, so callers can
+// rotate a daily pick with `n % count` and get a new item every day.
+export function localDayNumber(tz: string | null, now: Date = new Date()): number {
+  const zone = tz?.trim() ? tz : "UTC";
+  const [y, m, d] = dayjs(now).tz(zone).format("YYYY-MM-DD").split("-").map(Number);
+  return Math.floor(Date.UTC(y!, m! - 1, d!) / 86400000);
+}
