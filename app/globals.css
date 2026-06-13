@@ -5,23 +5,86 @@
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
 html,
 body {
   margin: 0;
   padding: 0;
+  /* `clip`, not `hidden`: contains accidental horizontal overflow on mobile
+     without turning the body into a scroll container, so position: sticky
+     descendants (e.g. the New Verse save bar) keep working. */
+  overflow-x: clip;
   background: var(--c-bg);
   color: var(--c-text);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 button {
   font-family: inherit;
+  color: inherit;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+button:disabled {
+  cursor: not-allowed;
 }
 
 a {
   color: inherit;
   text-decoration: none;
+}
+
+/* Kill the grey tap-flash on every interactive element (mobile). */
+button,
+a,
+[role="button"],
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Focus: suppress the default ring, show a clear keyboard-only ring. Uses
+   `outline` (not box-shadow) on purpose so a component's inline boxShadow
+   can never clobber the focus indicator. */
+:focus {
+  outline: none;
+}
+:focus-visible {
+  outline: 2px solid var(--c-indigo-500);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Safe-area + minimum-tap-target helpers. These rely on the `viewport`
+   export in app/layout.tsx (viewportFit: "cover") to resolve env() to a
+   real inset on notched devices; otherwise they are harmless no-ops. */
+.vr-safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+.vr-safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.vr-safe-x {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+.vr-tap {
+  min-height: var(--tap-min);
+  min-width: var(--tap-min);
 }
 
 div::-webkit-scrollbar {
@@ -54,7 +117,11 @@ div::-webkit-scrollbar {
    set inline padding that the desktop rule wouldn't be able to win. */
 .vr-app-main {
   min-height: 100dvh;
-  padding-bottom: 88px;
+  /* One place insets the whole authed column below the notch; individual
+     in-flow screen headers no longer need their own top inset. Fixed
+     overlays (practice sessions) escape this box and handle their own. */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: var(--tabbar-h);
 }
 @media (min-width: 1024px) {
   .vr-app-main {
