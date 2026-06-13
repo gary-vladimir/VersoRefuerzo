@@ -71,3 +71,74 @@ export const AlertCircle = (p: Props) => (
     <path d="M12 7v6M12 17h.01" />
   </Svg>
 );
+
+export const Dots = (p: Props) => (
+  <Svg {...p}>
+    <circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none" />
+    <circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none" />
+  </Svg>
+);
+
+export const Bulb = (p: Props) => (
+  <Svg {...p}>
+    <path d="M9 18h6M10 21h4" />
+    <path d="M12 3a6 6 0 0 0-4 10c.7.7 1 1.6 1 2.5h6c0-.9.3-1.8 1-2.5A6 6 0 0 0 12 3z" />
+  </Svg>
+);
+
+export const Eye = (p: Props) => (
+  <Svg {...p}>
+    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" />
+    <circle cx="12" cy="12" r="3" />
+  </Svg>
+);
+
+export const Pencil = (p: Props) => (
+  <Svg {...p}>
+    <path d="M4 20h4L18 10l-4-4L4 16v4z" />
+    <path d="M13.5 6.5l4 4" />
+  </Svg>
+);
+
+export const Trash = (p: Props) => (
+  <Svg {...p}>
+    <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" />
+    <path d="M10 11v6M14 11v6" />
+  </Svg>
+);
+
+export const Refresh = (p: Props) => (
+  <Svg {...p}>
+    <path d="M21 12a9 9 0 1 1-2.6-6.4" />
+    <path d="M21 3v5h-5" />
+  </Svg>
+);
+
+export const Search = (p: Props) => (
+  <Svg {...p}>
+    <circle cx="11" cy="11" r="7" />
+    <path d="M21 21l-4.3-4.3" />
+  </Svg>
+);
+
+export const Chevron = (p: Props) => (
+  <Svg {...p}>
+    <path d="M9 6l6 6-6 6" />
+  </Svg>
+);
+
+export const Heart = (p: Props) => (
+  <Svg {...p}>
+    <path d="M12 21s-7-4.5-9.5-9.5C0.5 7 4 3 7.5 3c2 0 3.5 1 4.5 2.5C13 4 14.5 3 16.5 3 20 3 23.5 7 21.5 11.5 19 16.5 12 21 12 21z" />
+  </Svg>
+);
+
+export const HeartFilled = (p: Props) => (
+  <Svg {...p}>
+    <path
+      d="M12 21s-7-4.5-9.5-9.5C0.5 7 4 3 7.5 3c2 0 3.5 1 4.5 2.5C13 4 14.5 3 16.5 3 20 3 23.5 7 21.5 11.5 19 16.5 12 21 12 21z"
+      fill="currentColor"
+    />
+  </Svg>
+);
