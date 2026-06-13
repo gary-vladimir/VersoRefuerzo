@@ -14,6 +14,7 @@
 //   - Delete account — confirm step + DELETE /api/me. AC-11.
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signOut } from "firebase/auth";
 import { getClientAuth } from "@/lib/auth/firebase-client";
@@ -321,6 +322,28 @@ export function ProfileSheet({ user, open, onClose }: Props) {
             </div>
           )}
         </div>
+
+        {/* Privacy / Terms (spec §10.5). Closing the sheet first so the
+            modal doesn't trap navigation. */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: 14,
+            marginTop: 18,
+          }}
+        >
+          <Link href="/privacy" onClick={onClose} style={legalLinkStyle}>
+            {t.privacyLink}
+          </Link>
+          <span aria-hidden style={{ color: "var(--c-soft)" }}>
+            ·
+          </span>
+          <Link href="/terms" onClick={onClose} style={legalLinkStyle}>
+            {t.termsLink}
+          </Link>
+        </div>
       </div>
     </div>
   );
@@ -515,6 +538,13 @@ const secondaryActionStyle: React.CSSProperties = {
   fontSize: 14,
   cursor: "pointer",
   boxShadow: "var(--shadow-xs)",
+};
+
+const legalLinkStyle: React.CSSProperties = {
+  fontSize: 12,
+  color: "var(--c-muted)",
+  textDecoration: "underline",
+  fontWeight: 600,
 };
 
 const destructiveActionStyle: React.CSSProperties = {

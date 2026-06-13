@@ -8,6 +8,7 @@
 // which handles the signed-in-already redirect.
 
 import { useState } from "react";
+import Link from "next/link";
 import { signInWithPopup, signOut } from "firebase/auth";
 import { getClientAuth, googleProvider } from "@/lib/auth/firebase-client";
 import { T } from "@/lib/i18n/strings";
@@ -239,6 +240,36 @@ export default function LoginClient() {
       >
         {t.freeForever}
       </p>
+      <div
+        style={{
+          marginTop: 14,
+          display: "flex",
+          gap: 18,
+          position: "relative",
+          zIndex: 2,
+        }}
+      >
+        <Link
+          href="/privacy"
+          style={{
+            fontSize: 12,
+            color: "rgba(255,255,255,0.6)",
+            textDecoration: "underline",
+          }}
+        >
+          {t.privacyLink}
+        </Link>
+        <Link
+          href="/terms"
+          style={{
+            fontSize: 12,
+            color: "rgba(255,255,255,0.6)",
+            textDecoration: "underline",
+          }}
+        >
+          {t.termsLink}
+        </Link>
+      </div>
     </main>
   );
 }
