@@ -9,7 +9,11 @@ import { getServerUser } from "@/lib/auth/session";
 import { T } from "@/lib/i18n/strings";
 import { SessionSummary } from "@/components/practice/SessionSummary";
 
-type SearchParams = Promise<{ reviewed?: string; elapsedMs?: string }>;
+type SearchParams = Promise<{
+  reviewed?: string;
+  correct?: string;
+  elapsedMs?: string;
+}>;
 
 export default async function SummaryPage({
   searchParams,
@@ -22,16 +26,19 @@ export default async function SummaryPage({
   const t = T[locale];
   const sp = await searchParams;
   const reviewed = Math.max(0, parseInt(sp.reviewed ?? "0", 10) || 0);
+  const correct = Math.max(0, parseInt(sp.correct ?? "0", 10) || 0);
   const elapsedMs = Math.max(0, parseInt(sp.elapsedMs ?? "0", 10) || 0);
 
   return (
     <SessionSummary
       reviewed={reviewed}
+      correct={correct}
       elapsedMs={elapsedMs}
       streak={user.currentStreak}
       strings={{
         title: locale === "es" ? "¡Buen trabajo!" : "Great job!",
         reviewed: locale === "es" ? "Versos repasados" : "Verses reviewed",
+        accuracy: locale === "es" ? "Aciertos" : "Accuracy",
         time: locale === "es" ? "Tiempo" : "Time",
         done: t.home,
         again: locale === "es" ? "Practicar otra vez" : "Practice again",

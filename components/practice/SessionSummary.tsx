@@ -9,10 +9,12 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { play } from "@/lib/sounds/player";
+import { Sparkles } from "@/components/icons/UiIcons";
 
 type Strings = {
   title: string;
   reviewed: string;
+  accuracy: string;
   time: string;
   done: string;
   again: string;
@@ -21,25 +23,38 @@ type Strings = {
 
 type Props = {
   reviewed: number;
+  correct: number;
   elapsedMs: number;
   streak: number | null;
   strings: Strings;
 };
 
-export function SessionSummary({ reviewed, elapsedMs, streak, strings: t }: Props) {
+export function SessionSummary({ reviewed, correct, elapsedMs, streak, strings: t }: Props) {
   const totalSeconds = Math.max(0, Math.round(elapsedMs / 1000));
   const m = Math.floor(totalSeconds / 60);
   const s = totalSeconds % 60;
+  const accuracyPct = reviewed > 0 ? Math.round((correct / reviewed) * 100) : null;
 
   // §6.9 cues: chime on mount, flame on streak presence. The flame plays
   // a beat after the chime so the two don't overlap.
   useEffect(() => {
     play("chime");
     if (streak && streak > 0) {
-      const t = window.setTimeout(() => play("flame"), 220);
-      return () => window.clearTimeout(t);
+      const id = window.setTimeout(() => play("flame"), 220);
+      return () => window.clearTimeout(id);
     }
   }, [streak]);
+
+  // Decorative sparkle field behind the card. aria-hidden; disabled under
+  // reduced-motion via the global animation rules.
+  const sparkles = [
+    { top: "12%", left: "14%", size: 6, cls: "vr-sparkle", delay: "0s" },
+    { top: "22%", left: "82%", size: 5, cls: "vr-twinkle", delay: ".4s" },
+    { top: "60%", left: "8%", size: 4, cls: "vr-twinkle", delay: ".9s" },
+    { top: "70%", left: "88%", size: 7, cls: "vr-sparkle", delay: ".2s" },
+    { top: "40%", left: "92%", size: 4, cls: "vr-twinkle", delay: "1.1s" },
+    { top: "84%", left: "30%", size: 5, cls: "vr-sparkle", delay: ".7s" },
+  ];
 
   return (
     <main
@@ -51,8 +66,29 @@ export function SessionSummary({ reviewed, elapsedMs, streak, strings: t }: Prop
         display: "flex",
         flexDirection: "column",
         padding: 24,
+        position: "relative",
+        overflow: "hidden",
       }}
     >
+      <div aria-hidden style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+        {sparkles.map((sp, i) => (
+          <span
+            key={i}
+            className={sp.cls}
+            style={{
+              position: "absolute",
+              top: sp.top,
+              left: sp.left,
+              width: sp.size,
+              height: sp.size,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.85)",
+              animationDelay: sp.delay,
+            }}
+          />
+        ))}
+      </div>
+
       <section
         className="vr-card-rise"
         style={{
@@ -62,18 +98,12 @@ export function SessionSummary({ reviewed, elapsedMs, streak, strings: t }: Prop
           justifyContent: "center",
           alignItems: "center",
           textAlign: "center",
-          gap: 24,
+          gap: 22,
+          position: "relative",
         }}
       >
-        <div
-          aria-hidden
-          className="vr-tada"
-          style={{
-            fontSize: 64,
-            lineHeight: 1,
-          }}
-        >
-          ✨
+        <div aria-hidden className="vr-tada" style={{ lineHeight: 1 }}>
+          <Sparkles size={60} color="#fff" strokeWidth={1.6} />
         </div>
         <h1
           style={{
@@ -87,8 +117,17 @@ export function SessionSummary({ reviewed, elapsedMs, streak, strings: t }: Prop
           {t.title}
         </h1>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, width: "100%", maxWidth: 360 }}>
-          <Stat label={t.reviewed} value={t.units.verses(reviewed)} />
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: accuracyPct != null ? "1fr 1fr 1fr" : "1fr 1fr",
+            gap: 12,
+            width: "100%",
+            maxWidth: 380,
+          }}
+        >
+          <Stat label={t.reviewed} value={String(reviewed)} />
+          {accuracyPct != null && <Stat label={t.accuracy} value={`${accuracyPct}%`} />}
           <Stat label={t.time} value={t.units.minSec(m, s)} />
         </div>
 
@@ -114,9 +153,18 @@ export function SessionSummary({ reviewed, elapsedMs, streak, strings: t }: Prop
         )}
       </section>
 
-      <footer style={{ display: "flex", flexDirection: "column", gap: 10, paddingBottom: 16 }}>
+      <footer
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 10,
+          paddingBottom: "max(16px, env(safe-area-inset-bottom))",
+          position: "relative",
+        }}
+      >
         <Link
           href="/"
+          className="vr-press"
           style={{
             background: "#fff",
             color: "var(--c-text)",
@@ -133,6 +181,7 @@ export function SessionSummary({ reviewed, elapsedMs, streak, strings: t }: Prop
         </Link>
         <Link
           href="/practice/classic"
+          className="vr-press"
           style={{
             background: "transparent",
             color: "rgba(255,255,255,0.7)",
@@ -140,6 +189,7 @@ export function SessionSummary({ reviewed, elapsedMs, streak, strings: t }: Prop
             textAlign: "center",
             fontSize: 13,
             fontWeight: 600,
+            padding: "8px",
           }}
         >
           {t.again}
@@ -159,7 +209,10 @@ function Stat({ label, value }: { label: string; value: string }) {
         textAlign: "center",
       }}
     >
-      <div style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 22 }}>
+      <div
+        className="vr-count-pop"
+        style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 22 }}
+      >
         {value}
       </div>
       <div
