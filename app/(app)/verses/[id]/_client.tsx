@@ -15,6 +15,7 @@ import { VerseIcon } from "@/components/icons/VerseIcons";
 import { useToast } from "@/components/ui/Toast";
 import { QualityButtons } from "@/components/practice/QualityButtons";
 import { play } from "@/lib/sounds/player";
+import { Pencil, Trash, Eye, Refresh, Bulb } from "@/components/icons/UiIcons";
 import type { Quality } from "@/lib/srs/sm2";
 import type { Verse } from "@/db/schema";
 
@@ -172,9 +173,10 @@ export function CardViewClient({
         <Link
           href="/library"
           aria-label={t.back}
+          className="vr-press"
           style={{
-            width: 36,
-            height: 36,
+            width: 40,
+            height: 40,
             borderRadius: 12,
             background: "#fff",
             display: "inline-flex",
@@ -185,7 +187,7 @@ export function CardViewClient({
             textDecoration: "none",
             fontFamily: "var(--font-display)",
             fontWeight: 800,
-            fontSize: 16,
+            fontSize: 18,
           }}
         >
           ←
@@ -194,9 +196,10 @@ export function CardViewClient({
           <Link
             href={`/verses/${verse.id}/edit`}
             aria-label={t.edit}
+            className="vr-press"
             style={{
-              width: 36,
-              height: 36,
+              width: 40,
+              height: 40,
               borderRadius: 12,
               background: "#fff",
               display: "inline-flex",
@@ -205,20 +208,18 @@ export function CardViewClient({
               boxShadow: "var(--shadow-xs)",
               color: "var(--c-text)",
               textDecoration: "none",
-              fontFamily: "var(--font-display)",
-              fontWeight: 800,
-              fontSize: 14,
             }}
           >
-            ✎
+            <Pencil size={17} />
           </Link>
           <button
             type="button"
             aria-label={t.delete}
             onClick={handleDelete}
+            className="vr-press"
             style={{
-              width: 36,
-              height: 36,
+              width: 40,
+              height: 40,
               borderRadius: 12,
               background: "#fff",
               border: "none",
@@ -228,12 +229,9 @@ export function CardViewClient({
               boxShadow: "var(--shadow-xs)",
               color: "#B91C1C",
               cursor: "pointer",
-              fontFamily: "var(--font-display)",
-              fontSize: 16,
-              fontWeight: 800,
             }}
           >
-            🗑
+            <Trash size={17} />
           </button>
         </div>
       </header>
@@ -289,9 +287,10 @@ export function CardViewClient({
             <button
               type="button"
               onClick={reveal}
+              className="vr-press"
               style={primaryButtonStyle}
             >
-              👁 {t.revealVerse}
+              <Eye size={18} /> {t.revealVerse}
             </button>
           </>
         ) : graded ? (
@@ -365,11 +364,13 @@ export function CardViewClient({
                 if (!revealed) reveal();
               }}
               aria-pressed={hintShown}
+              className="vr-press"
               style={{
                 background: hintShown ? `var(--card-${color}-tint)` : "#fff",
                 border: "none",
                 borderRadius: 999,
-                padding: "8px 14px",
+                padding: "10px 14px",
+                minHeight: 40,
                 fontSize: 12,
                 fontWeight: 700,
                 color: "var(--c-text)",
@@ -380,18 +381,20 @@ export function CardViewClient({
                 gap: 6,
               }}
             >
-              💡 {t.showHint}
+              <Bulb size={14} /> {t.showHint}
             </button>
           )}
           {/* §17.4 — `Repasar ahora` opens a one-card Classic session
               against this verse, recorded as a normal practice attempt. */}
           <Link
             href={{ pathname: "/practice/classic", query: { verse: verse.id } }}
+            className="vr-press"
             style={{
               background: "#fff",
               border: "none",
               borderRadius: 999,
-              padding: "8px 14px",
+              padding: "10px 14px",
+              minHeight: 40,
               fontSize: 12,
               fontWeight: 700,
               color: "var(--c-indigo-700)",
@@ -402,7 +405,7 @@ export function CardViewClient({
               gap: 6,
             }}
           >
-            ↻ {t.practiceNow}
+            <Refresh size={14} /> {t.practiceNow}
           </Link>
         </div>
       </div>
@@ -715,7 +718,7 @@ function BackFace({
             gap: 10,
           }}
         >
-          <span style={{ fontSize: 16 }}>💡</span>
+          <Bulb size={16} color={`var(--card-${color}-solid)`} />
           <div>
             <div
               style={{
