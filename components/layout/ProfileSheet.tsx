@@ -13,7 +13,7 @@
 //     client (mirror of the existing sign-out button).
 //   - Delete account — confirm step + DELETE /api/me. AC-11.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signOut } from "firebase/auth";
 import { getClientAuth } from "@/lib/auth/firebase-client";
@@ -38,20 +38,51 @@ export function ProfileSheet({ user, open, onClose }: Props) {
   // value on success.
   const [localeDraft, setLocaleDraft] = useState<Locale>(locale);
   const [soundDraft, setSoundDraft] = useState<boolean>(user.soundEnabled);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     setLocaleDraft(locale);
     setSoundDraft(user.soundEnabled);
   }, [locale, user.soundEnabled]);
 
-  // Close on Escape.
+  // Modal behavior (specs.md §10.4): trap focus inside the dialog, lock
+  // background scroll while open, close on Escape, and restore focus to the
+  // element that opened the sheet on close.
   useEffect(() => {
     if (!open) return;
+    triggerRef.current = (document.activeElement as HTMLElement) ?? null;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const panel = panelRef.current;
+    panel?.focus();
+
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (e.key !== "Tab" || !panel) return;
+      const focusables = panel.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), a[href], input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      if (focusables.length === 0) return;
+      const first = focusables[0]!;
+      const last = focusables[focusables.length - 1]!;
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     }
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+      triggerRef.current?.focus?.();
+    };
   }, [open, onClose]);
 
   if (!open) return null;
@@ -124,34 +155,38 @@ export function ProfileSheet({ user, open, onClose }: Props) {
       aria-modal="true"
       aria-labelledby="vr-profile-title"
       onClick={onClose}
+      className="vr-fade-in vr-sheet-overlay"
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(15,14,26,0.45)",
-        zIndex: 200,
+        background: "var(--scrim)",
+        zIndex: "var(--z-modal)",
         display: "flex",
         alignItems: "flex-end",
         justifyContent: "center",
       }}
-      className="vr-fade-in"
     >
       <div
+        ref={panelRef}
+        tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        className="vr-card-rise"
+        className="vr-card-rise vr-sheet-panel"
         style={{
           background: "#fff",
           width: "100%",
           maxWidth: 480,
           borderRadius: "var(--r-3xl) var(--r-3xl) 0 0",
-          padding: "20px 20px 28px",
+          padding: "20px 20px calc(28px + env(safe-area-inset-bottom))",
           boxShadow: "var(--shadow-xl)",
           maxHeight: "92dvh",
           overflowY: "auto",
+          outline: "none",
         }}
       >
-        {/* Drag handle */}
+        {/* Drag handle — visual sheet affordance on mobile. */}
         <span
           aria-hidden
+          className="vr-sheet-handle"
           style={{
             display: "block",
             width: 40,
@@ -228,6 +263,7 @@ export function ProfileSheet({ user, open, onClose }: Props) {
             type="button"
             onClick={handleSignOut}
             disabled={busy}
+            className="vr-press"
             style={primaryActionStyle}
           >
             {t.signOut}
@@ -238,6 +274,7 @@ export function ProfileSheet({ user, open, onClose }: Props) {
               type="button"
               onClick={() => setConfirmDelete(true)}
               disabled={busy}
+              className="vr-press"
               style={destructiveActionStyle}
             >
               {t.deleteAccount}
@@ -266,6 +303,7 @@ export function ProfileSheet({ user, open, onClose }: Props) {
                   type="button"
                   onClick={() => setConfirmDelete(false)}
                   disabled={busy}
+                  className="vr-press"
                   style={{ ...secondaryActionStyle, flex: 1 }}
                 >
                   {t.deleteAccountCancel}
@@ -274,6 +312,7 @@ export function ProfileSheet({ user, open, onClose }: Props) {
                   type="button"
                   onClick={handleDelete}
                   disabled={busy}
+                  className="vr-press"
                   style={{ ...destructiveActionStyle, flex: 1 }}
                 >
                   {t.deleteAccountConfirmCta}
