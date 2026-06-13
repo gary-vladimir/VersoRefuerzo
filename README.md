@@ -43,28 +43,34 @@ the full v1 feature surface:
 - **Profile sheet.** Locale toggle (ES↔EN, re-renders without page reload),
   sound toggle, sign out, delete account.
 - **Sound effects.** Five named cues (`flip`, `pluck`, `thud`, `chime`,
-  `flame`) wired to reveal, grade, round resolution, session complete, and
-  streak extension. Default ON; toggle in the profile sheet. See
-  `public/sounds/README.md` for the asset drop.
+  `flame`) **synthesized at runtime with the Web Audio API** — no binary
+  assets to ship. Wired to reveal, grade, round resolution, session complete,
+  and streak extension. Default ON; toggle in the profile sheet. See
+  `public/sounds/README.md`.
 - **Accessibility.** Reduced-motion compliance (looping animations
   disabled; flip card cross-fades; transitional helpers play at reduced
-  amplitude), responsive switch at 1024px between mobile bottom tab bar and
-  desktop sidebar.
+  amplitude); responsive switch at 1024px between mobile bottom tab bar and
+  desktop sidebar; ProfileSheet is a focus-trapped modal with scroll-lock
+  and focus restore; keyboard-only focus rings; privacy / terms links on
+  login and profile (specs §10.5).
+- **Visual / UX pass.** Refreshed design tokens and a micro-interaction
+  animation layer (press, hover-lift, reveal, count-pop, shake, skeleton);
+  safe-area insets via a `viewport` export; SVG glyphs replacing emoji
+  throughout; richer Home (time-of-day greeting, progress insights strip,
+  verse-of-the-day); Library search across both tabs plus status filters and
+  a sort control; practice keyboard shortcuts; collection delete with undo.
 - **Deploy.** `Dockerfile` (Next.js standalone output), Cloud Build config,
   and a one-shot `scripts/deploy.sh` that builds, pushes, and deploys to
   Cloud Run with secrets from Secret Manager.
 
-Known polish items still open (see the milestone review notes for context):
+Known polish items still open:
 
-- The five MP3 cue files are not committed; `lib/sounds/player.ts` no-ops
-  silently until you drop assets into `public/sounds/`.
-- ProfileSheet closes on Escape but does not yet trap focus or restore it
-  to the trigger.
-- Login and ProfileSheet do not yet expose privacy / terms links
-  (specs §10.5).
-- The `practiceSessions` insert, verse update, and streak update in
-  `POST /api/practice/sessions` are sequential writes, not a single
-  transaction.
+- The session row + verse SRS update in `POST /api/practice/sessions` are now
+  written atomically with `db.batch`; the streak update remains a separate
+  follow-up write (a missed bump self-heals on the next session).
+- Word Scramble / Verse Match chips are tap-to-place, not drag-and-drop.
+- Move-to-collection is reachable via a verse's *Editar* → *Colecciones*
+  (no dedicated quick-move dialog yet); bulk verse add is not implemented.
 
 ---
 
@@ -369,7 +375,7 @@ lib/
   streak/             tz-aware streak engine (current / best / effective)
   practice/           loadClassicQueue, loadMiniGameVerses
   i18n/strings.ts     ES/EN string table with locale-aware helpers
-  sounds/player.ts    Pooled HTMLAudioElement player, five named cues
+  sounds/player.ts    Web Audio synthesizer, five named cues
   validation/         zod schemas for verse / collection bodies
   constants.ts        UNDO_WINDOW_MS, etc.
 db/
@@ -377,7 +383,7 @@ db/
                       bible_text_cache, practice_sessions)
   client.ts           Neon connection
   migrations/         0000_init, 0001_practice_sessions, 0002_was_full_verse,
-                      0003_last_practiced_at
+                      0003_last_practiced_at, 0004_collection_soft_delete
 styles/               Design tokens + animations (ported from DesignBundle)
 public/sounds/        Drop the five short MP3 cues here (see public/sounds/README.md)
 middleware.ts         Edge auth gate + pathname forwarder
