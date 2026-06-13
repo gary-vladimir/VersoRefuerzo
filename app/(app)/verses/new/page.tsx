@@ -13,7 +13,7 @@ import { availableVersions } from "@/lib/bible/apibible";
 import { T } from "@/lib/i18n/strings";
 import { VerseForm } from "@/components/verse/VerseForm";
 
-type SearchParams = Promise<{ ref?: string }>;
+type SearchParams = Promise<{ ref?: string; collection?: string }>;
 
 export default async function NewVersePage({
   searchParams,
@@ -47,12 +47,19 @@ export default async function NewVersePage({
 
   const sp = await searchParams;
   const initialReference = sp?.ref ?? "";
+  // Pre-select a collection when arriving from a collection's empty state
+  // (only if it actually belongs to the user).
+  const preselect =
+    sp?.collection && userCollections.some((c) => c.id === sp.collection)
+      ? [sp.collection]
+      : undefined;
 
   return (
     <VerseForm
       locale={locale}
       initialReference={initialReference}
       initialVersion={initialVersion ?? undefined}
+      initialCollectionIds={preselect}
       versions={versions}
       initialCollections={userCollections}
       existingVerseCount={verseCount}

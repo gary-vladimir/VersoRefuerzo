@@ -177,10 +177,11 @@ export default async function CollectionDetailPage({
             {t.emptyCollectionVerses}
           </p>
           <Link
-            href="/verses/new"
+            href={{ pathname: "/verses/new", query: { collection: collection.id } }}
+            className="vr-press"
             style={{
               display: "inline-block",
-              padding: "10px 18px",
+              padding: "11px 20px",
               borderRadius: 999,
               background: "var(--brand-primary)",
               color: "#fff",
@@ -188,6 +189,7 @@ export default async function CollectionDetailPage({
               fontWeight: 700,
               fontSize: 13,
               textDecoration: "none",
+              boxShadow: "0 8px 20px rgb(var(--card-indigo-rgb) / 0.35)",
             }}
           >
             + {t.addVerse}
