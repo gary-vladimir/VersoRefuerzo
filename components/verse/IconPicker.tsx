@@ -36,6 +36,7 @@ export function IconPicker({
             aria-checked={sel}
             aria-label={id}
             onClick={() => onChange(id)}
+            className="vr-press"
             style={{
               aspectRatio: "1 / 1",
               borderRadius: 10,
@@ -44,7 +45,7 @@ export function IconPicker({
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              boxShadow: sel ? `0 4px 10px var(--card-${color}-solid)50` : "none",
+              boxShadow: sel ? `0 6px 14px rgb(var(--card-${color}-rgb) / 0.45)` : "none",
               transform: sel ? "scale(1.08)" : "scale(1)",
               transition: "all .2s cubic-bezier(.2,.8,.2,1)",
               cursor: "pointer",

@@ -25,6 +25,7 @@ export function ColorPicker({
             aria-checked={sel}
             aria-label={c.labelEs}
             onClick={() => onChange(c.id)}
+            className="vr-press"
             style={{
               flex: 1,
               aspectRatio: "1 / 1",
@@ -33,7 +34,7 @@ export function ColorPicker({
               cursor: "pointer",
               border: "none",
               boxShadow: sel
-                ? `0 0 0 3px #fff, 0 0 0 5px var(--card-${c.id}-solid), 0 8px 18px var(--card-${c.id}-solid)50`
+                ? `0 0 0 3px #fff, 0 0 0 5px var(--card-${c.id}-solid), 0 8px 18px rgb(var(--card-${c.id}-rgb) / 0.5)`
                 : "0 1px 2px rgba(0,0,0,0.06)",
               transform: sel ? "scale(1.06)" : "scale(1)",
               transition: "all .25s cubic-bezier(.2,.8,.2,1)",
