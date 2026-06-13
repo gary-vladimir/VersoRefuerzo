@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, Inter, Lora, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -34,6 +34,17 @@ const mono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "VersoRefuerzo",
   description: "Memoriza la Palabra. Una tarjeta a la vez.",
+};
+
+// viewportFit: "cover" is what activates env(safe-area-inset-*) on notched
+// devices — without it every safe-area helper in the app is a no-op. We
+// deliberately do NOT lock zoom (maximumScale / userScalable) so the app
+// stays accessible to low-vision users.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#faf9fe",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
