@@ -3,12 +3,15 @@
 
 type Props = {
   current: number;
+  ariaLabel?: string;
 };
 
-export function StreakChip({ current }: Props) {
+export function StreakChip({ current, ariaLabel }: Props) {
   const inactive = current === 0;
   return (
     <span
+      role="img"
+      aria-label={ariaLabel ?? String(current)}
       style={{
         padding: "6px 12px",
         borderRadius: 999,
