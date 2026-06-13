@@ -18,6 +18,7 @@ import { isCardColor, isVerseIcon, type CardColorId, type VerseIconId } from "@/
 import { formatDisplay } from "@/lib/bible/reference";
 import { wordsOnly } from "@/lib/bible/tokenize";
 import { VerseIcon } from "@/components/icons/VerseIcons";
+import { Close, Heart, HeartFilled } from "@/components/icons/UiIcons";
 import { play } from "@/lib/sounds/player";
 import type { Verse } from "@/db/schema";
 
@@ -179,7 +180,7 @@ export function VerseMatch({ verses, locale, strings: t }: Props) {
         minHeight: "100dvh",
         background:
           "linear-gradient(180deg, var(--card-sky-tint) 0%, var(--c-bg) 50%)",
-        paddingBottom: 32,
+        paddingBottom: "max(32px, calc(20px + env(safe-area-inset-bottom)))",
         fontFamily: "var(--font-sans)",
       }}
     >
@@ -196,9 +197,10 @@ export function VerseMatch({ verses, locale, strings: t }: Props) {
           type="button"
           onClick={() => router.push("/practice")}
           aria-label={t.exit}
+          className="vr-press"
           style={iconButtonStyle}
         >
-          ×
+          <Close size={18} />
         </button>
         <span
           style={{
@@ -215,11 +217,13 @@ export function VerseMatch({ verses, locale, strings: t }: Props) {
             color: "var(--c-text)",
           }}
         >
-          {Array.from({ length: STARTING_INTENTOS }, (_, i) => (
-            <span key={i} style={{ opacity: i < intentos ? 1 : 0.25 }}>
-              {i < intentos ? "❤" : "♡"}
-            </span>
-          ))}
+          {Array.from({ length: STARTING_INTENTOS }, (_, i) =>
+            i < intentos ? (
+              <HeartFilled key={i} size={15} color="var(--c-rose-500)" />
+            ) : (
+              <Heart key={i} size={15} color="var(--c-soft)" />
+            ),
+          )}
         </span>
       </header>
 
@@ -246,15 +250,18 @@ export function VerseMatch({ verses, locale, strings: t }: Props) {
               type="button"
               disabled={!!done || isMatched}
               onClick={() => pick("left", it.id)}
+              className={isWrong ? "vr-press vr-shake" : "vr-press"}
               style={{
                 ...cellStyle,
                 background: isMatched ? "var(--c-card-soft)" : "#fff",
-                opacity: isMatched ? 0.45 : 1,
+                opacity: isMatched ? 0.5 : 1,
                 boxShadow: isWrong
                   ? "0 0 0 2px var(--c-rose-500)"
                   : isSelected
                     ? "0 0 0 2px var(--c-indigo-600)"
-                    : "var(--shadow-xs)",
+                    : isMatched
+                      ? "0 0 0 2px var(--c-emerald-500)"
+                      : "var(--shadow-xs)",
                 display: "flex",
                 alignItems: "center",
                 gap: 10,
@@ -302,15 +309,18 @@ export function VerseMatch({ verses, locale, strings: t }: Props) {
               type="button"
               disabled={!!done || isMatched}
               onClick={() => pick("right", rid)}
+              className={isWrong ? "vr-press vr-shake" : "vr-press"}
               style={{
                 ...cellStyle,
                 background: isMatched ? "var(--c-card-soft)" : "#fff",
-                opacity: isMatched ? 0.45 : 1,
+                opacity: isMatched ? 0.5 : 1,
                 boxShadow: isWrong
                   ? "0 0 0 2px var(--c-rose-500)"
                   : isSelected
                     ? "0 0 0 2px var(--c-indigo-600)"
-                    : "var(--shadow-xs)",
+                    : isMatched
+                      ? "0 0 0 2px var(--c-emerald-500)"
+                      : "var(--shadow-xs)",
                 fontFamily: "var(--font-serif)",
                 fontStyle: "italic",
                 fontSize: 13,
@@ -392,11 +402,12 @@ export function VerseMatch({ verses, locale, strings: t }: Props) {
             <button
               type="button"
               onClick={() => router.refresh()}
+              className="vr-press"
               style={primaryActionStyle}
             >
               {t.playAgain}
             </button>
-            <Link href="/practice" style={secondaryActionStyle}>
+            <Link href="/practice" className="vr-press" style={secondaryActionStyle}>
               {t.backHub}
             </Link>
           </div>
@@ -449,8 +460,8 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 const iconButtonStyle: React.CSSProperties = {
-  width: 36,
-  height: 36,
+  width: 40,
+  height: 40,
   borderRadius: 12,
   background: "#fff",
   border: "none",
@@ -459,8 +470,6 @@ const iconButtonStyle: React.CSSProperties = {
   justifyContent: "center",
   boxShadow: "var(--shadow-xs)",
   color: "var(--c-text)",
-  fontSize: 18,
-  fontWeight: 800,
   cursor: "pointer",
 };
 
@@ -474,6 +483,7 @@ const columnHeaderStyle: React.CSSProperties = {
 
 const cellStyle: React.CSSProperties = {
   padding: "12px 14px",
+  minHeight: 52,
   borderRadius: "var(--r-xl)",
   border: "none",
   cursor: "pointer",
