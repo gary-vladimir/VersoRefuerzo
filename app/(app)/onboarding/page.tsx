@@ -66,7 +66,7 @@ export default async function OnboardingPage() {
       </h1>
 
       <ul
-        className="vr-fade-up"
+        className="vr-stagger"
         style={{
           marginTop: "var(--s-6)",
           padding: 0,
@@ -79,7 +79,6 @@ export default async function OnboardingPage() {
           color: "var(--c-text)",
           maxWidth: 360,
           textAlign: "left",
-          animationDelay: "0.2s",
         }}
       >
         {[t.onboardingBullet1, t.onboardingBullet2, t.onboardingBullet3].map(

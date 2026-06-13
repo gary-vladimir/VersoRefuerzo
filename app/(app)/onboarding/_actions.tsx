@@ -38,6 +38,7 @@ export default function OnboardingActions({
         // §17.7: opens New Verse pre-filled with Juan 14:6.
         onClick={() => complete("/verses/new?ref=Juan%2014%3A6", "primary")}
         disabled={loading !== null}
+        className="vr-press"
         style={{
           background: "var(--brand-primary)",
           color: "#fff",
@@ -61,6 +62,7 @@ export default function OnboardingActions({
         type="button"
         onClick={() => complete("/", "skip")}
         disabled={loading !== null}
+        className="vr-press"
         style={{
           background: "transparent",
           color: "var(--c-muted)",
