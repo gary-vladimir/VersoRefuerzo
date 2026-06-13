@@ -27,6 +27,7 @@ import {
   PRACTICE_OUTCOMES,
   type SrsState,
   type PracticeMode,
+  type PracticeSession,
 } from "@/db/schema";
 import { applyRecallGrade, applyRecognitionTouch, type Quality } from "@/lib/srs/sm2";
 import { deriveMastery, deriveStatus, findLastUnaidedRecall } from "@/lib/srs/mastery";
@@ -122,8 +123,8 @@ export async function POST(req: NextRequest) {
     nextSrs = applyRecognitionTouch(verse.srsState, data.outcome === "correct");
   }
 
-  // 3. Insert the session row.
-  await db.insert(practiceSessions).values({
+  // 3. The session row we are about to record.
+  const sessionRow = {
     userId: user.id,
     verseId: verse.id,
     mode: data.mode,
@@ -134,10 +135,12 @@ export async function POST(req: NextRequest) {
     usedHint: data.usedHint,
     wasFullVerse,
     startedAt: now,
-  });
+  };
 
-  // 4. Re-derive mastery + status from updated SRS + the verse's session log.
-  // The §15.5 guard wants a 30-day window of unaided RECALL passes.
+  // 4. Re-derive mastery + status. We read the 30-day window of prior
+  // sessions (§15.5 unaided-recall guard) BEFORE the insert and fold this
+  // in-flight attempt in memory, so the session insert and the verse update
+  // can be written together atomically below.
   const windowStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const recentSessions = await db
     .select()
@@ -151,26 +154,31 @@ export async function POST(req: NextRequest) {
     )
     .orderBy(desc(practiceSessions.startedAt));
 
-  const lastUnaided = findLastUnaidedRecall(recentSessions);
+  const inFlight: PracticeSession = { id: "pending", ...sessionRow };
+  const lastUnaided = findLastUnaidedRecall([inFlight, ...recentSessions]);
   const mastery = deriveMastery(nextSrs);
   const status = deriveStatus({ srs: nextSrs, lastUnaidedRecall: lastUnaided, now });
 
-  // 5. Persist the verse. lastPracticedAt is bumped for every recorded
-  // attempt — recall modes also need it so a Classic pass on a verse that
-  // was already due-today doesn't keep showing in tomorrow's queue from a
-  // stale timestamp; the suppression check is `isSameTzDay`, not boolean
-  // truthiness, so it's safe to overwrite on recall too.
-  const updatedVerse = await db
-    .update(versesTable)
-    .set({
-      srsState: nextSrs,
-      mastery,
-      status,
-      lastPracticedAt: now,
-      updatedAt: now,
-    })
-    .where(eq(versesTable.id, verse.id))
-    .returning();
+  // 5. Write the session row + the verse update in ONE batch. The neon-http
+  // driver can't do interactive transactions (db.transaction throws), but
+  // db.batch sends both statements in a single transactional round-trip, so
+  // we never persist a recorded attempt without its matching SRS advance
+  // (M4 review #8). lastPracticedAt is bumped on every attempt so a verse
+  // practiced today drops out of the due-today queue via isSameTzDay.
+  const [, updatedVerse] = await db.batch([
+    db.insert(practiceSessions).values(sessionRow),
+    db
+      .update(versesTable)
+      .set({
+        srsState: nextSrs,
+        mastery,
+        status,
+        lastPracticedAt: now,
+        updatedAt: now,
+      })
+      .where(eq(versesTable.id, verse.id))
+      .returning(),
+  ]);
 
   // 6. Streak update — every recorded session counts (§6.6).
   // user.lastStreakAt comes off Postgres `date` as a string in YYYY-MM-DD;
