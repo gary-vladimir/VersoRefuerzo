@@ -118,6 +118,11 @@ textarea {
   grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
 }
 
+/* Collection grid — two-up on phones, more columns as width grows. */
+.vr-collection-grid {
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+}
+
 div::-webkit-scrollbar {
   display: none;
 }

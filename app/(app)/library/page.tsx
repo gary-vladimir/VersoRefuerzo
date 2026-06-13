@@ -168,6 +168,14 @@ export default async function LibraryPage({
           createFirst: t.createFirstCollection,
           emptyAll: t.emptyAllVerses,
           addVerse: t.addVerse,
+          filterAll: t.filterAll,
+          filterNew: t.statNew,
+          filterLearning: t.statLearning,
+          filterMastered: t.statMastered,
+          sortRecent: t.sortRecent,
+          sortAlpha: t.sortAlpha,
+          sortLeastMastered: t.sortLeastMastered,
+          noResults: t.noResults,
         }}
       />
     </main>
