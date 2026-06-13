@@ -77,6 +77,13 @@ export const T = {
     signOut: "Cerrar sesión",
     deleteAccount: "Eliminar cuenta",
     helloName: (name: string) => `Hola, ${name}`,
+    greeting: (hour: number) =>
+      hour < 12 ? "Buenos días" : hour < 19 ? "Buenas tardes" : "Buenas noches",
+    streakLabel: (n: number) => `Racha de ${n} ${n === 1 ? "día" : "días"}`,
+    verseOfTheDay: "Verso del día",
+    statNew: "Nuevos",
+    statLearning: "Aprendiendo",
+    statMastered: "Dominados",
 
     // Library / Card View / overflow menu (M3)
     libraryTabCollections: "Colecciones",
@@ -206,6 +213,13 @@ export const T = {
     signOut: "Sign out",
     deleteAccount: "Delete account",
     helloName: (name: string) => `Hi, ${name}`,
+    greeting: (hour: number) =>
+      hour < 12 ? "Good morning" : hour < 19 ? "Good afternoon" : "Good evening",
+    streakLabel: (n: number) => `${n}-day streak`,
+    verseOfTheDay: "Verse of the day",
+    statNew: "New",
+    statLearning: "Learning",
+    statMastered: "Mastered",
 
     libraryTabCollections: "Collections",
     libraryTabAll: "All verses",
