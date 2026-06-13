@@ -17,9 +17,16 @@ import {
 } from "@/db/schema";
 import { T } from "@/lib/i18n/strings";
 import { UNDO_WINDOW_MS } from "@/lib/constants";
-import { deriveEffectiveStreak, isSameTzDay } from "@/lib/streak/streak";
+import {
+  deriveEffectiveStreak,
+  isSameTzDay,
+  localHour,
+  localDayNumber,
+} from "@/lib/streak/streak";
 import { StreakChip } from "@/components/home/StreakChip";
 import { TodayCTA } from "@/components/home/TodayCTA";
+import { InsightsStrip } from "@/components/home/InsightsStrip";
+import { VerseOfTheDay } from "@/components/home/VerseOfTheDay";
 import { VerseRow } from "@/components/verse/VerseRow";
 import { HeaderAvatar } from "@/components/layout/HeaderAvatar";
 
@@ -57,7 +64,26 @@ export default async function Home() {
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
     .slice(0, 6);
 
-  const refs = recent.map((r) => r.canonicalRef);
+  const hour = localHour(user.timezone);
+  const effStreak = deriveEffectiveStreak({
+    state: {
+      currentStreak: user.currentStreak,
+      bestStreak: user.bestStreak,
+      lastStreakAt: (user.lastStreakAt ?? null) as string | null,
+    },
+    tz: user.timezone,
+  });
+  // Deterministic daily rotation through the whole library.
+  const verseOfDay = allVerses.length
+    ? allVerses[localDayNumber(user.timezone) % allVerses.length]!
+    : null;
+
+  const refs = Array.from(
+    new Set([
+      ...recent.map((r) => r.canonicalRef),
+      ...(verseOfDay ? [verseOfDay.canonicalRef] : []),
+    ]),
+  );
   const cached = refs.length
     ? await db
         .select({
@@ -94,7 +120,7 @@ export default async function Home() {
       >
         <div>
           <div style={{ fontSize: 11, color: "var(--c-muted)", fontWeight: 600 }}>
-            {t.helloName(firstName)}
+            {t.greeting(hour)}
           </div>
           <div
             style={{
@@ -106,20 +132,11 @@ export default async function Home() {
               marginTop: 1,
             }}
           >
-            {locale === "es" ? "Tus versos" : "Your verses"}
+            {t.helloName(firstName)}
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <StreakChip
-            current={deriveEffectiveStreak({
-              state: {
-                currentStreak: user.currentStreak,
-                bestStreak: user.bestStreak,
-                lastStreakAt: (user.lastStreakAt ?? null) as string | null,
-              },
-              tz: user.timezone,
-            })}
-          />
+          <StreakChip current={effStreak} ariaLabel={t.streakLabel(effStreak)} />
           <HeaderAvatar user={user} />
         </div>
       </header>
@@ -147,6 +164,30 @@ export default async function Home() {
           />
         )}
       </section>
+
+      {/* Progress insights + verse of the day — only with a non-empty
+          library. */}
+      {!isLibraryEmpty && (
+        <section
+          style={{
+            padding: "16px 20px 0",
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
+          }}
+        >
+          <InsightsStrip verses={allVerses} locale={locale} />
+          {verseOfDay && (
+            <VerseOfTheDay
+              verse={verseOfDay}
+              textPreview={
+                textByKey.get(`${verseOfDay.canonicalRef}|${verseOfDay.version}`) ?? null
+              }
+              locale={locale}
+            />
+          )}
+        </section>
+      )}
 
       {/* Recent verses (§6.7 — "X verses today" hero plus recent list).
           The slim row list re-uses the Library's VerseRow so undo behavior
@@ -226,11 +267,11 @@ export default async function Home() {
       <Link
         href="/verses/new"
         aria-label={t.addVerse}
-        className="vr-mobile-only"
+        className="vr-mobile-only vr-press"
         style={{
           position: "fixed",
           right: 20,
-          bottom: "calc(80px + env(safe-area-inset-bottom))",
+          bottom: "calc(var(--tabbar-h) + 16px)",
           width: 56,
           height: 56,
           borderRadius: "50%",
@@ -243,8 +284,8 @@ export default async function Home() {
           fontSize: 28,
           textDecoration: "none",
           boxShadow:
-            "0 12px 24px rgba(99,102,241,0.40), inset 0 1px 0 rgba(255,255,255,0.2)",
-          zIndex: 30,
+            "0 14px 30px rgb(var(--card-indigo-rgb) / 0.45), inset 0 1px 0 rgba(255,255,255,0.25)",
+          zIndex: "var(--z-fab)",
         }}
       >
         +
@@ -286,9 +327,10 @@ function EmptyHero({
       </p>
       <Link
         href={href}
+        className="vr-press"
         style={{
           display: "inline-block",
-          padding: "10px 18px",
+          padding: "11px 20px",
           borderRadius: 999,
           background: "var(--brand-primary)",
           color: "#fff",
@@ -296,6 +338,7 @@ function EmptyHero({
           fontWeight: 700,
           fontSize: 13,
           textDecoration: "none",
+          boxShadow: "0 8px 20px rgb(var(--card-indigo-rgb) / 0.35)",
         }}
       >
         {cta}
