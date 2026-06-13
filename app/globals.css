@@ -87,6 +87,37 @@ textarea {
   min-width: var(--tap-min);
 }
 
+/* Nav links (bottom tab bar + sidebar): a hover affordance that does not
+   fight the active-tab background. */
+@media (hover: hover) {
+  .vr-nav-link:not([aria-current="page"]):hover {
+    background: var(--c-card-soft);
+  }
+}
+
+/* Profile sheet: bottom sheet on mobile, centered modal on desktop. The
+   media-query !important is the same pattern as the visibility helpers
+   above — it has to win over the component's inline mobile styles. */
+@media (min-width: 1024px) {
+  .vr-sheet-overlay {
+    align-items: center !important;
+  }
+  .vr-sheet-panel {
+    max-width: 440px !important;
+    border-radius: var(--r-3xl) !important;
+    margin: 0 16px;
+  }
+  .vr-sheet-handle {
+    display: none !important;
+  }
+}
+
+/* Icon picker grid — auto-fills so each cell stays >= 40px (a comfortable
+   tap target) on narrow phones instead of cramming 8 tiny columns. */
+.vr-icon-grid {
+  grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+}
+
 div::-webkit-scrollbar {
   display: none;
 }
