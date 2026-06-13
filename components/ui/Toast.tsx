@@ -4,9 +4,11 @@
 // Provider-driven so any descendant can call `useToast().show(...)`.
 //
 // Behavior:
-//   - The toast auto-dismisses at the end of `durationMs` (default 5000ms).
+//   - The toast slides in, then auto-dismisses at the end of `durationMs`
+//     (default 5000ms) with a slide-out.
 //   - A countdown bar fills the underside as time elapses.
-//   - Tapping the action button dismisses the toast and runs `onAction`.
+//   - Tapping the action button runs `onAction` synchronously, then animates
+//     the toast out.
 //
 // Important: a "delete" toast assumes the row is already soft-deleted on the
 // server when shown. The action callback issues the *restore* call. If the
@@ -14,6 +16,7 @@
 // sweep will commit the hard-delete on the next list read.
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { Close } from "@/components/icons/UiIcons";
 
 type ToastSpec = {
   message: string;
@@ -22,7 +25,7 @@ type ToastSpec = {
   durationMs?: number;
 };
 
-type Live = ToastSpec & { id: number; createdAt: number };
+type Live = ToastSpec & { id: number };
 
 type ToastApi = { show: (t: ToastSpec) => void };
 
@@ -34,36 +37,17 @@ export function useToast(): ToastApi {
   return ctx;
 }
 
+const EXIT_MS = 200;
+
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toast, setToast] = useState<Live | null>(null);
   const seq = useRef(0);
-  const timer = useRef<number | null>(null);
 
-  const dismiss = useCallback(() => {
-    if (timer.current !== null) {
-      window.clearTimeout(timer.current);
-      timer.current = null;
-    }
-    setToast(null);
-  }, []);
-
-  const show = useCallback(
-    (t: ToastSpec) => {
-      if (timer.current !== null) window.clearTimeout(timer.current);
-      seq.current += 1;
-      const id = seq.current;
-      const duration = t.durationMs ?? 5000;
-      setToast({ ...t, id, createdAt: Date.now() });
-      timer.current = window.setTimeout(() => {
-        setToast((cur) => (cur && cur.id === id ? null : cur));
-        timer.current = null;
-      }, duration);
-    },
-    [],
-  );
-
-  useEffect(() => () => {
-    if (timer.current !== null) window.clearTimeout(timer.current);
+  const show = useCallback((t: ToastSpec) => {
+    seq.current += 1;
+    // Replacing the visible toast: the `key={id}` on ToastView remounts a
+    // fresh instance, whose own timers supersede the previous one.
+    setToast({ ...t, id: seq.current });
   }, []);
 
   return (
@@ -75,12 +59,11 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           message={toast.message}
           actionLabel={toast.actionLabel}
           durationMs={toast.durationMs ?? 5000}
-          onAction={() => {
-            const fn = toast.onAction;
-            dismiss();
-            fn?.();
-          }}
-          onDismiss={dismiss}
+          onAction={toast.onAction}
+          // Guard against a stale exit clearing a newer toast.
+          onClosed={() =>
+            setToast((cur) => (cur && cur.id === toast.id ? null : cur))
+          }
         />
       )}
     </ToastContext.Provider>
@@ -91,15 +74,44 @@ function ToastView({
   message,
   actionLabel,
   onAction,
-  onDismiss,
+  onClosed,
   durationMs,
 }: {
   message: string;
   actionLabel?: string;
-  onAction: () => void;
-  onDismiss: () => void;
+  onAction?: () => void;
+  onClosed: () => void;
   durationMs: number;
 }) {
+  const [leaving, setLeaving] = useState(false);
+  const autoTimer = useRef<number | null>(null);
+  const exitTimer = useRef<number | null>(null);
+  // Hold the latest onClosed in a ref so beginClose stays referentially
+  // stable — otherwise an unrelated parent re-render would reset the
+  // auto-dismiss timer below.
+  const onClosedRef = useRef(onClosed);
+  onClosedRef.current = onClosed;
+
+  const beginClose = useCallback(() => {
+    if (exitTimer.current !== null) return; // already closing
+    if (autoTimer.current !== null) window.clearTimeout(autoTimer.current);
+    setLeaving(true);
+    exitTimer.current = window.setTimeout(() => onClosedRef.current(), EXIT_MS);
+  }, []);
+
+  useEffect(() => {
+    autoTimer.current = window.setTimeout(beginClose, durationMs);
+    return () => {
+      if (autoTimer.current !== null) window.clearTimeout(autoTimer.current);
+      if (exitTimer.current !== null) window.clearTimeout(exitTimer.current);
+    };
+  }, [durationMs, beginClose]);
+
+  function handleAction() {
+    onAction?.();
+    beginClose();
+  }
+
   return (
     <div
       role="status"
@@ -107,39 +119,41 @@ function ToastView({
       style={{
         position: "fixed",
         left: "50%",
-        bottom: "max(20px, env(safe-area-inset-bottom))",
+        bottom: "calc(20px + env(safe-area-inset-bottom))",
         transform: "translateX(-50%)",
         background: "var(--c-ink)",
         color: "#fff",
         borderRadius: "var(--r-lg)",
-        padding: "12px 16px",
+        padding: "12px 12px 12px 16px",
         display: "inline-flex",
         alignItems: "center",
-        gap: 16,
+        gap: 12,
         fontFamily: "var(--font-sans)",
         fontSize: 14,
         boxShadow: "var(--shadow-xl)",
         minWidth: 260,
         maxWidth: "calc(100vw - 32px)",
-        zIndex: 1000,
+        zIndex: "var(--z-toast)",
         overflow: "hidden",
       }}
-      className="vr-card-rise"
+      className={leaving ? "vr-toast-out" : "vr-toast-in"}
     >
       <span style={{ flex: 1 }}>{message}</span>
       {actionLabel && (
         <button
           type="button"
-          onClick={onAction}
+          onClick={handleAction}
+          className="vr-press"
           style={{
             background: "transparent",
             border: "none",
             color: "var(--c-amber-400)",
             fontFamily: "var(--font-display)",
             fontWeight: 700,
-            fontSize: 13,
+            fontSize: 14,
             cursor: "pointer",
-            padding: "4px 6px",
+            padding: "8px 10px",
+            minHeight: 40,
             letterSpacing: "0.2px",
           }}
         >
@@ -148,22 +162,27 @@ function ToastView({
       )}
       <button
         type="button"
-        onClick={onDismiss}
+        onClick={beginClose}
         aria-label="dismiss"
+        className="vr-press"
         style={{
           background: "transparent",
           border: "none",
-          color: "rgba(255,255,255,0.5)",
+          color: "rgba(255,255,255,0.55)",
           cursor: "pointer",
-          fontSize: 16,
-          padding: 0,
-          marginLeft: -4,
+          width: 32,
+          height: 32,
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
         }}
       >
-        ×
+        <Close size={16} />
       </button>
       <span
         aria-hidden
+        className="vr-toast-bar"
         style={{
           position: "absolute",
           left: 0,
@@ -179,6 +198,9 @@ function ToastView({
         @keyframes vr-toast-countdown {
           from { transform: scaleX(1); }
           to   { transform: scaleX(0); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .vr-toast-bar { animation: none !important; }
         }
       `}</style>
     </div>
