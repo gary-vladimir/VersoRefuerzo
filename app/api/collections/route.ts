@@ -4,11 +4,12 @@
 // so the UI can tell the user without losing their input.
 
 import { NextResponse, type NextRequest } from "next/server";
-import { and, eq, sql, asc } from "drizzle-orm";
+import { and, eq, sql, asc, isNull, lt } from "drizzle-orm";
 import { getServerUser } from "@/lib/auth/session";
 import { getDb } from "@/db/client";
 import { collections } from "@/db/schema";
 import { NewCollectionInput } from "@/lib/validation/schemas";
+import { UNDO_WINDOW_MS } from "@/lib/constants";
 
 export const runtime = "nodejs";
 
@@ -18,10 +19,16 @@ export async function GET() {
     return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
   }
   const db = getDb();
+  // Housekeeping sweep — commit collection soft-deletes whose undo window has
+  // elapsed. The verseCollections FK cascade then drops the membership rows.
+  const cutoff = new Date(Date.now() - UNDO_WINDOW_MS);
+  await db
+    .delete(collections)
+    .where(and(eq(collections.userId, user.id), lt(collections.deletedAt, cutoff)));
   const rows = await db
     .select()
     .from(collections)
-    .where(eq(collections.userId, user.id))
+    .where(and(eq(collections.userId, user.id), isNull(collections.deletedAt)))
     .orderBy(asc(collections.name));
   return NextResponse.json({ collections: rows });
 }

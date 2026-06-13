@@ -46,7 +46,11 @@ export const users = pgTable(
 );
 
 // Per-user named bucket of verses. Many-to-many with verses via verseCollections.
-// Deleting a collection un-links its verses but does NOT delete them (specs.md §4.2).
+// Hard-deleting a collection un-links its verses but does NOT delete them
+// (specs.md §4.2). Delete is soft (deletedAt) so it can be undone within the
+// 5-second window (§17.5), mirroring the verse soft-delete; the housekeeping
+// sweep at collection-list reads commits the hard-delete past the window,
+// and the verseCollections FK cascade then drops the membership rows.
 export const collections = pgTable(
   "collections",
   {
@@ -57,12 +61,17 @@ export const collections = pgTable(
     name: text("name").notNull(),
     description: text("description"),
     colorKey: text("color_key").notNull(), // one of 8 collection-tag color keys (specs §7.5 / §17.6)
+    deletedAt: timestamp("deleted_at", { withTimezone: true }), // soft-delete (§17.5)
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     userIdx: index("collections_user_idx").on(t.userId),
-    // Case-insensitive uniqueness per user — see specs.md §4.2.
+    userDeletedIdx: index("collections_user_deleted_idx").on(t.userId, t.deletedAt),
+    // Case-insensitive uniqueness per user — see specs.md §4.2. Note: this
+    // index still covers soft-deleted rows, so a just-deleted name is briefly
+    // reserved until the sweep finalizes it (the dupe checks below stay
+    // unfiltered to surface a clean 409 rather than a unique-violation 500).
     userNameUniq: uniqueIndex("collections_user_name_uniq").on(
       t.userId,
       sql`lower(${t.name})`,

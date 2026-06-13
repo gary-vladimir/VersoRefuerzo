@@ -1,18 +1,17 @@
-// /api/collections/[id]  — PATCH only.
+// /api/collections/[id]  — PATCH and DELETE.
 //
 // PATCH supports rename, recolor, and description edits. The case-insensitive
 // uniqueness rule from POST applies to renames too.
 //
-// DELETE is intentionally NOT exposed in M3. Per specs.md §17.5 a collection
-// delete must be undoable for 5 seconds and must restore every membership
-// link on undo — that needs a soft-delete column on `collections` plus a
-// /restore endpoint, which is a schema change that lands with the collection
-// edit/delete UI in a later milestone. Hard-delete + FK cascade today would
-// silently destroy the user's organization with no undo path. Better to not
-// offer the API at all than to offer a destructive one.
+// DELETE is a SOFT delete (specs.md §17.5): it stamps `deletedAt` so the
+// action is undoable for 5 seconds via /restore. Verse memberships are left
+// intact during the window; the housekeeping sweep at collection-list reads
+// commits the hard-delete past the window and the verseCollections FK cascade
+// then drops the membership rows (so a hard-deleted collection un-links its
+// verses without deleting them, per §4.2).
 
 import { NextResponse, type NextRequest } from "next/server";
-import { and, eq, ne, sql } from "drizzle-orm";
+import { and, eq, ne, sql, isNull } from "drizzle-orm";
 import { getServerUser } from "@/lib/auth/session";
 import { getDb } from "@/db/client";
 import { collections } from "@/db/schema";
@@ -41,7 +40,13 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const existing = await db
     .select()
     .from(collections)
-    .where(and(eq(collections.id, id), eq(collections.userId, user.id)))
+    .where(
+      and(
+        eq(collections.id, id),
+        eq(collections.userId, user.id),
+        isNull(collections.deletedAt),
+      ),
+    )
     .limit(1);
   if (!existing[0]) {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
@@ -80,5 +85,30 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     .where(eq(collections.id, id))
     .returning();
   return NextResponse.json({ collection: updated[0] });
+}
+
+export async function DELETE(_req: NextRequest, { params }: Params) {
+  const user = await getServerUser();
+  if (!user) {
+    return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
+  }
+  const { id } = await params;
+  const db = getDb();
+  // Soft-delete — stamp deletedAt. /restore can undo within the window.
+  const deleted = await db
+    .update(collections)
+    .set({ deletedAt: new Date(), updatedAt: new Date() })
+    .where(
+      and(
+        eq(collections.id, id),
+        eq(collections.userId, user.id),
+        isNull(collections.deletedAt),
+      ),
+    )
+    .returning({ id: collections.id });
+  if (!deleted[0]) {
+    return NextResponse.json({ error: "not_found" }, { status: 404 });
+  }
+  return NextResponse.json({ ok: true });
 }
 
