@@ -11,13 +11,15 @@ import type { Route } from "next";
 import { redirect } from "next/navigation";
 import { getServerUser } from "@/lib/auth/session";
 import { T } from "@/lib/i18n/strings";
+import { ModeIcon, type ModeName } from "@/components/practice/ModeIcons";
+import { Chevron } from "@/components/icons/UiIcons";
 
 type Tile = {
   title: string;
   description: string;
-  href: Route | null;       // null === coming soon
-  badge?: string;
-  glyph: string;
+  href: Route;
+  mode: ModeName;
+  gradient: string;
 };
 
 export default async function PracticeHubPage() {
@@ -31,31 +33,36 @@ export default async function PracticeHubPage() {
       title: t.classicTitle,
       description: t.classicHubDesc,
       href: "/practice/classic",
-      glyph: "🃏",
+      mode: "classic",
+      gradient: "var(--brand-primary)",
     },
     {
       title: t.firstLetterTitle,
       description: t.firstLetterDesc,
       href: "/practice/first-letter",
-      glyph: "🔤",
+      mode: "firstLetter",
+      gradient: "var(--brand-sky)",
     },
     {
       title: t.practiceModeWordScramble,
       description: t.scrambleDesc,
       href: "/practice/scramble",
-      glyph: "🧩",
+      mode: "scramble",
+      gradient: "var(--brand-sunrise)",
     },
     {
       title: t.practiceModeMatch,
       description: t.matchDesc,
       href: "/practice/match",
-      glyph: "🔗",
+      mode: "match",
+      gradient: "var(--brand-forest)",
     },
     {
       title: t.practiceModeGap,
       description: t.gapDesc,
       href: "/practice/gap",
-      glyph: "⬜",
+      mode: "gap",
+      gradient: "var(--brand-ember)",
     },
   ];
 
@@ -115,9 +122,13 @@ export default async function PracticeHubPage() {
 }
 
 function ModeTile({ tile }: { tile: Tile }) {
-  const inner = (
-    <div
+  return (
+    <Link
+      href={tile.href}
+      className="vr-tile vr-press"
       style={{
+        textDecoration: "none",
+        color: "inherit",
         background: "#fff",
         borderRadius: "var(--r-2xl)",
         padding: 18,
@@ -125,24 +136,23 @@ function ModeTile({ tile }: { tile: Tile }) {
         display: "flex",
         alignItems: "center",
         gap: 14,
-        opacity: tile.href ? 1 : 0.6,
       }}
     >
       <div
         aria-hidden
         style={{
-          width: 48,
-          height: 48,
-          borderRadius: 14,
-          background: "var(--c-card-soft)",
+          width: 50,
+          height: 50,
+          borderRadius: 15,
+          background: tile.gradient,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: 24,
           flexShrink: 0,
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.4)",
         }}
       >
-        {tile.glyph}
+        <ModeIcon name={tile.mode} size={26} color="#fff" strokeWidth={2.1} />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div
@@ -166,34 +176,9 @@ function ModeTile({ tile }: { tile: Tile }) {
           {tile.description}
         </div>
       </div>
-      {tile.badge && (
-        <span
-          style={{
-            padding: "4px 10px",
-            borderRadius: 999,
-            background: "var(--c-card-soft)",
-            color: "var(--c-soft)",
-            fontSize: 10,
-            fontWeight: 700,
-            letterSpacing: 0.4,
-            textTransform: "uppercase",
-          }}
-        >
-          {tile.badge}
-        </span>
-      )}
-    </div>
+      <span aria-hidden style={{ color: "var(--c-soft)", flexShrink: 0, display: "inline-flex" }}>
+        <Chevron size={18} />
+      </span>
+    </Link>
   );
-
-  if (tile.href) {
-    return (
-      <Link
-        href={tile.href}
-        style={{ textDecoration: "none", color: "inherit" }}
-      >
-        {inner}
-      </Link>
-    );
-  }
-  return <div aria-disabled="true">{inner}</div>;
 }
