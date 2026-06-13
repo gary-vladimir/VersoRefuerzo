@@ -1,6 +1,6 @@
-// Verse-card preview. Front-only for M2 (no flip yet — the back face and
-// give-up state arrive in M3 with Card View). Used by the New Verse form's
-// live preview region above the form (specs.md §6.1).
+// Verse-card front face. Used by the New Verse form's live preview region
+// (specs.md §6.1) and anywhere a compact verse card is shown. The Card View
+// renders its own flippable faces, so this stays a simple front-only card.
 
 import type { CardColorId, VerseIconId } from "@/lib/catalog";
 import { VerseIcon } from "@/components/icons/VerseIcons";
@@ -25,8 +25,9 @@ export function VerseCard({ refDisplay, version, color, icon, size = "md" }: Pro
         height: dim.h,
         borderRadius: "var(--r-2xl)",
         background: `var(--card-${color}-bg)`,
-        boxShadow:
-          "0 18px 36px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.25)",
+        // Ambient shadow tinted by the card's own color so it glows on the
+        // page instead of casting a flat grey drop shadow.
+        boxShadow: `0 20px 44px rgb(var(--card-${color}-rgb) / 0.42), inset 0 1px 0 rgba(255,255,255,0.3)`,
         padding: dim.padding,
         display: "flex",
         flexDirection: "column",
@@ -36,22 +37,36 @@ export function VerseCard({ refDisplay, version, color, icon, size = "md" }: Pro
         overflow: "hidden",
       }}
     >
+      {/* Top-light sheen — makes the gradient read as a glossy surface. Painted
+          first so the positioned content below sits on top of it. */}
+      <span
+        aria-hidden
+        style={{
+          position: "absolute",
+          inset: 0,
+          background:
+            "radial-gradient(120% 80% at 20% 0%, rgba(255,255,255,0.28), transparent 60%)",
+          pointerEvents: "none",
+        }}
+      />
+
       <div
         style={{
+          position: "relative",
           width: dim.iconBox,
           height: dim.iconBox,
           borderRadius: "calc(var(--r-2xl) - 8px)",
-          background: "rgba(255,255,255,0.18)",
+          background: "rgba(255,255,255,0.2)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          backdropFilter: "blur(2px)",
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.45)",
         }}
       >
         <VerseIcon id={icon} size={isMd ? 32 : 26} color="#fff" strokeWidth={2.2} />
       </div>
 
-      <div>
+      <div style={{ position: "relative" }}>
         <div
           style={{
             fontFamily: "var(--font-display)",
