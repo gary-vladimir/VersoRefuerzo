@@ -151,6 +151,8 @@ export const T = {
     deleteAccountConfirm: "¿Eliminar tu cuenta? Esto borra tus versos, colecciones y racha. No se puede deshacer.",
     deleteAccountConfirmCta: "Sí, eliminar",
     deleteAccountCancel: "Cancelar",
+    privacyLink: "Privacidad",
+    termsLink: "Términos",
   },
   en: {
     appName: "VersoRefuerzo",
@@ -289,6 +291,8 @@ export const T = {
     deleteAccountConfirm: "Delete your account? This wipes your verses, collections, and streak. It can't be undone.",
     deleteAccountConfirmCta: "Yes, delete",
     deleteAccountCancel: "Cancel",
+    privacyLink: "Privacy",
+    termsLink: "Terms",
   },
 } as const;
 
