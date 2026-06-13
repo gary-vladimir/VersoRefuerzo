@@ -13,6 +13,7 @@
 
 import { useState } from "react";
 import { tolerantCompare, type CompareResult } from "@/lib/bible/compare";
+import { play } from "@/lib/sounds/player";
 import { QualityButtons } from "./QualityButtons";
 import type { Quality } from "@/lib/srs/sm2";
 import type { SrsState } from "@/db/schema";
@@ -56,7 +57,9 @@ export function TypedRecall({
 
   function submit() {
     if (!draft.trim()) return;
-    setResult(tolerantCompare(draft, canonicalText));
+    const r = tolerantCompare(draft, canonicalText);
+    setResult(r);
+    play(r.quality >= 3 ? "pluck" : "thud");
   }
 
   return (
@@ -84,9 +87,16 @@ export function TypedRecall({
           <textarea
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                e.preventDefault();
+                submit();
+              }
+            }}
             placeholder={t.placeholder}
             rows={6}
             autoFocus
+            autoCapitalize="sentences"
             style={{
               width: "100%",
               padding: "12px 14px",
@@ -96,17 +106,18 @@ export function TypedRecall({
               background: "#fff",
               fontFamily: "var(--font-serif)",
               fontStyle: "italic",
-              fontSize: 15,
+              // 16px keeps iOS Safari from auto-zooming the field on focus.
+              fontSize: 16,
               lineHeight: 1.5,
               color: "var(--c-text)",
-              resize: "vertical",
-              outline: "none",
+              resize: "none",
             }}
           />
           <div style={{ display: "flex", gap: 10 }}>
             <button
               type="button"
               onClick={onCancel}
+              className="vr-press"
               style={secondaryButtonStyle}
             >
               {t.cancel}
@@ -115,6 +126,7 @@ export function TypedRecall({
               type="button"
               onClick={submit}
               disabled={!draft.trim()}
+              className="vr-press"
               style={{
                 ...primaryButtonStyle,
                 opacity: draft.trim() ? 1 : 0.6,
@@ -128,6 +140,7 @@ export function TypedRecall({
       ) : (
         <>
           <div
+            className="vr-fade-up"
             style={{
               display: "flex",
               alignItems: "center",
@@ -136,6 +149,7 @@ export function TypedRecall({
             }}
           >
             <span
+              className="vr-count-pop"
               style={{
                 fontFamily: "var(--font-display)",
                 fontWeight: 800,
@@ -218,6 +232,9 @@ function DiffPanel({
                   ? "rgba(16,185,129,0.15)"
                   : "rgba(244,63,94,0.18)",
                 color: result.matchedMask[i] ? "var(--c-emerald-500)" : "var(--c-rose-500)",
+                // Non-color cue (WCAG): missed words are underlined too.
+                textDecoration: result.matchedMask[i] ? "none" : "underline wavy",
+                textUnderlineOffset: 2,
                 fontWeight: 600,
               }}
             >
