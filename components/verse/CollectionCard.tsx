@@ -21,6 +21,7 @@ export function CollectionCard({ collection, sample, countLabel }: Props) {
   return (
     <Link
       href={`/library/collections/${collection.id}`}
+      className="vr-lift"
       style={{
         textDecoration: "none",
         color: "inherit",
@@ -63,7 +64,7 @@ export function CollectionCard({ collection, sample, countLabel }: Props) {
                 left: i * 20,
                 top: i * 2,
                 transform: `rotate(${(i - 1) * 4}deg)`,
-                boxShadow: "0 6px 12px rgba(0,0,0,0.14)",
+                boxShadow: `0 6px 14px rgb(var(--card-${color}-rgb) / 0.32)`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",

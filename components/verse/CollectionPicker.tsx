@@ -69,8 +69,10 @@ export function CollectionPicker({
             type="button"
             onClick={() => toggle(c.id)}
             aria-pressed={sel}
+            className="vr-press"
             style={{
-              padding: "6px 12px",
+              padding: "8px 14px",
+              minHeight: 38,
               borderRadius: 999,
               cursor: "pointer",
               border: "none",
@@ -165,8 +167,10 @@ export function CollectionPicker({
         <button
           type="button"
           onClick={() => setCreating(true)}
+          className="vr-press"
           style={{
-            padding: "6px 12px",
+            padding: "8px 14px",
+            minHeight: 38,
             borderRadius: 999,
             background: "var(--c-indigo-50)",
             color: "var(--c-indigo-700)",

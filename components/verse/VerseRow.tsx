@@ -24,6 +24,7 @@ import { formatDisplay } from "@/lib/bible/reference";
 import { isCardColor, isVerseIcon } from "@/lib/catalog";
 import type { Verse } from "@/db/schema";
 import { VerseIcon } from "@/components/icons/VerseIcons";
+import { Dots } from "@/components/icons/UiIcons";
 import { useToast } from "@/components/ui/Toast";
 
 type Strings = {
@@ -135,7 +136,7 @@ export function VerseRow({ verse, textPreview, locale, strings }: Props) {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            boxShadow: `0 4px 10px var(--card-${color}-solid)30`,
+            boxShadow: `0 4px 12px rgb(var(--card-${color}-rgb) / 0.3)`,
           }}
         >
           <VerseIcon id={icon} size={22} color="#fff" strokeWidth={2.3} />
@@ -229,25 +230,27 @@ export function VerseRow({ verse, textPreview, locale, strings }: Props) {
           aria-haspopup="menu"
           aria-expanded={menuOpen}
           aria-label="more"
+          className="vr-press"
           style={{
-            width: 28,
-            height: 28,
+            width: 32,
+            height: 32,
             borderRadius: 8,
-            background: "transparent",
+            background: menuOpen ? "var(--c-card-soft)" : "transparent",
             border: "none",
             cursor: "pointer",
             color: "var(--c-soft)",
-            fontSize: 18,
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",
+            transition: "background var(--dur-2) ease",
           }}
         >
-          ⋯
+          <Dots size={18} />
         </button>
         {menuOpen && (
           <div
             role="menu"
+            className="vr-pop"
             style={{
               position: "absolute",
               right: 0,
@@ -255,10 +258,11 @@ export function VerseRow({ verse, textPreview, locale, strings }: Props) {
               marginTop: 4,
               background: "#fff",
               borderRadius: "var(--r-md)",
-              boxShadow: "var(--shadow-md)",
+              boxShadow: "var(--shadow-lg)",
               minWidth: 160,
               padding: 4,
               zIndex: 5,
+              transformOrigin: "top right",
             }}
           >
             <Link
