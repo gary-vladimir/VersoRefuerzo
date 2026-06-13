@@ -3,6 +3,8 @@ import {
   applyPracticeForStreak,
   deriveEffectiveStreak,
   isSameTzDay,
+  localHour,
+  localDayNumber,
 } from "@/lib/streak/streak";
 
 describe("applyPracticeForStreak", () => {
@@ -132,5 +134,39 @@ describe("isSameTzDay", () => {
     expect(
       isSameTzDay(new Date("2026-01-16T02:00:00Z"), "America/Mexico_City", now),
     ).toBe(true);
+  });
+});
+
+describe("localHour", () => {
+  it("returns the hour in the user's tz", () => {
+    // 18:00 UTC is 12:00 in America/Mexico_City (UTC-6).
+    expect(localHour("America/Mexico_City", new Date("2026-01-15T18:00:00Z"))).toBe(12);
+  });
+
+  it("falls back to UTC when tz is null", () => {
+    expect(localHour(null, new Date("2026-01-15T18:00:00Z"))).toBe(18);
+  });
+});
+
+describe("localDayNumber", () => {
+  const tz = "America/Mexico_City";
+
+  it("is stable across different times on the same local day", () => {
+    const morning = localDayNumber(tz, new Date("2026-01-15T15:00:00Z")); // 09:00 local
+    const lateNight = localDayNumber(tz, new Date("2026-01-16T05:00:00Z")); // 23:00 local, still Jan 15
+    expect(morning).toBe(lateNight);
+  });
+
+  it("increments by exactly 1 on the next local day", () => {
+    const a = localDayNumber(tz, new Date("2026-01-15T15:00:00Z"));
+    const b = localDayNumber(tz, new Date("2026-01-16T15:00:00Z"));
+    expect(b - a).toBe(1);
+  });
+
+  it("rotates a daily pick to a new index each day", () => {
+    const count = 5;
+    const d0 = localDayNumber(tz, new Date("2026-01-15T15:00:00Z")) % count;
+    const d1 = localDayNumber(tz, new Date("2026-01-16T15:00:00Z")) % count;
+    expect(d0).not.toBe(d1);
   });
 });
