@@ -9,6 +9,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { User } from "@/db/schema";
+import { NavIcon, type NavName } from "./NavIcons";
 
 type Strings = {
   home: string;
@@ -21,7 +22,7 @@ type Strings = {
 type NavItem = {
   href: "/" | "/practice" | "/library";
   label: string;
-  glyph: string;
+  icon: NavName;
   match: (p: string) => boolean;
 };
 
@@ -34,17 +35,17 @@ type Props = {
 export function DesktopSidebar({ user, onProfileClick, strings: t }: Props) {
   const pathname = usePathname() ?? "/";
   const items: NavItem[] = [
-    { href: "/", label: t.home, glyph: "🏠", match: (p) => p === "/" },
+    { href: "/", label: t.home, icon: "home", match: (p) => p === "/" },
     {
       href: "/practice",
       label: t.practice,
-      glyph: "✦",
+      icon: "practice",
       match: (p) => p.startsWith("/practice"),
     },
     {
       href: "/library",
       label: t.library,
-      glyph: "📚",
+      icon: "library",
       match: (p) => p.startsWith("/library"),
     },
   ];
@@ -68,7 +69,7 @@ export function DesktopSidebar({ user, onProfileClick, strings: t }: Props) {
         // hidden on mobile; inline styles would override the media rule.
         flexDirection: "column",
         gap: 18,
-        zIndex: 40,
+        zIndex: "var(--z-sidebar)",
       }}
     >
       <div
@@ -86,16 +87,18 @@ export function DesktopSidebar({ user, onProfileClick, strings: t }: Props) {
 
       <Link
         href="/verses/new"
+        className="vr-press vr-lift"
         style={{
           background: "var(--brand-primary)",
           color: "#fff",
           textDecoration: "none",
-          padding: "10px 14px",
+          padding: "11px 14px",
           borderRadius: "var(--r-full)",
           fontFamily: "var(--font-display)",
           fontWeight: 700,
           fontSize: 13,
           textAlign: "center",
+          boxShadow: "0 8px 20px rgb(var(--card-indigo-rgb) / 0.35)",
         }}
       >
         + {t.addVerse}
@@ -109,7 +112,9 @@ export function DesktopSidebar({ user, onProfileClick, strings: t }: Props) {
               key={item.href}
               href={item.href}
               aria-current={active ? "page" : undefined}
+              className="vr-nav-link"
               style={{
+                position: "relative",
                 display: "flex",
                 alignItems: "center",
                 gap: 10,
@@ -121,11 +126,29 @@ export function DesktopSidebar({ user, onProfileClick, strings: t }: Props) {
                 fontFamily: "var(--font-display)",
                 fontWeight: 700,
                 fontSize: 14,
+                transition: "background var(--dur-2) ease, color var(--dur-2) ease",
               }}
             >
-              <span aria-hidden style={{ fontSize: 16 }}>
-                {item.glyph}
-              </span>
+              {active && (
+                <span
+                  aria-hidden
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    top: 8,
+                    bottom: 8,
+                    width: 3,
+                    borderRadius: 3,
+                    background: "var(--brand-primary)",
+                  }}
+                />
+              )}
+              <NavIcon
+                name={item.icon}
+                size={18}
+                strokeWidth={active ? 2.4 : 2}
+                color={active ? "var(--c-indigo-700)" : "var(--c-muted)"}
+              />
               {item.label}
             </Link>
           );
@@ -138,6 +161,7 @@ export function DesktopSidebar({ user, onProfileClick, strings: t }: Props) {
         type="button"
         onClick={onProfileClick}
         aria-label={user.displayName}
+        className="vr-press"
         style={{
           background: "var(--c-card-soft)",
           border: "none",
