@@ -21,6 +21,7 @@ import { isCardColor, isVerseIcon, type CardColorId, type VerseIconId } from "@/
 import { formatDisplay } from "@/lib/bible/reference";
 import { firstLetterRender } from "@/lib/bible/tokenize";
 import { VerseIcon } from "@/components/icons/VerseIcons";
+import { Close, Eye, Pencil, Bulb } from "@/components/icons/UiIcons";
 import type { SrsState } from "@/db/schema";
 import { play } from "@/lib/sounds/player";
 import { QualityButtons } from "./QualityButtons";
@@ -111,7 +112,9 @@ export function ClassicSession({
   // Per-session aggregates for the summary screen.
   const sessionStartRef = useRef<number>(Date.now());
   const reviewedRef = useRef<number>(0);
+  const correctRef = useRef<number>(0);
   const cardStartRef = useRef<number>(Date.now());
+  const aloudOkRef = useRef<HTMLButtonElement | null>(null);
 
   const current = queue[pos] ?? null;
 
@@ -119,6 +122,64 @@ export function ClassicSession({
     cardStartRef.current = Date.now();
     setHintShown(false);
   }, [pos]);
+
+  // Keyboard shortcuts for desktop power users (no effect on touch). Space or
+  // Enter reveals; 1/2/3/4 grade Otra vez / Difícil / Bien / Fácil (quality
+  // 1/3/4/5); S skips; Esc exits. Inert while typing or the tip is open.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (aloudTipOpen || typedActive) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (phase === "submitting") return;
+      const el = e.target as HTMLElement | null;
+      if (
+        el &&
+        (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)
+      ) {
+        return;
+      }
+      if (phase === "front") {
+        if (e.key === " " || e.key === "Enter") {
+          e.preventDefault();
+          reveal();
+        } else if (e.key === "s" || e.key === "S") {
+          e.preventDefault();
+          skipCard();
+        } else if (e.key === "Escape") {
+          e.preventDefault();
+          exit();
+        }
+      } else if (phase === "revealed") {
+        const map: Record<string, Quality> = { "1": 1, "2": 3, "3": 4, "4": 5 };
+        const q = map[e.key];
+        if (q !== undefined) {
+          e.preventDefault();
+          grade(q);
+        } else if (e.key === "Escape") {
+          e.preventDefault();
+          exit();
+        }
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, typedActive, aloudTipOpen, pos, queue, hintShown]);
+
+  // Aloud-tip dialog: focus the OK button on open and close on Escape.
+  useEffect(() => {
+    if (!aloudTipOpen) return;
+    aloudOkRef.current?.focus();
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        dismissAloudTip();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aloudTipOpen]);
 
   // Empty-state — nothing due.
   if (!current && phase === "done" && reviewedRef.current === 0) {
@@ -181,6 +242,7 @@ export function ClassicSession({
     const elapsedMs = Date.now() - sessionStartRef.current;
     const params = new URLSearchParams({
       reviewed: String(reviewedRef.current),
+      correct: String(correctRef.current),
       elapsedMs: String(elapsedMs),
     });
     router.replace(`/practice/summary?${params.toString()}`);
@@ -260,6 +322,7 @@ export function ClassicSession({
     // §6.9 audio cues: pluck on a passing grade, thud on Otra vez.
     play(q >= 3 ? "pluck" : "thud");
     reviewedRef.current += 1;
+    if (q >= 4) correctRef.current += 1;
     setTypedActive(false);
     advance();
   }
@@ -313,9 +376,10 @@ export function ClassicSession({
             type="button"
             onClick={exit}
             aria-label={t.exit}
+            className="vr-press"
             style={{
-              width: 36,
-              height: 36,
+              width: 40,
+              height: 40,
               borderRadius: 12,
               background: "#fff",
               border: "none",
@@ -324,12 +388,10 @@ export function ClassicSession({
               justifyContent: "center",
               boxShadow: "var(--shadow-xs)",
               color: "var(--c-text)",
-              fontWeight: 800,
-              fontSize: 18,
               cursor: "pointer",
             }}
           >
-            ×
+            <Close size={18} />
           </button>
           <div
             style={{
@@ -551,7 +613,7 @@ export function ClassicSession({
                       lineHeight: 1.4,
                     }}
                   >
-                    💡 {current.hint}
+                    <Bulb size={13} /> {current.hint}
                   </div>
                 )}
 
@@ -649,7 +711,7 @@ export function ClassicSession({
                       lineHeight: 1.4,
                     }}
                   >
-                    💡 {current.hint}
+                    <Bulb size={13} /> {current.hint}
                   </div>
                 )}
                 <p
@@ -668,12 +730,13 @@ export function ClassicSession({
         )}
       </section>
 
-      <footer style={{ padding: "20px 16px 32px" }}>
+      <footer style={{ padding: "20px 16px max(32px, calc(20px + env(safe-area-inset-bottom)))" }}>
         {typedActive ? null : phase === "front" ? (
           <>
             <button
               type="button"
               onClick={reveal}
+              className="vr-press"
               style={{
                 width: "100%",
                 height: 56,
@@ -686,19 +749,24 @@ export function ClassicSession({
                 fontSize: 17,
                 cursor: "pointer",
                 boxShadow:
-                  "0 8px 20px rgba(99,102,241,0.35), inset 0 1px 0 rgba(255,255,255,0.2)",
+                  "0 8px 20px rgb(var(--card-indigo-rgb) / 0.35), inset 0 1px 0 rgba(255,255,255,0.2)",
                 marginBottom: 12,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
               }}
             >
-              👁 {t.reveal}
+              <Eye size={20} /> {t.reveal}
             </button>
             {sessionMode === "classic" && (
               <button
                 type="button"
                 onClick={enterTyped}
+                className="vr-press"
                 style={{
                   width: "100%",
-                  height: 44,
+                  height: 46,
                   background: "#fff",
                   color: "var(--c-indigo-700)",
                   border: "none",
@@ -709,9 +777,13 @@ export function ClassicSession({
                   cursor: "pointer",
                   boxShadow: "var(--shadow-xs)",
                   marginBottom: 12,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
                 }}
               >
-                ✎ {t.writeIt}
+                <Pencil size={16} /> {t.writeIt}
               </button>
             )}
             <div style={{ textAlign: "center" }}>
@@ -769,12 +841,12 @@ export function ClassicSession({
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(15,14,26,0.45)",
+            background: "var(--scrim)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             padding: 24,
-            zIndex: 100,
+            zIndex: "var(--z-modal)",
           }}
         >
           <div
@@ -801,14 +873,16 @@ export function ClassicSession({
               {t.aloudTip}
             </p>
             <button
+              ref={aloudOkRef}
               type="button"
               onClick={dismissAloudTip}
+              className="vr-press"
               style={{
                 background: "var(--brand-primary)",
                 color: "#fff",
                 border: "none",
                 borderRadius: "var(--r-full)",
-                padding: "10px 22px",
+                padding: "12px 24px",
                 fontFamily: "var(--font-display)",
                 fontWeight: 700,
                 fontSize: 13,
