@@ -17,6 +17,7 @@ import { formatDisplay } from "@/lib/bible/reference";
 import { tokenize, type Token } from "@/lib/bible/tokenize";
 import { segmentTokens } from "@/lib/srs/scramble";
 import { VerseIcon } from "@/components/icons/VerseIcons";
+import { Close, Heart, HeartFilled } from "@/components/icons/UiIcons";
 import { play } from "@/lib/sounds/player";
 import type { Verse } from "@/db/schema";
 
@@ -190,7 +191,7 @@ export function WordScramble({ verse, text, copyright, locale, strings: t }: Pro
         minHeight: "100dvh",
         background:
           "linear-gradient(180deg, var(--card-emerald-tint) 0%, var(--c-bg) 50%)",
-        paddingBottom: 32,
+        paddingBottom: "max(32px, calc(20px + env(safe-area-inset-bottom)))",
         fontFamily: "var(--font-sans)",
       }}
     >
@@ -206,9 +207,10 @@ export function WordScramble({ verse, text, copyright, locale, strings: t }: Pro
           type="button"
           onClick={() => router.push("/practice")}
           aria-label={t.exit}
+          className="vr-press"
           style={iconButtonStyle}
         >
-          ×
+          <Close size={18} />
         </button>
         <div
           style={{
@@ -265,11 +267,13 @@ export function WordScramble({ verse, text, copyright, locale, strings: t }: Pro
             color: "var(--c-text)",
           }}
         >
-          {Array.from({ length: STARTING_INTENTOS }, (_, i) => (
-            <span key={i} style={{ opacity: i < intentos ? 1 : 0.25 }}>
-              {i < intentos ? "❤" : "♡"}
-            </span>
-          ))}
+          {Array.from({ length: STARTING_INTENTOS }, (_, i) =>
+            i < intentos ? (
+              <HeartFilled key={i} size={15} color="var(--c-rose-500)" />
+            ) : (
+              <Heart key={i} size={15} color="var(--c-soft)" />
+            ),
+          )}
         </span>
       </header>
 
@@ -348,10 +352,9 @@ export function WordScramble({ verse, text, copyright, locale, strings: t }: Pro
             type="button"
             disabled={!!done}
             onClick={() => tap(c)}
+            className={bouncedIndex === c.correctOrder ? "vr-press vr-shake" : "vr-press"}
             style={{
               ...poolChipStyle,
-              transform:
-                bouncedIndex === c.correctOrder ? "translateY(-4px)" : "none",
               borderColor:
                 bouncedIndex === c.correctOrder
                   ? "var(--c-rose-500)"
@@ -436,11 +439,12 @@ export function WordScramble({ verse, text, copyright, locale, strings: t }: Pro
             <button
               type="button"
               onClick={() => router.refresh()}
+              className="vr-press"
               style={primaryActionStyle}
             >
               {t.playAgain}
             </button>
-            <Link href="/practice" style={secondaryActionStyle}>
+            <Link href="/practice" className="vr-press" style={secondaryActionStyle}>
               {t.backHub}
             </Link>
           </div>
@@ -474,8 +478,8 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 const iconButtonStyle: React.CSSProperties = {
-  width: 36,
-  height: 36,
+  width: 40,
+  height: 40,
   borderRadius: 12,
   background: "#fff",
   border: "none",
@@ -484,8 +488,6 @@ const iconButtonStyle: React.CSSProperties = {
   justifyContent: "center",
   boxShadow: "var(--shadow-xs)",
   color: "var(--c-text)",
-  fontSize: 18,
-  fontWeight: 800,
   cursor: "pointer",
 };
 
@@ -505,14 +507,17 @@ function placedChipStyle(color: CardColorId): React.CSSProperties {
 const poolChipStyle: React.CSSProperties = {
   background: "#fff",
   border: "1.5px solid transparent",
-  padding: "8px 12px",
+  padding: "10px 14px",
+  minHeight: 44,
+  display: "inline-flex",
+  alignItems: "center",
   borderRadius: 999,
   fontFamily: "var(--font-serif)",
-  fontSize: 14,
+  fontSize: 15,
   fontWeight: 600,
   boxShadow: "var(--shadow-xs)",
   cursor: "pointer",
-  transition: "transform .2s, border-color .2s",
+  transition: "border-color .2s",
   color: "var(--c-text)",
 };
 
