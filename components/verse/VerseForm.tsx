@@ -352,7 +352,7 @@ export function VerseForm({
                       fontWeight: 700,
                       fontSize: 12,
                       boxShadow: sel
-                        ? `0 4px 10px var(--card-${color}-solid)40`
+                        ? `0 4px 12px rgb(var(--card-${color}-rgb) / 0.4)`
                         : "inset 0 0 0 1.5px var(--c-line)",
                       transition: "all .25s",
                       cursor: "pointer",

@@ -204,7 +204,7 @@ export function FillTheGap({
             alignItems: "center",
             gap: 10,
             flex: 1,
-            boxShadow: `0 8px 20px var(--card-${color}-solid)40`,
+            boxShadow: `0 8px 22px rgb(var(--card-${color}-rgb) / 0.4)`,
           }}
         >
           <VerseIcon id={icon} size={26} color="#fff" strokeWidth={2.2} />
