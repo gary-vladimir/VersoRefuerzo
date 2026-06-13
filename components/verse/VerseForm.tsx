@@ -19,7 +19,7 @@ import { VerseCard } from "@/components/ui/VerseCard";
 import { ColorPicker } from "./ColorPicker";
 import { IconPicker } from "./IconPicker";
 import { CollectionPicker } from "./CollectionPicker";
-import { Check, AlertCircle } from "@/components/icons/UiIcons";
+import { Check, AlertCircle, Bulb, Close } from "@/components/icons/UiIcons";
 import type { Collection } from "@/db/schema";
 import type { StringTable } from "@/lib/i18n/strings";
 
@@ -169,7 +169,7 @@ export function VerseForm({
       style={{
         background: "var(--c-bg)",
         minHeight: "100dvh",
-        paddingBottom: 120,
+        paddingBottom: "calc(120px + env(safe-area-inset-bottom))",
         fontFamily: "var(--font-sans)",
       }}
     >
@@ -188,9 +188,10 @@ export function VerseForm({
           type="button"
           onClick={() => router.back()}
           aria-label={t.cancel}
+          className="vr-press"
           style={{
-            width: 36,
-            height: 36,
+            width: 40,
+            height: 40,
             borderRadius: 12,
             background: "var(--c-bg)",
             border: "none",
@@ -199,12 +200,9 @@ export function VerseForm({
             justifyContent: "center",
             cursor: "pointer",
             color: "var(--c-text)",
-            fontFamily: "var(--font-display)",
-            fontSize: 18,
-            fontWeight: 800,
           }}
         >
-          ×
+          <Close size={18} />
         </button>
         <h1
           style={{
@@ -231,7 +229,7 @@ export function VerseForm({
           transition: "background .4s ease",
         }}
       >
-        <div className="vr-card-rise" key={`${color}-${icon}`}>
+        <div className="vr-card-swap" key={`${color}-${icon}`}>
           <VerseCard
             refDisplay={refDisplay}
             version={version || "—"}
@@ -279,7 +277,6 @@ export function VerseForm({
               style={{
                 flex: 1,
                 border: "none",
-                outline: "none",
                 fontSize: 16,
                 fontFamily: "var(--font-display)",
                 fontWeight: 700,
@@ -402,7 +399,9 @@ export function VerseForm({
               locale === "es" ? "Solo aparece si te rindes" : "Only shows if you give up"
             }
           >
-            💡 {t.hint}
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+              <Bulb size={13} /> {t.hint}
+            </span>
           </FormLabel>
           <div
             style={{
@@ -419,7 +418,6 @@ export function VerseForm({
               style={{
                 width: "100%",
                 border: "none",
-                outline: "none",
                 fontSize: 14,
                 fontFamily: "var(--font-sans)",
                 fontStyle: "italic",
@@ -470,12 +468,15 @@ export function VerseForm({
           bottom: 0,
           left: 0,
           right: 0,
-          padding: "14px 20px 30px",
+          padding: "14px 20px max(30px, calc(20px + env(safe-area-inset-bottom)))",
           background: "linear-gradient(180deg, transparent, var(--c-bg) 35%)",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           gap: 8,
+          // Above the bottom tab bar so the save button stays fully tappable
+          // on the focused New Verse screen.
+          zIndex: "var(--z-overlay)",
         }}
       >
         {submitError && (
@@ -485,6 +486,7 @@ export function VerseForm({
           type="button"
           onClick={submit}
           disabled={!canSave}
+          className="vr-press"
           style={{
             background: canSave ? "var(--brand-primary)" : "var(--c-soft)",
             color: "#fff",
