@@ -17,6 +17,7 @@ import { COLLECTION_COLORS } from "@/lib/catalog";
 import { T } from "@/lib/i18n/strings";
 import { UNDO_WINDOW_MS } from "@/lib/constants";
 import { VerseRow } from "@/components/verse/VerseRow";
+import { CollectionActions } from "@/components/verse/CollectionActions";
 
 export default async function CollectionDetailPage({
   params,
@@ -34,11 +35,20 @@ export default async function CollectionDetailPage({
   await db
     .delete(versesTable)
     .where(and(eq(versesTable.userId, user.id), lt(versesTable.deletedAt, cutoff)));
+  await db
+    .delete(collectionsTable)
+    .where(and(eq(collectionsTable.userId, user.id), lt(collectionsTable.deletedAt, cutoff)));
 
   const found = await db
     .select()
     .from(collectionsTable)
-    .where(and(eq(collectionsTable.id, id), eq(collectionsTable.userId, user.id)))
+    .where(
+      and(
+        eq(collectionsTable.id, id),
+        eq(collectionsTable.userId, user.id),
+        isNull(collectionsTable.deletedAt),
+      ),
+    )
     .limit(1);
   const collection = found[0];
   if (!collection) notFound();
@@ -103,29 +113,46 @@ export default async function CollectionDetailPage({
         >
           ← {t.library}
         </Link>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span
-            aria-hidden
-            style={{
-              width: 12,
-              height: 12,
-              borderRadius: "50%",
-              background: preset.dot,
-              display: "inline-block",
-            }}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            justifyContent: "space-between",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+            <span
+              aria-hidden
+              style={{
+                width: 12,
+                height: 12,
+                borderRadius: "50%",
+                background: preset.dot,
+                display: "inline-block",
+                flexShrink: 0,
+              }}
+            />
+            <h1
+              style={{
+                margin: 0,
+                fontFamily: "var(--font-display)",
+                fontWeight: 800,
+                fontSize: 24,
+                color: "var(--c-text)",
+                letterSpacing: "-0.5px",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {collection.name}
+            </h1>
+          </div>
+          <CollectionActions
+            id={collection.id}
+            strings={{ delete: t.delete, deleted: t.collectionDeleted, undo: t.undo }}
           />
-          <h1
-            style={{
-              margin: 0,
-              fontFamily: "var(--font-display)",
-              fontWeight: 800,
-              fontSize: 24,
-              color: "var(--c-text)",
-              letterSpacing: "-0.5px",
-            }}
-          >
-            {collection.name}
-          </h1>
         </div>
         {collection.description && (
           <p
