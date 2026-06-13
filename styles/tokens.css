@@ -142,4 +142,53 @@
   --shadow-xl:
     0 32px 60px rgba(79, 70, 229, 0.22), 0 10px 24px rgba(15, 14, 26, 0.08);
   --shadow-glow: 0 0 0 4px rgba(139, 92, 246, 0.18);
+
+  /* Per-color RGB channels (space-separated, for rgb(var(--x) / a) syntax).
+     Derived from the matching --card-*-solid hexes. These let components
+     build translucent colored shadows/rings without hardcoding rgba(). */
+  --card-indigo-rgb: 99 102 241;
+  --card-violet-rgb: 139 92 246;
+  --card-rose-rgb: 236 72 153;
+  --card-amber-rgb: 245 158 11;
+  --card-emerald-rgb: 16 185 129;
+  --card-sky-rgb: 14 165 233;
+  --card-crimson-rgb: 239 68 68;
+  --card-midnight-rgb: 49 46 129;
+
+  /* Motion system — shared easings + durations so every transition reads
+     from one place. --ease-snap overshoots slightly for "pop" feedback. */
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-spring: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-snap: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-1: 120ms;
+  --dur-2: 200ms;
+  --dur-3: 320ms;
+  --dur-flip: 700ms;
+  --tap-min: 44px;
+
+  /* Surfaces, glass, scrim, skeleton, sheen */
+  --glass-bg-strong: rgba(255, 255, 255, 0.92);
+  --glass-blur: saturate(180%) blur(14px);
+  --scrim: rgba(15, 14, 26, 0.45);
+  --surface-sunken: #f1eefb;
+  --skeleton: linear-gradient(90deg, #ece9f6 25%, #f6f4fc 50%, #ece9f6 75%);
+  --sheen: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.45) 50%, transparent 70%);
+
+  /* Layout — the tab-bar height folds in the bottom safe-area inset so the
+     mobile main column and FAB clear the home indicator on notched phones. */
+  --tabbar-h: calc(64px + env(safe-area-inset-bottom));
+
+  /* z-index scale — one source of truth, no more magic numbers. */
+  --z-fab: 30;
+  --z-sidebar: 40;
+  --z-tabbar: 50;
+  --z-overlay: 100;
+  --z-modal: 200;
+  --z-toast: 1000;
+
+  /* Extra semantic shadows used by the refreshed components. */
+  --shadow-press: inset 0 2px 6px rgba(15, 14, 26, 0.1);
+  --shadow-focus: 0 0 0 3px rgba(99, 102, 241, 0.35);
+  --shadow-card-hover:
+    0 6px 14px rgba(15, 14, 26, 0.06), 0 28px 52px rgba(79, 70, 229, 0.2);
 }
