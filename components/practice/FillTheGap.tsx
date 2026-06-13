@@ -25,6 +25,7 @@ import Link from "next/link";
 import { isCardColor, isVerseIcon, type CardColorId, type VerseIconId } from "@/lib/catalog";
 import { formatDisplay } from "@/lib/bible/reference";
 import { VerseIcon } from "@/components/icons/VerseIcons";
+import { Close, Bulb, Heart, HeartFilled } from "@/components/icons/UiIcons";
 import { play } from "@/lib/sounds/player";
 import type { Verse } from "@/db/schema";
 import type { BlankPlan } from "@/lib/srs/cloze";
@@ -174,7 +175,7 @@ export function FillTheGap({
         minHeight: "100dvh",
         background:
           "linear-gradient(180deg, var(--card-violet-tint) 0%, var(--c-bg) 50%)",
-        paddingBottom: 32,
+        paddingBottom: "max(32px, calc(20px + env(safe-area-inset-bottom)))",
         fontFamily: "var(--font-sans)",
       }}
     >
@@ -190,9 +191,10 @@ export function FillTheGap({
           type="button"
           onClick={() => router.push("/practice")}
           aria-label={t.exit}
+          className="vr-press"
           style={iconButtonStyle}
         >
-          ×
+          <Close size={18} />
         </button>
         <div
           style={{
@@ -247,11 +249,13 @@ export function FillTheGap({
             color: "var(--c-text)",
           }}
         >
-          {Array.from({ length: STARTING_INTENTOS }, (_, i) => (
-            <span key={i} style={{ opacity: i < intentos ? 1 : 0.25 }}>
-              {i < intentos ? "❤" : "♡"}
-            </span>
-          ))}
+          {Array.from({ length: STARTING_INTENTOS }, (_, i) =>
+            i < intentos ? (
+              <HeartFilled key={i} size={15} color="var(--c-rose-500)" />
+            ) : (
+              <Heart key={i} size={15} color="var(--c-soft)" />
+            ),
+          )}
         </span>
       </header>
 
@@ -295,6 +299,9 @@ export function FillTheGap({
           return (
             <span
               key={i}
+              className={
+                isSolved ? "vr-pop" : wrongFlash && isActive ? "vr-shake" : undefined
+              }
               style={{
                 display: "inline-block",
                 padding: "0 6px",
@@ -311,8 +318,7 @@ export function FillTheGap({
                     : "var(--c-soft)",
                 fontWeight: 700,
                 margin: "0 1px",
-                transform: wrongFlash && isActive ? "translateX(2px)" : "none",
-                transition: "transform .12s, background .25s",
+                transition: "background .25s",
               }}
             >
               {tok.prefix}
@@ -336,6 +342,7 @@ export function FillTheGap({
               key={opt}
               type="button"
               onClick={() => tap(opt)}
+              className="vr-press"
               style={optionButtonStyle}
             >
               {opt}
@@ -345,13 +352,18 @@ export function FillTheGap({
             type="button"
             onClick={showFirstLetter}
             disabled={hintRevealed[active]}
+            className="vr-press"
             style={{
               ...hintButtonStyle,
               gridColumn: "1 / -1",
               opacity: hintRevealed[active] ? 0.5 : 1,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
             }}
           >
-            💡 {t.showFirstLetter}
+            <Bulb size={14} /> {t.showFirstLetter}
           </button>
         </section>
       )}
@@ -423,11 +435,12 @@ export function FillTheGap({
             <button
               type="button"
               onClick={() => router.refresh()}
+              className="vr-press"
               style={primaryActionStyle}
             >
               {t.playAgain}
             </button>
-            <Link href="/practice" style={secondaryActionStyle}>
+            <Link href="/practice" className="vr-press" style={secondaryActionStyle}>
               {t.backHub}
             </Link>
           </div>
@@ -466,8 +479,8 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 const iconButtonStyle: React.CSSProperties = {
-  width: 36,
-  height: 36,
+  width: 40,
+  height: 40,
   borderRadius: 12,
   background: "#fff",
   border: "none",
@@ -476,8 +489,6 @@ const iconButtonStyle: React.CSSProperties = {
   justifyContent: "center",
   boxShadow: "var(--shadow-xs)",
   color: "var(--c-text)",
-  fontSize: 18,
-  fontWeight: 800,
   cursor: "pointer",
 };
 
@@ -485,6 +496,7 @@ const optionButtonStyle: React.CSSProperties = {
   background: "#fff",
   border: "none",
   padding: "14px 12px",
+  minHeight: 50,
   borderRadius: "var(--r-xl)",
   fontFamily: "var(--font-display)",
   fontWeight: 700,
