@@ -1,15 +1,18 @@
 # Sound effects
 
-The app expects five short, royalty-free MP3 cues here. Spec §6.9 caps each at
-**200 ms** and §16.8 says the toggle defaults to ON.
+The five UI cues (spec §6.9 / §16.8) are **synthesized at runtime with the
+Web Audio API** in `lib/sounds/player.ts` — there are no audio files to ship.
 
-| File | Plays on | Tone |
+| Cue | Plays on | Synthesis |
 | --- | --- | --- |
-| `flip.mp3` | Card flip | subtle whoosh |
-| `pluck.mp3` | Correct answer / quality button | gentle pluck |
-| `thud.mp3` | Incorrect answer | soft thud |
-| `chime.mp3` | Session complete | uplifting chime |
-| `flame.mp3` | Streak extended | warm flame crackle |
+| `flip` | Card flip / reveal | triangle 1200→600 Hz, ~60 ms whoosh |
+| `pluck` | Correct answer / quality tap | triangle 660 Hz, ~140 ms |
+| `thud` | Incorrect answer | sine 180→90 Hz through a low-pass, ~120 ms |
+| `chime` | Session complete | two rising sines (A5, E6), ~190 ms |
+| `flame` | Streak extended | sawtooth 300→900 Hz, opening low-pass, ~130 ms |
 
-Drop real assets here before shipping. Without them, `lib/sounds/player.ts`
-silently no-ops every `play()` call — the app remains fully functional.
+Each cue is royalty-free by construction and well under the 200 ms spec cap.
+The toggle in the Profile sheet (persisted on `users.soundEnabled`) gates
+playback; with sound off, or on a browser without `AudioContext`, `play()`
+no-ops silently. This directory is kept only so the Docker `COPY public`
+step always succeeds.
