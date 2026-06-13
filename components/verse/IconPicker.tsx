@@ -16,13 +16,13 @@ export function IconPicker({
     <div
       role="radiogroup"
       aria-label="Ícono"
+      className="vr-icon-grid"
       style={{
         background: "#fff",
         borderRadius: "var(--r-lg)",
         padding: 10,
         boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
         display: "grid",
-        gridTemplateColumns: "repeat(8, 1fr)",
         gap: 6,
       }}
     >

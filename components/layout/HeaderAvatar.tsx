@@ -4,43 +4,49 @@
 // (and anywhere else a server-rendered surface needs the avatar tap to
 // open the sheet — the desktop sidebar has its own analog button).
 
+import { useState } from "react";
 import { useProfileSheet } from "./AppShell";
 import type { User } from "@/db/schema";
 
 export function HeaderAvatar({ user }: { user: User }) {
   const { open } = useProfileSheet();
+  const [imgError, setImgError] = useState(false);
   const initial = user.displayName.trim().charAt(0).toUpperCase() || "?";
+  const showImg = Boolean(user.photoUrl) && !imgError;
   return (
     <button
       type="button"
       onClick={open}
       aria-label={user.displayName}
+      className="vr-press"
       style={{
-        width: 36,
-        height: 36,
+        width: 40,
+        height: 40,
         borderRadius: "50%",
         border: "none",
         padding: 0,
         cursor: "pointer",
-        background: user.photoUrl ? "transparent" : "var(--brand-rose)",
+        background: showImg ? "transparent" : "var(--brand-rose)",
         color: "#fff",
         fontFamily: "var(--font-display)",
         fontWeight: 800,
-        fontSize: 14,
+        fontSize: 15,
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
         overflow: "hidden",
+        boxShadow: "var(--shadow-sm)",
       }}
     >
-      {user.photoUrl ? (
+      {showImg ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={user.photoUrl}
+          src={user.photoUrl as string}
           alt=""
-          width={36}
-          height={36}
-          style={{ width: 36, height: 36, objectFit: "cover" }}
+          width={40}
+          height={40}
+          onError={() => setImgError(true)}
+          style={{ width: 40, height: 40, objectFit: "cover" }}
         />
       ) : (
         initial
