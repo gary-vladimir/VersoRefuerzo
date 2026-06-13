@@ -86,6 +86,7 @@ export async function GET(req: NextRequest) {
       .where(
         and(
           eq(collectionsTable.userId, user.id),
+          isNull(collectionsTable.deletedAt),
           inArray(vcTable.verseId, verseIds),
         ),
       ),

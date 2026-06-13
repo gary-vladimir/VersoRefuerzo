@@ -68,7 +68,12 @@ export async function GET(_req: NextRequest, { params }: Params) {
       })
       .from(verseCollections)
       .innerJoin(collectionsTable, eq(verseCollections.collectionId, collectionsTable.id))
-      .where(eq(verseCollections.verseId, verse.id)),
+      .where(
+        and(
+          eq(verseCollections.verseId, verse.id),
+          isNull(collectionsTable.deletedAt),
+        ),
+      ),
   ]);
 
   return NextResponse.json({
@@ -122,7 +127,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     const owned = await db
       .select({ id: collectionsTable.id })
       .from(collectionsTable)
-      .where(eq(collectionsTable.userId, user.id));
+      .where(and(eq(collectionsTable.userId, user.id), isNull(collectionsTable.deletedAt)));
     const ownedSet = new Set(owned.map((o) => o.id));
     if (!collectionIds.every((cid) => ownedSet.has(cid))) {
       return NextResponse.json({ error: "invalid_collection" }, { status: 400 });

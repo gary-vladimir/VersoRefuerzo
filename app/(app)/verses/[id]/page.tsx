@@ -69,7 +69,9 @@ export default async function CardViewPage({
       })
       .from(vcTable)
       .innerJoin(collectionsTable, eq(vcTable.collectionId, collectionsTable.id))
-      .where(eq(vcTable.verseId, verse.id)),
+      .where(
+        and(eq(vcTable.verseId, verse.id), isNull(collectionsTable.deletedAt)),
+      ),
   ]);
 
   return (

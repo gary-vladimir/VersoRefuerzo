@@ -34,6 +34,9 @@ export default async function LibraryPage({
   await db
     .delete(versesTable)
     .where(and(eq(versesTable.userId, user.id), lt(versesTable.deletedAt, cutoff)));
+  await db
+    .delete(collectionsTable)
+    .where(and(eq(collectionsTable.userId, user.id), lt(collectionsTable.deletedAt, cutoff)));
 
   const [allVerses, allCollections, allLinks] = await Promise.all([
     db
@@ -44,13 +47,15 @@ export default async function LibraryPage({
     db
       .select()
       .from(collectionsTable)
-      .where(eq(collectionsTable.userId, user.id))
+      .where(and(eq(collectionsTable.userId, user.id), isNull(collectionsTable.deletedAt)))
       .orderBy(asc(collectionsTable.name)),
     db
       .select({ verseId: vcTable.verseId, collectionId: vcTable.collectionId })
       .from(vcTable)
       .innerJoin(collectionsTable, eq(vcTable.collectionId, collectionsTable.id))
-      .where(eq(collectionsTable.userId, user.id)),
+      .where(
+        and(eq(collectionsTable.userId, user.id), isNull(collectionsTable.deletedAt)),
+      ),
   ]);
 
   // Index links and prime cached text in one pass.

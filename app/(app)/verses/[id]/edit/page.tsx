@@ -47,7 +47,7 @@ export default async function EditVersePage({
     db
       .select()
       .from(collectionsTable)
-      .where(eq(collectionsTable.userId, user.id))
+      .where(and(eq(collectionsTable.userId, user.id), isNull(collectionsTable.deletedAt)))
       .orderBy(asc(collectionsTable.name)),
     db
       .select({ collectionId: vcTable.collectionId })

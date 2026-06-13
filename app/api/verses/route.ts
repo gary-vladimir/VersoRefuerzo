@@ -135,7 +135,13 @@ export async function POST(req: NextRequest) {
     const owned = await db
       .select({ id: collections.id })
       .from(collections)
-      .where(and(eq(collections.userId, user.id), inArray(collections.id, collectionIds)));
+      .where(
+        and(
+          eq(collections.userId, user.id),
+          isNull(collections.deletedAt),
+          inArray(collections.id, collectionIds),
+        ),
+      );
     if (owned.length !== collectionIds.length) {
       return NextResponse.json({ error: "invalid_collection" }, { status: 400 });
     }

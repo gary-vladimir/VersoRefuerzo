@@ -31,7 +31,7 @@ export default async function NewVersePage({
     db
       .select()
       .from(collectionsTable)
-      .where(eq(collectionsTable.userId, user.id))
+      .where(and(eq(collectionsTable.userId, user.id), isNull(collectionsTable.deletedAt)))
       .orderBy(collectionsTable.name),
     db
       .select({ value: count() })
