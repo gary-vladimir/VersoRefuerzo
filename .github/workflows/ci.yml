@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    # Every secret-bearing value is a placeholder. Nothing here talks to
+    # Neon, Firebase, or API.Bible: db/client.ts, lib/auth/firebase-admin.ts,
+    # and lib/auth/firebase-client.ts all initialise lazily, so a build only
+    # needs the variables to exist.
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?sslmode=require
+      FIREBASE_PROJECT_ID: ci-placeholder
+      FIREBASE_CLIENT_EMAIL: ci@example.invalid
+      FIREBASE_PRIVATE_KEY: ci-placeholder
+      NEXT_PUBLIC_FIREBASE_API_KEY: ci-placeholder
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ci.example.invalid
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: ci-placeholder
+      NEXT_PUBLIC_FIREBASE_APP_ID: ci-placeholder
+      APIBIBLE_KEY: ci-placeholder
+      NEXT_TELEMETRY_DISABLED: "1"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Cheap checks first so an obvious failure reports in seconds.
+      - name: Migration metadata
+        run: node scripts/check-migrations.mjs
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Unit tests
+        run: pnpm test
+
+      # Must precede typecheck: `typedRoutes` makes the Route union a build
+      # artifact under .next/types, and tsconfig includes it. Running tsc on
+      # a clean checkout without it fails on every typed <Link href>.
+      - name: Build
+        run: pnpm build
+
+      - name: Typecheck
+        run: pnpm typecheck

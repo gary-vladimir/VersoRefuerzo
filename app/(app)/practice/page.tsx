@@ -10,7 +10,7 @@
 // selector itself and the mode tiles live in the client component `_hub`.
 
 import { redirect } from "next/navigation";
-import { and, asc, eq, isNull, inArray, lt } from "drizzle-orm";
+import { and, asc, eq, isNull, lt } from "drizzle-orm";
 import { getServerUser } from "@/lib/auth/session";
 import { getDb } from "@/db/client";
 import {

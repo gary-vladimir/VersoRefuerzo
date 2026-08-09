@@ -24,6 +24,14 @@ import type { SrsState } from "@/db/schema";
 export const MIN_EASE = 1.3;
 export const MAX_EASE = 2.8;
 
+// Ceiling on a single scheduling step. Without one the interval compounds by
+// up to MAX_EASE every pass: eleven straight `Fácil` grades already schedule
+// eight years out, and around twenty the day count overflows what a Date can
+// represent, so `addDays(...).toISOString()` throws and takes down both
+// POST /api/practice/sessions and the QualityButtons preview render.
+// Ten years is far past any real review schedule and keeps every date valid.
+export const MAX_INTERVAL_DAYS = 3650;
+
 export type Quality = 0 | 1 | 2 | 3 | 4 | 5;
 
 // Pure SM-2 update for a recall-class attempt. Returns the next state.
@@ -56,7 +64,10 @@ export function applyRecallGrade(
     interval = 6;
     repetitions = prev.repetitions + 1;
   } else {
-    interval = Math.round(prev.interval * easeFactor);
+    interval = Math.min(
+      Math.round(prev.interval * easeFactor),
+      MAX_INTERVAL_DAYS,
+    );
     repetitions = prev.repetitions + 1;
   }
 

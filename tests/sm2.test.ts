@@ -5,6 +5,7 @@ import {
   previewIntervals,
   MIN_EASE,
   MAX_EASE,
+  MAX_INTERVAL_DAYS,
 } from "@/lib/srs/sm2";
 import { INITIAL_SRS_STATE } from "@/db/schema";
 
@@ -47,6 +48,26 @@ describe("applyRecallGrade", () => {
     expect(s.easeFactor).toBeGreaterThanOrEqual(MIN_EASE);
     for (let i = 0; i < 30; i++) s = applyRecallGrade(s, 5, NOW);
     expect(s.easeFactor).toBeLessThanOrEqual(MAX_EASE);
+  });
+
+  // Regression: the interval used to compound by the ease factor without a
+  // ceiling. Around twenty straight passes the day count grew past what a
+  // Date can hold, and dueAt's toISOString() threw a RangeError — a 500 from
+  // POST /api/practice/sessions and a crash in the QualityButtons preview.
+  it("caps the interval and always yields a valid dueAt", () => {
+    let s = INITIAL_SRS_STATE;
+    for (let i = 0; i < 200; i++) {
+      s = applyRecallGrade(s, 5, NOW);
+      expect(s.interval).toBeLessThanOrEqual(MAX_INTERVAL_DAYS);
+      expect(Number.isNaN(new Date(s.dueAt).getTime())).toBe(false);
+    }
+    expect(s.interval).toBe(MAX_INTERVAL_DAYS);
+  });
+
+  it("previews intervals for a long-matured verse without throwing", () => {
+    let s = INITIAL_SRS_STATE;
+    for (let i = 0; i < 50; i++) s = applyRecallGrade(s, 5, NOW);
+    expect(() => previewIntervals(s, "es")).not.toThrow();
   });
 
   it("dueAt advances by interval days", () => {

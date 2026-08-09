@@ -40,7 +40,11 @@ export function isSoundEnabled(): boolean {
   return enabled;
 }
 
-type AudioWindow = Window & { webkitAudioContext?: typeof AudioContext };
+// `typeof globalThis` is what carries the standard `AudioContext` binding;
+// intersecting plain `Window` alone drops it and makes every use below look
+// like a null access.
+type AudioWindow = Window &
+  typeof globalThis & { webkitAudioContext?: typeof AudioContext };
 
 // Lazily create (and reuse) a single AudioContext + master gain. Created on
 // first `play()`, which is virtually always inside a user-gesture handler.

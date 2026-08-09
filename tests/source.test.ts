@@ -6,6 +6,7 @@ import {
   parsePracticeSource,
   practiceSourceQuery,
   practiceSourceSearch,
+  type PracticeSource,
 } from "@/lib/practice/source";
 
 const A = "11111111-1111-4111-8111-111111111111";
@@ -81,12 +82,12 @@ describe("practiceSourceQuery", () => {
   });
 
   it("round-trips a collection pool", () => {
-    const src = { kind: "collection", collectionId: A } as const;
+    const src: PracticeSource = { kind: "collection", collectionId: A };
     expect(parsePracticeSource(practiceSourceQuery(src))).toEqual(src);
   });
 
   it("round-trips a custom pool", () => {
-    const src = { kind: "custom", verseIds: [A, B, C] } as const;
+    const src: PracticeSource = { kind: "custom", verseIds: [A, B, C] };
     expect(parsePracticeSource(practiceSourceQuery(src))).toEqual(src);
   });
 
