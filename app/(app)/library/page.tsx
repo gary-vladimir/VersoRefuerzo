@@ -91,9 +91,19 @@ export default async function LibraryPage({
     return { collection: c, sample, count: ids.length };
   });
 
+  // Per-verse membership, for the §6.3 collection filter chips on the
+  // All-verses tab.
+  const collectionsByVerse = new Map<string, string[]>();
+  for (const link of allLinks) {
+    const arr = collectionsByVerse.get(link.verseId) ?? [];
+    arr.push(link.collectionId);
+    collectionsByVerse.set(link.verseId, arr);
+  }
+
   const verseRows = allVerses.map((v) => ({
     verse: v,
     textPreview: textByKey.get(`${v.canonicalRef}|${v.version}`) ?? null,
+    collectionIds: collectionsByVerse.get(v.id) ?? [],
   }));
 
   const sp = await searchParams;
@@ -181,6 +191,7 @@ export default async function LibraryPage({
           sortAlpha: t.sortAlpha,
           sortLeastMastered: t.sortLeastMastered,
           noResults: t.noResults,
+          filterUngrouped: t.filterUngrouped,
         }}
       />
     </main>
