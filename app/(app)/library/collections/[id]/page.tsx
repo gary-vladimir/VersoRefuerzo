@@ -232,6 +232,33 @@ export default async function CollectionDetailPage({
             gap: 8,
           }}
         >
+          {/* Straight into a Classic session scoped to this collection —
+              the §6.4 pool selector reached from where the user already
+              is, without a detour through the hub. */}
+          <Link
+            href={{
+              pathname: "/practice/classic",
+              query: { source: "collection", collectionId: collection.id },
+            }}
+            className="vr-press"
+            style={{
+              display: "block",
+              textAlign: "center",
+              padding: "12px 20px",
+              marginBottom: 4,
+              borderRadius: 999,
+              background: "var(--brand-primary)",
+              color: "#fff",
+              fontFamily: "var(--font-display)",
+              fontWeight: 700,
+              fontSize: 14,
+              textDecoration: "none",
+              boxShadow: "0 8px 20px rgb(var(--card-indigo-rgb) / 0.35)",
+            }}
+          >
+            {t.practiceThisCollection}
+          </Link>
+
           {verses.map((v) => (
             <VerseRow
               key={v.id}

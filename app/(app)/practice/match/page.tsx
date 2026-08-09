@@ -1,22 +1,31 @@
 // /practice/match — Verse Match (specs.md §6.4.3).
-// Server samples up to 5 cached verses for one round.
+// Server samples up to 5 cached verses from the §6.4 source pool for one round.
 
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getServerUser } from "@/lib/auth/session";
 import { T } from "@/lib/i18n/strings";
 import { loadMiniGameVerses } from "@/lib/practice/loadMiniGameVerses";
+import { parsePracticeSource, type RawSearchParams } from "@/lib/practice/source";
 import { VerseMatch } from "@/components/practice/VerseMatch";
 
 const ROUND_SIZE = 5;
 
-export default async function MatchPage() {
+export default async function MatchPage({
+  searchParams,
+}: {
+  searchParams: Promise<RawSearchParams>;
+}) {
   const user = await getServerUser();
   if (!user) redirect("/login");
   const locale: "es" | "en" = user.locale === "en" ? "en" : "es";
   const t = T[locale];
 
-  const pool = await loadMiniGameVerses(user.id, ROUND_SIZE);
+  const pool = await loadMiniGameVerses(
+    user.id,
+    ROUND_SIZE,
+    parsePracticeSource(await searchParams),
+  );
 
   if (pool.verses.length < 2) return <NeedMore locale={locale} t={t} />;
 

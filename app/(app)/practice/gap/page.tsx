@@ -11,6 +11,7 @@ import Link from "next/link";
 import { getServerUser } from "@/lib/auth/session";
 import { T } from "@/lib/i18n/strings";
 import { loadMiniGameVerses } from "@/lib/practice/loadMiniGameVerses";
+import { parsePracticeSource, type RawSearchParams } from "@/lib/practice/source";
 import { chooseBlanks } from "@/lib/srs/cloze";
 import { fallbackPoolFor } from "@/lib/bible/fallback-distractors";
 import { FillTheGap } from "@/components/practice/FillTheGap";
@@ -30,15 +31,19 @@ const EN_STOP = new Set([
   "this", "that", "no", "not",
 ]);
 
-export default async function GapPage() {
+export default async function GapPage({
+  searchParams,
+}: {
+  searchParams: Promise<RawSearchParams>;
+}) {
   const user = await getServerUser();
   if (!user) redirect("/login");
   const locale: "es" | "en" = user.locale === "en" ? "en" : "es";
   const t = T[locale];
 
-  // Sample one verse to play; loader also returns the user's full word
-  // pool so we can build distractors without a second round-trip.
-  const pool = await loadMiniGameVerses(user.id, 1);
+  // Sample one verse to play; loader also returns the pool's word list so
+  // we can build distractors without a second round-trip.
+  const pool = await loadMiniGameVerses(user.id, 1, parsePracticeSource(await searchParams));
   const pick = pool.verses[0];
 
   if (!pick) return <NotEnoughVerses locale={locale} t={t} />;

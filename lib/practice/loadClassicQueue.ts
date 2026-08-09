@@ -4,7 +4,8 @@
 // with the same data shape; only the front-face mode and copy differ. This
 // helper is the one place that:
 //   - sweeps soft-deletes whose undo window has elapsed
-//   - resolves which verses to surface (full library / single verse / random)
+//   - resolves which verses to surface (the §6.4 source pool, or a single
+//     verse for "Repasar ahora" / random)
 //   - filters out uncached verses (M4 review #5)
 //   - interleaves the due-today queue
 //   - precomputes chunk plan + stage per §15.7
@@ -24,18 +25,24 @@ import {
 import { buildDueQueue, dailySeed } from "@/lib/srs/queue";
 import { planChunks, stageForReps } from "@/lib/srs/chunk";
 import { endOfTzDay, isSameTzDay, localDayNumber } from "@/lib/streak/streak";
+import { ALL_VERSES, type PracticeSource } from "@/lib/practice/source";
+import { sourceFilter } from "@/lib/practice/sourceFilter";
 import { UNDO_WINDOW_MS } from "@/lib/constants";
 import type { QueueItem } from "@/components/practice/ClassicSession";
 
 export type LoadOpts = {
   oneVerseId?: string | null;
   random?: boolean;
+  // Which pool the hub selected (specs.md §6.4). Ignored when `oneVerseId`
+  // or `random` is set — those are explicit single-verse drills.
+  source?: PracticeSource;
 };
 
 export async function loadClassicQueue(
   user: User,
   opts: LoadOpts = {},
 ): Promise<QueueItem[]> {
+  const source = opts.source ?? ALL_VERSES;
   const db = getDb();
 
   // 1. Sweep committed-deletable rows so the surface matches the spec.
@@ -57,7 +64,13 @@ export async function loadClassicQueue(
           eq(bibleTextCache.version, versesTable.version),
         ),
       )
-      .where(and(eq(versesTable.userId, user.id), isNull(versesTable.deletedAt)));
+      .where(
+        and(
+          eq(versesTable.userId, user.id),
+          isNull(versesTable.deletedAt),
+          sourceFilter(db, source),
+        ),
+      );
     if (candidates.length > 0) {
       oneVerseId = candidates[Math.floor(Math.random() * candidates.length)]!.id;
     }
@@ -78,7 +91,13 @@ export async function loadClassicQueue(
     : await db
         .select()
         .from(versesTable)
-        .where(and(eq(versesTable.userId, user.id), isNull(versesTable.deletedAt)));
+        .where(
+          and(
+            eq(versesTable.userId, user.id),
+            isNull(versesTable.deletedAt),
+            sourceFilter(db, source),
+          ),
+        );
 
   if (verses.length === 0) return [];
 

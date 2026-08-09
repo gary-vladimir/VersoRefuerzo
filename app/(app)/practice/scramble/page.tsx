@@ -1,20 +1,26 @@
 // /practice/scramble — Word Scramble (specs.md §6.4.2).
-// Server picks one cached verse at random and hands it to the game.
+// Server picks one cached verse at random from the §6.4 source pool and
+// hands it to the game.
 
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getServerUser } from "@/lib/auth/session";
 import { T } from "@/lib/i18n/strings";
 import { loadMiniGameVerses } from "@/lib/practice/loadMiniGameVerses";
+import { parsePracticeSource, type RawSearchParams } from "@/lib/practice/source";
 import { WordScramble } from "@/components/practice/WordScramble";
 
-export default async function ScramblePage() {
+export default async function ScramblePage({
+  searchParams,
+}: {
+  searchParams: Promise<RawSearchParams>;
+}) {
   const user = await getServerUser();
   if (!user) redirect("/login");
   const locale: "es" | "en" = user.locale === "en" ? "en" : "es";
   const t = T[locale];
 
-  const pool = await loadMiniGameVerses(user.id, 1);
+  const pool = await loadMiniGameVerses(user.id, 1, parsePracticeSource(await searchParams));
   const pick = pool.verses[0];
 
   if (!pick) return <NotEnoughVerses locale={locale} t={t} />;

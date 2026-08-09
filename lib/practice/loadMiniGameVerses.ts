@@ -1,10 +1,11 @@
 // Server helper for the recognition mini-games (specs.md §6.4.2 – §6.4.4).
 //
-// All three games — Scramble, Match, Gap — pull from the same source pool:
-// the user's owned, non-deleted, *cached* verses. This helper:
+// All three games — Scramble, Match, Gap — pull from the same source pool
+// the hub selected (specs.md §6.4), narrowed to the user's owned,
+// non-deleted, *cached* verses. This helper:
 //
 //   - sweeps soft-deletes whose undo window has elapsed
-//   - returns up to `limit` randomly-sampled cached verses
+//   - returns up to `limit` randomly-sampled cached verses from that pool
 //   - returns the user's full word pool (lowercased, deduped, no stopwords
 //     dropped — the consumer decides) for FillTheGap distractors
 //
@@ -21,6 +22,8 @@ import {
 } from "@/db/schema";
 import { UNDO_WINDOW_MS } from "@/lib/constants";
 import { wordsOnly } from "@/lib/bible/tokenize";
+import { ALL_VERSES, type PracticeSource } from "@/lib/practice/source";
+import { sourceFilter } from "@/lib/practice/sourceFilter";
 
 export type MiniGameVerse = {
   verse: Verse;
@@ -39,6 +42,7 @@ export type MiniGamePool = {
 export async function loadMiniGameVerses(
   userId: string,
   limit: number,
+  source: PracticeSource = ALL_VERSES,
 ): Promise<MiniGamePool> {
   const db = getDb();
 
@@ -58,7 +62,13 @@ export async function loadMiniGameVerses(
         eq(bibleTextCache.version, versesTable.version),
       ),
     )
-    .where(and(eq(versesTable.userId, userId), isNull(versesTable.deletedAt)));
+    .where(
+      and(
+        eq(versesTable.userId, userId),
+        isNull(versesTable.deletedAt),
+        sourceFilter(db, source),
+      ),
+    );
 
   if (candidates.length === 0) return { verses: [], wordPool: [] };
 
@@ -81,8 +91,9 @@ export async function loadMiniGameVerses(
     return { verse: v, text: c.text, copyright: c.copyright };
   });
 
-  // Word pool — lowercased, deduped, drawn from every cached verse the
-  // user has access to (not just the sampled ones).
+  // Word pool — lowercased, deduped, drawn from every cached verse in the
+  // selected pool (not just the sampled ones). A narrow pool yields fewer
+  // distractors; FillTheGap tops up from the curated fallback list.
   const pool = new Set<string>();
   for (const c of cached) {
     for (const w of wordsOnly(c.text)) pool.add(w);

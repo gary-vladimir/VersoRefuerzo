@@ -1,34 +1,110 @@
 // /practice — practice hub (specs.md §6.4 / §15.1 / §16.1).
 //
-// Surface for picking a practice mode. The Home hero CTA still goes
-// directly to Classic per §16.1, so the hub exists for variety and
-// discoverability of the other modes. All five modes are live here:
-// Classic and First-letter (RECALL), plus the §15.4 recognition mini-
-// games Word Scramble, Verse Match, and Fill the Gap.
+// Surface for picking a practice mode and the pool it draws from. The Home
+// hero CTA still goes directly to Classic per §16.1, so the hub exists for
+// variety and discoverability of the other modes. All five modes are live
+// here: Classic and First-letter (RECALL), plus the §15.4 recognition
+// mini-games Word Scramble, Verse Match, and Fill the Gap.
+//
+// This component only loads the data the §6.4 source selector needs; the
+// selector itself and the mode tiles live in the client component `_hub`.
 
-import Link from "next/link";
-import type { Route } from "next";
 import { redirect } from "next/navigation";
+import { and, asc, eq, isNull, inArray, lt } from "drizzle-orm";
 import { getServerUser } from "@/lib/auth/session";
+import { getDb } from "@/db/client";
+import {
+  collections as collectionsTable,
+  verses as versesTable,
+  verseCollections as vcTable,
+} from "@/db/schema";
 import { T } from "@/lib/i18n/strings";
-import { ModeIcon, type ModeName } from "@/components/practice/ModeIcons";
-import { Chevron } from "@/components/icons/UiIcons";
-
-type Tile = {
-  title: string;
-  description: string;
-  href: Route;
-  mode: ModeName;
-  gradient: string;
-};
+import { UNDO_WINDOW_MS } from "@/lib/constants";
+import { formatDisplay } from "@/lib/bible/reference";
+import {
+  PracticeHub,
+  type HubCollection,
+  type HubTile,
+  type HubVerse,
+} from "./_hub";
 
 export default async function PracticeHubPage() {
   const user = await getServerUser();
   if (!user) redirect("/login");
   const locale: "es" | "en" = user.locale === "en" ? "en" : "es";
   const t = T[locale];
+  const db = getDb();
 
-  const tiles: Tile[] = [
+  // Same housekeeping sweep every read does, so a just-deleted collection
+  // cannot be offered as a practice source.
+  const cutoff = new Date(Date.now() - UNDO_WINDOW_MS);
+  await db
+    .delete(versesTable)
+    .where(and(eq(versesTable.userId, user.id), lt(versesTable.deletedAt, cutoff)));
+  await db
+    .delete(collectionsTable)
+    .where(
+      and(eq(collectionsTable.userId, user.id), lt(collectionsTable.deletedAt, cutoff)),
+    );
+
+  const [allVerses, allCollections, allLinks] = await Promise.all([
+    db
+      .select({
+        id: versesTable.id,
+        canonicalRef: versesTable.canonicalRef,
+        color: versesTable.color,
+      })
+      .from(versesTable)
+      .where(and(eq(versesTable.userId, user.id), isNull(versesTable.deletedAt)))
+      .orderBy(asc(versesTable.createdAt)),
+    db
+      .select({
+        id: collectionsTable.id,
+        name: collectionsTable.name,
+        colorKey: collectionsTable.colorKey,
+      })
+      .from(collectionsTable)
+      .where(
+        and(eq(collectionsTable.userId, user.id), isNull(collectionsTable.deletedAt)),
+      )
+      .orderBy(asc(collectionsTable.name)),
+    db
+      .select({ verseId: vcTable.verseId, collectionId: vcTable.collectionId })
+      .from(vcTable)
+      .innerJoin(collectionsTable, eq(vcTable.collectionId, collectionsTable.id))
+      .where(
+        and(eq(collectionsTable.userId, user.id), isNull(collectionsTable.deletedAt)),
+      ),
+  ]);
+
+  // Only count links whose verse still exists and is not soft-deleted, so
+  // the chip count matches what a session would actually serve.
+  const liveVerseIds = new Set(allVerses.map((v) => v.id));
+  const countByCollection = new Map<string, number>();
+  for (const link of allLinks) {
+    if (!liveVerseIds.has(link.verseId)) continue;
+    countByCollection.set(
+      link.collectionId,
+      (countByCollection.get(link.collectionId) ?? 0) + 1,
+    );
+  }
+
+  const collections: HubCollection[] = allCollections.map((c) => ({
+    id: c.id,
+    name: c.name,
+    colorKey: c.colorKey,
+    count: countByCollection.get(c.id) ?? 0,
+  }));
+
+  // Reference labels are localised server-side so the picker does not have
+  // to ship the book-name tables to the browser.
+  const verses: HubVerse[] = allVerses.map((v) => ({
+    id: v.id,
+    label: formatDisplay(v.canonicalRef, locale),
+    color: v.color,
+  }));
+
+  const tiles: HubTile[] = [
     {
       title: t.classicTitle,
       description: t.classicHubDesc,
@@ -104,81 +180,27 @@ export default async function PracticeHubPage() {
         </p>
       </header>
 
-      <section
-        className="vr-stagger"
-        style={{
-          padding: 20,
-          display: "grid",
-          gridTemplateColumns: "1fr",
-          gap: 12,
+      <PracticeHub
+        tiles={tiles}
+        collections={collections}
+        verses={verses}
+        strings={{
+          sourceLabel: t.sourceLabel,
+          sourceAll: t.sourceAll,
+          sourceCollection: t.sourceCollection,
+          sourceCustom: t.sourceCustom,
+          sourcePickCollection: t.sourcePickCollection,
+          sourcePickVerses: t.sourcePickVerses,
+          sourceNoCollections: t.sourceNoCollections,
+          sourceNoVerses: t.sourceNoVerses,
+          sourceSelectedCount: t.sourceSelectedCount,
+          sourceClearSelection: t.sourceClearSelection,
+          sourceSelectAll: t.sourceSelectAll,
+          sourceMaxReached: t.sourceMaxReached,
+          sourceNeedsPick: t.sourceNeedsPick,
+          sourceNeedsCollection: t.sourceNeedsCollection,
         }}
-      >
-        {tiles.map((tile) => (
-          <ModeTile key={tile.title} tile={tile} />
-        ))}
-      </section>
+      />
     </main>
-  );
-}
-
-function ModeTile({ tile }: { tile: Tile }) {
-  return (
-    <Link
-      href={tile.href}
-      className="vr-tile vr-press"
-      style={{
-        textDecoration: "none",
-        color: "inherit",
-        background: "#fff",
-        borderRadius: "var(--r-2xl)",
-        padding: 18,
-        boxShadow: "var(--shadow-sm)",
-        display: "flex",
-        alignItems: "center",
-        gap: 14,
-      }}
-    >
-      <div
-        aria-hidden
-        style={{
-          width: 50,
-          height: 50,
-          borderRadius: 15,
-          background: tile.gradient,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexShrink: 0,
-          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.4)",
-        }}
-      >
-        <ModeIcon name={tile.mode} size={26} color="#fff" strokeWidth={2.1} />
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div
-          style={{
-            fontFamily: "var(--font-display)",
-            fontWeight: 800,
-            fontSize: 16,
-            color: "var(--c-text)",
-            letterSpacing: "-0.2px",
-          }}
-        >
-          {tile.title}
-        </div>
-        <div
-          style={{
-            fontSize: 12,
-            color: "var(--c-muted)",
-            marginTop: 2,
-          }}
-        >
-          {tile.description}
-        </div>
-      </div>
-      <span aria-hidden style={{ color: "var(--c-soft)", flexShrink: 0, display: "inline-flex" }}>
-        <Chevron size={18} />
-      </span>
-    </Link>
   );
 }

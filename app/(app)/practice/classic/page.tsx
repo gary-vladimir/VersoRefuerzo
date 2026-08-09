@@ -2,14 +2,17 @@
 //
 // `?verse=<id>` runs the §17.4 single-card session for `Repasar ahora`.
 // `?random=1` picks a random cached verse (the §17.2 empty-day CTA).
+// `?source=` / `?collectionId=` / `?verses=` carry the §6.4 pool the hub
+// selected (see lib/practice/source.ts).
 
 import { redirect } from "next/navigation";
 import { getServerUser } from "@/lib/auth/session";
 import { T } from "@/lib/i18n/strings";
 import { loadClassicQueue } from "@/lib/practice/loadClassicQueue";
+import { parsePracticeSource, type RawSearchParams } from "@/lib/practice/source";
 import { ClassicSession } from "@/components/practice/ClassicSession";
 
-type SearchParams = Promise<{ verse?: string; random?: string }>;
+type SearchParams = Promise<RawSearchParams & { verse?: string; random?: string }>;
 
 export default async function ClassicPage({
   searchParams,
@@ -23,8 +26,9 @@ export default async function ClassicPage({
 
   const sp = await searchParams;
   const queue = await loadClassicQueue(user, {
-    oneVerseId: sp.verse?.trim() || null,
+    oneVerseId: typeof sp.verse === "string" ? sp.verse.trim() || null : null,
     random: sp.random === "1" || sp.random === "true",
+    source: parsePracticeSource(sp),
   });
 
   const aloudTip = locale === "es"

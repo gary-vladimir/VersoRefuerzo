@@ -1,9 +1,9 @@
-// GET /api/practice/queue?source=todos|collection&collectionId=&mode=
+// GET /api/practice/queue?source=all|collection|custom&collectionId=&verses=
 //
 // Returns the interleaved due-today queue for the current user (specs.md
-// §15.6, AC-17). Used by the Classic / First-letter / Typed routes; the
-// recognition mini-games will read the same queue but apply their own
-// outcome handling on completion (M6).
+// §15.6, AC-17), drawn from the §6.4 source pool. Query vocabulary is the
+// one defined in lib/practice/source.ts, so the same link works against
+// this route and against the mode pages.
 //
 // Response shape:
 //   { queue: Array<{ id, canonicalRef, version, icon, color, hint,
@@ -23,6 +23,8 @@ import {
 import { buildDueQueue, dailySeed } from "@/lib/srs/queue";
 import { planChunks, stageForReps } from "@/lib/srs/chunk";
 import { endOfTzDay, isSameTzDay, localDayNumber } from "@/lib/streak/streak";
+import { parsePracticeSource } from "@/lib/practice/source";
+import { sourceFilter } from "@/lib/practice/sourceFilter";
 import { UNDO_WINDOW_MS } from "@/lib/constants";
 
 export const runtime = "nodejs";
@@ -40,35 +42,23 @@ export async function GET(req: NextRequest) {
     .delete(versesTable)
     .where(and(eq(versesTable.userId, user.id), lt(versesTable.deletedAt, cutoff)));
 
-  const sp = req.nextUrl.searchParams;
-  const source = sp.get("source") ?? "todos";
-  const filterCollection = sp.get("collectionId");
+  const source = parsePracticeSource(
+    Object.fromEntries(req.nextUrl.searchParams.entries()),
+  );
 
-  // Pull the user's verses, optionally constrained to a single collection.
-  // We need the verse fields, the cached text, and the per-verse collection
-  // id list — all in as few queries as possible.
-  let verses;
-  if (source === "collection" && filterCollection) {
-    // Ownership check on the collection id is the userId match on verses
-    // (a link can only point at a verse this user owns).
-    const rows = await db
-      .select({ verse: versesTable })
-      .from(versesTable)
-      .innerJoin(vcTable, eq(vcTable.verseId, versesTable.id))
-      .where(
-        and(
-          eq(versesTable.userId, user.id),
-          isNull(versesTable.deletedAt),
-          eq(vcTable.collectionId, filterCollection),
-        ),
-      );
-    verses = rows.map((r) => r.verse);
-  } else {
-    verses = await db
-      .select()
-      .from(versesTable)
-      .where(and(eq(versesTable.userId, user.id), isNull(versesTable.deletedAt)));
-  }
+  // Pull the user's verses, narrowed to the selected pool. We need the verse
+  // fields, the cached text, and the per-verse collection id list — all in
+  // as few queries as possible.
+  const verses = await db
+    .select()
+    .from(versesTable)
+    .where(
+      and(
+        eq(versesTable.userId, user.id),
+        isNull(versesTable.deletedAt),
+        sourceFilter(db, source),
+      ),
+    );
 
   if (verses.length === 0) {
     return NextResponse.json({ queue: [] });
