@@ -9,6 +9,8 @@
 //   - the in-process sound-enabled flag, kept in sync with
 //     `user.soundEnabled` so the player module honors the user's setting
 //     across renders without prop drilling
+//   - TimezoneSync, which re-reports the browser zone when it has drifted
+//     from the one captured at sign-in
 //
 // The (app) server layout is the auth + onboarding gate; this shell sits
 // inside it.
@@ -20,6 +22,7 @@ import type { User } from "@/db/schema";
 import { ProfileSheet } from "./ProfileSheet";
 import { BottomTabBar } from "./BottomTabBar";
 import { DesktopSidebar } from "./DesktopSidebar";
+import { TimezoneSync } from "./TimezoneSync";
 
 type ProfileSheetApi = { open: () => void };
 const ProfileSheetContext = createContext<ProfileSheetApi>({ open: () => {} });
@@ -42,6 +45,8 @@ export function AppShell({ user, children }: Props) {
 
   return (
     <ProfileSheetContext.Provider value={{ open: () => setProfileOpen(true) }}>
+      <TimezoneSync current={user.timezone} />
+
       <DesktopSidebar
         user={user}
         onProfileClick={() => setProfileOpen(true)}

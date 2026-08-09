@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { getServerUser, clearSessionCookie } from "@/lib/auth/session";
 import { getDb } from "@/db/client";
 import { users } from "@/db/schema";
+import { TimeZoneInput } from "@/lib/validation/schemas";
 
 export const runtime = "nodejs";
 
@@ -13,7 +14,7 @@ const PatchBody = z.object({
   hasCompletedOnboarding: z.boolean().optional(),
   hasSeenAloudTip: z.boolean().optional(),
   lastVersion: z.string().optional(),
-  timezone: z.string().optional(),
+  timezone: TimeZoneInput.optional(),
 });
 
 export async function GET() {

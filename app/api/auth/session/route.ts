@@ -6,12 +6,15 @@ import {
   clearSessionCookie,
   upsertUserFromIdToken,
 } from "@/lib/auth/session";
+import { TimeZoneInput } from "@/lib/validation/schemas";
 
 export const runtime = "nodejs";
 
 const Body = z.object({
   idToken: z.string().min(1),
-  timezone: z.string().optional(),
+  // A browser that reports a zone Intl can't resolve simply signs in
+  // without one; the streak helpers fall back to UTC.
+  timezone: TimeZoneInput.optional().catch(undefined),
 });
 
 export async function POST(req: NextRequest) {

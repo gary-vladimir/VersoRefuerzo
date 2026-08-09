@@ -11,6 +11,25 @@ import { isValidUsfmRef } from "@/lib/bible/reference";
 const VersionEnum = z.enum(["NBLA", "NVI", "RVR1960"]);
 export type Version = z.infer<typeof VersionEnum>;
 
+// The stored timezone is fed straight into dayjs.tz() by the streak, queue,
+// and stats paths, and an unknown zone makes Intl throw. Validate it at the
+// door so one bad write can't turn every subsequent read into a 500.
+export function isValidTimeZone(tz: string): boolean {
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export const TimeZoneInput = z
+  .string()
+  .trim()
+  .min(1)
+  .max(64)
+  .refine(isValidTimeZone, "unknown_timezone");
+
 export const NewCollectionInput = z.object({
   name: z.string().trim().min(1).max(40),
   description: z.string().trim().max(120).optional().nullable(),
