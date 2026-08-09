@@ -110,6 +110,27 @@ export function isSameTzDay(
   return day === today;
 }
 
+// Epoch-ms cutoff for the END of today in the user's tz. Everything that
+// answers "is this verse due today?" — the practice queue, the Classic
+// loader, the Home hero count — compares `srsState.dueAt` against this.
+//
+// It must be the user's midnight, not UTC's. A user in UTC-10 asking at
+// 20:00 local is already 06:00 UTC *tomorrow*; a UTC end-of-day cutoff
+// would sit at 14:00 their time and hide every verse scheduled for the
+// rest of their evening. Symmetrically, a UTC cutoff leaks tomorrow's
+// verses into today for users east of UTC.
+export function endOfTzDay(tz: string | null, now: Date = new Date()): number {
+  const zone = tz?.trim() ? tz : "UTC";
+  const [y, m, d] = dayjs(now).tz(zone).format("YYYY-MM-DD").split("-").map(Number);
+  // Increment the calendar date with plain UTC arithmetic — no DST rules are
+  // involved in "what is tomorrow's date". The zone is applied once, at the
+  // final parse, which is where it actually matters.
+  const tomorrow = new Date(Date.UTC(y!, m! - 1, d!) + 86400000)
+    .toISOString()
+    .slice(0, 10);
+  return dayjs.tz(`${tomorrow}T00:00:00`, zone).valueOf() - 1;
+}
+
 // Current local hour (0-23) in the user's tz — drives the time-of-day
 // greeting on Home.
 export function localHour(tz: string | null, now: Date = new Date()): number {

@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   applyPracticeForStreak,
   deriveEffectiveStreak,
+  endOfTzDay,
   isSameTzDay,
   localHour,
   localDayNumber,
@@ -168,5 +169,33 @@ describe("localDayNumber", () => {
     const d0 = localDayNumber(tz, new Date("2026-01-15T15:00:00Z")) % count;
     const d1 = localDayNumber(tz, new Date("2026-01-16T15:00:00Z")) % count;
     expect(d0).not.toBe(d1);
+  });
+});
+
+describe("endOfTzDay", () => {
+  it("returns the user's local midnight, not UTC's", () => {
+    const asked = new Date("2026-01-15T20:00:00Z");
+    // Honolulu is UTC-10 year round: local Jan 15 ends at 09:59:59.999Z Jan 16.
+    expect(new Date(endOfTzDay("Pacific/Honolulu", asked)).toISOString()).toBe(
+      "2026-01-16T09:59:59.999Z",
+    );
+    // Auckland is UTC+13 in January: local Jan 16 ends at 10:59:59.999Z Jan 16.
+    expect(new Date(endOfTzDay("Pacific/Auckland", asked)).toISOString()).toBe(
+      "2026-01-16T10:59:59.999Z",
+    );
+  });
+
+  it("falls back to UTC when the timezone is missing or blank", () => {
+    const asked = new Date("2026-01-15T20:00:00Z");
+    const expected = "2026-01-15T23:59:59.999Z";
+    expect(new Date(endOfTzDay(null, asked)).toISOString()).toBe(expected);
+    expect(new Date(endOfTzDay("  ", asked)).toISOString()).toBe(expected);
+  });
+
+  it("always lands after the instant it was asked about", () => {
+    for (const tz of ["UTC", "America/Mexico_City", "Asia/Tokyo", "Pacific/Auckland"]) {
+      const asked = new Date("2026-06-30T23:30:00Z");
+      expect(endOfTzDay(tz, asked)).toBeGreaterThan(asked.getTime());
+    }
   });
 });

@@ -4,15 +4,15 @@
 //   { totalVerses, mastered, learning, dueToday, currentStreak, bestStreak }
 //
 // `dueToday` counts all non-deleted verses whose `srsState.dueAt` is at or
-// before end-of-day (UTC) — same cutoff as the queue route, so the hero
-// number matches the actual queue length.
+// before end-of-day in the user's timezone — the same cutoff the queue
+// route uses, so the hero number matches the actual queue length.
 
 import { NextResponse } from "next/server";
 import { and, count, eq, isNull } from "drizzle-orm";
 import { getServerUser } from "@/lib/auth/session";
 import { getDb } from "@/db/client";
 import { verses as versesTable } from "@/db/schema";
-import { deriveEffectiveStreak, isSameTzDay } from "@/lib/streak/streak";
+import { deriveEffectiveStreak, endOfTzDay, isSameTzDay } from "@/lib/streak/streak";
 
 export const runtime = "nodejs";
 
@@ -36,7 +36,7 @@ export async function GET() {
     .from(versesTable)
     .where(baseFilter);
 
-  const cutoff = endOfTodayUtc();
+  const cutoff = endOfTzDay(user.timezone);
   let mastered = 0;
   let learning = 0;
   let dueToday = 0;
@@ -78,10 +78,4 @@ export async function GET() {
     currentStreak,
     bestStreak: user.bestStreak,
   });
-}
-
-function endOfTodayUtc(): number {
-  const d = new Date();
-  d.setUTCHours(23, 59, 59, 999);
-  return d.getTime();
 }

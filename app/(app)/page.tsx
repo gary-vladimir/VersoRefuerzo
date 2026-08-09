@@ -19,6 +19,7 @@ import { T } from "@/lib/i18n/strings";
 import { UNDO_WINDOW_MS } from "@/lib/constants";
 import {
   deriveEffectiveStreak,
+  endOfTzDay,
   isSameTzDay,
   localHour,
   localDayNumber,
@@ -52,11 +53,10 @@ export default async function Home() {
     .where(and(eq(versesTable.userId, user.id), isNull(versesTable.deletedAt)))
     .orderBy(asc(versesTable.createdAt));
 
-  const endOfToday = new Date();
-  endOfToday.setUTCHours(23, 59, 59, 999);
+  const endOfToday = endOfTzDay(user.timezone);
   const dueVerses = allVerses.filter(
     (v) =>
-      new Date(v.srsState.dueAt).getTime() <= endOfToday.getTime() &&
+      new Date(v.srsState.dueAt).getTime() <= endOfToday &&
       !isSameTzDay(v.lastPracticedAt, user.timezone),
   );
 

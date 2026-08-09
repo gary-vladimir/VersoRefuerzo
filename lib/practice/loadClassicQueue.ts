@@ -23,7 +23,7 @@ import {
 } from "@/db/schema";
 import { buildDueQueue, dailySeed } from "@/lib/srs/queue";
 import { planChunks, stageForReps } from "@/lib/srs/chunk";
-import { isSameTzDay } from "@/lib/streak/streak";
+import { endOfTzDay, isSameTzDay, localDayNumber } from "@/lib/streak/streak";
 import { UNDO_WINDOW_MS } from "@/lib/constants";
 import type { QueueItem } from "@/components/practice/ClassicSession";
 
@@ -143,7 +143,8 @@ export async function loadClassicQueue(
           srsState: v.srsState,
           collectionIds: linksByVerse.get(v.id) ?? [],
         })),
-        dailySeed(user.id),
+        dailySeed(user.id, localDayNumber(user.timezone)),
+        endOfTzDay(user.timezone),
       );
 
   const versesById = new Map(versesWithText.map((v) => [v.id, v]));

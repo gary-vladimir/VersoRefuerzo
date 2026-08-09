@@ -21,11 +21,15 @@ export type QueueVerse = {
   collectionIds: string[]; // empty array == ungrouped
 };
 
+// `cutoffMs` is the end of today in the *user's* timezone — see
+// lib/streak/streak.ts::endOfTzDay. It is passed in rather than computed
+// here so this module stays pure and there is exactly one definition of
+// where a day ends.
 export function selectDueToday(
   verses: Array<{ id: string; srsState: SrsState; collectionIds: string[] }>,
-  now: Date = new Date(),
+  cutoffMs: number,
 ): QueueVerse[] {
-  const cutoff = endOfDay(now).getTime();
+  const cutoff = cutoffMs;
   const due: QueueVerse[] = [];
   for (const v of verses) {
     const dueAtMs = new Date(v.srsState.dueAt).getTime();
@@ -87,17 +91,18 @@ export function interleave(
 export function buildDueQueue(
   verses: Array<{ id: string; srsState: SrsState; collectionIds: string[] }>,
   seed: number,
-  now: Date = new Date(),
+  cutoffMs: number,
 ): QueueVerse[] {
-  return interleave(selectDueToday(verses, now), seed);
+  return interleave(selectDueToday(verses, cutoffMs), seed);
 }
 
 // Stable per-user-per-day seed. The exact integer doesn't matter; only that
-// it changes by day and is deterministic across reloads.
-export function dailySeed(userId: string, now: Date = new Date()): number {
-  const day = `${now.getUTCFullYear()}-${now.getUTCMonth()}-${now.getUTCDate()}`;
+// it changes by day and is deterministic across reloads. `dayNumber` is the
+// user's LOCAL day (lib/streak/streak.ts::localDayNumber) so the ordering
+// rotates at their midnight, not UTC's.
+export function dailySeed(userId: string, dayNumber: number): number {
   let h = 2166136261;
-  const s = `${userId}|${day}`;
+  const s = `${userId}|${dayNumber}`;
   for (let i = 0; i < s.length; i++) {
     h ^= s.charCodeAt(i);
     h = Math.imul(h, 16777619);
@@ -125,11 +130,5 @@ function shuffle<T>(arr: T[], seed: number): T[] {
     const j = Math.floor(r() * (i + 1));
     [out[i], out[j]] = [out[j]!, out[i]!];
   }
-  return out;
-}
-
-function endOfDay(d: Date): Date {
-  const out = new Date(d);
-  out.setUTCHours(23, 59, 59, 999);
   return out;
 }
