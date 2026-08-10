@@ -29,6 +29,12 @@ the full v1 feature surface:
   `Bien`, `Fácil`), interleaved due-today queue, long-verse chunking, mastery
   status with a 30-day unaided full-verse recall guard, timezone-aware
   streaks.
+- **Practice source pool.** The hub's `Practicar desde` selector scopes every
+  mode to **Todos**, **a single collection**, or a **hand-picked set of
+  verses** (specs §6.4). The choice rides in the query string
+  (`?source=collection&collectionId=…`), so a mode page stays a server
+  component and a copied link reproduces the pool. Collection detail pages
+  link straight into a scoped Classic session.
 - **Practice modes.**
   - **Classic** (recall + quality grade)
   - **First-letter** (Classic shell with first-letter rendering)
@@ -57,8 +63,14 @@ the full v1 feature surface:
   animation layer (press, hover-lift, reveal, count-pop, shake, skeleton);
   safe-area insets via a `viewport` export; SVG glyphs replacing emoji
   throughout; richer Home (time-of-day greeting, progress insights strip,
-  verse-of-the-day); Library search across both tabs plus status filters and
-  a sort control; practice keyboard shortcuts; collection delete with undo.
+  verse-of-the-day); Library search across both tabs plus status filters,
+  collection filter chips, and a sort control; practice keyboard shortcuts;
+  collection delete with undo.
+- **Resilience.** Route-level `error`, `global-error`, `not-found`, and a
+  streaming `loading` skeleton for the authed shell, so a Neon timeout or an
+  API.Bible outage degrades to a recoverable card instead of a blank page.
+- **CI.** `.github/workflows/ci.yml` runs the migration-metadata check,
+  lint, unit + route tests, build, and typecheck on every push and PR.
 - **Deploy.** `Dockerfile` (Next.js standalone output), Cloud Build config,
   and a one-shot `scripts/deploy.sh` that builds, pushes, and deploys to
   Cloud Run with secrets from Secret Manager.
@@ -69,8 +81,15 @@ Known polish items still open:
   written atomically with `db.batch`; the streak update remains a separate
   follow-up write (a missed bump self-heals on the next session).
 - Word Scramble / Verse Match chips are tap-to-place, not drag-and-drop.
+- Word Scramble segments break at the nearest punctuation inside the word
+  window, which can yield uneven rounds (a 3-word round next to a 10-word
+  one). Within spec — §6.4.2 only caps the segment size — but worth evening
+  out.
 - Move-to-collection is reachable via a verse's *Editar* → *Colecciones*
   (no dedicated quick-move dialog yet); bulk verse add is not implemented.
+- The error / not-found boundaries render Spanish regardless of the user's
+  locale toggle: they run outside any session, so there is no user row to
+  read the preference from.
 
 ---
 
@@ -223,6 +242,14 @@ Prefer it only on personal Neon dev branches; never on production.
 
 To inspect data: `pnpm db:studio` (opens Drizzle Studio in your browser).
 
+**When you change `db/schema.ts`:** `pnpm db:generate` writes *two* files —
+`db/migrations/NNNN_name.sql` **and** `db/migrations/meta/NNNN_snapshot.json`.
+Commit both. The snapshot is the baseline the next `db:generate` diffs
+against; committing only the `.sql` makes the following migration re-emit
+every change since the last surviving snapshot. `pnpm check:migrations`
+(also a CI step) fails the build when a snapshot is missing or the
+`prevId` chain is broken.
+
 ---
 
 ## 8. Run locally
@@ -252,6 +279,7 @@ FAB or `Agregar verso` to add your first verse.
 | `pnpm db:push` | Sync schema to Neon (dev branches only) |
 | `pnpm db:generate` | Generate a new migration from schema diff |
 | `pnpm db:studio` | Open Drizzle Studio |
+| `pnpm check:migrations` | Verify the migration journal, SQL files, and snapshot chain agree |
 
 ---
 
@@ -336,13 +364,19 @@ Google sign-in will fail in production.
 
 ```text
 .devcontainer/        VS Code / Codespaces config
+.github/workflows/    CI (migration check, lint, tests, build, typecheck)
 app/
+  error.tsx           Route error boundary (reset action)
+  global-error.tsx    Boundary for failures in the root layout itself
+  not-found.tsx       404 / notFound()
   (auth)/login/       Login page (Google sign-in)
   (app)/              Authenticated shell — every route here requires a session
     layout.tsx        Verifies session, enforces first-run onboarding, mounts AppShell
     page.tsx          Home (hero CTA, streak chip, recent verses, mobile FAB)
+    loading.tsx       Streaming skeleton for every authed route
     onboarding/       First-run-only onboarding screen
-    practice/         page.tsx (hub) + classic/, first-letter/, scramble/, match/, gap/, summary/
+    practice/         page.tsx (hub) + _hub.tsx (source selector + mode tiles),
+                      classic/, first-letter/, scramble/, match/, gap/, summary/
     library/          page.tsx (Colecciones | Todos) + collections/[id]/
     verses/           new/, [id]/ (Card View), [id]/edit/
   api/
@@ -359,12 +393,13 @@ app/
   layout.tsx          Root HTML, fonts, providers
   globals.css         Imports tokens.css + animations.css; responsive helpers
 components/
-  ui/                 VerseCard, Toast
+  ui/                 VerseCard, Toast, MessageScreen (error / not-found card)
   icons/              VerseIcons, UiIcons
   verse/              VerseRow, VerseForm, ColorPicker, IconPicker, CollectionPicker, CollectionCard
   practice/           ClassicSession, FirstLetterSession (in route), TypedRecall, WordScramble,
                       VerseMatch, FillTheGap, QualityButtons, HintButton, SkipLink, SessionSummary
-  layout/             AppShell, BottomTabBar, DesktopSidebar, HeaderAvatar, ProfileSheet
+  layout/             AppShell, BottomTabBar, DesktopSidebar, HeaderAvatar, ProfileSheet,
+                      TimezoneSync
   home/               StreakChip, TodayCTA
 lib/
   auth/               Firebase admin/client, session cookie helpers, getServerUser
@@ -373,10 +408,12 @@ lib/
                       fallback-distractors, smart-default catalog
   srs/                sm2, mastery, queue, chunk, cloze, scramble
   streak/             tz-aware streak engine (current / best / effective)
-  practice/           loadClassicQueue, loadMiniGameVerses
+  practice/           loadClassicQueue, loadMiniGameVerses,
+                      source (the §6.4 pool + its query vocabulary),
+                      sourceFilter (pool -> Drizzle clause, server-only)
   i18n/strings.ts     ES/EN string table with locale-aware helpers
   sounds/player.ts    Web Audio synthesizer, five named cues
-  validation/         zod schemas for verse / collection bodies
+  validation/         zod schemas for verse / collection bodies, IANA timezone guard
   constants.ts        UNDO_WINDOW_MS, etc.
 db/
   schema.ts           Drizzle tables (users, collections, verses, verse_collections,
@@ -385,10 +422,11 @@ db/
   migrations/         0000_init, 0001_practice_sessions, 0002_was_full_verse,
                       0003_last_practiced_at, 0004_collection_soft_delete
 styles/               Design tokens + animations (ported from DesignBundle)
-public/sounds/        Drop the five short MP3 cues here (see public/sounds/README.md)
+public/sounds/        README only — the cues are synthesized, no assets to ship
 middleware.ts         Edge auth gate + pathname forwarder
-scripts/              deploy.sh, cloudbuild.yaml
-tests/                Vitest unit suites for the pure helpers above
+scripts/              deploy.sh, cloudbuild.yaml, check-migrations.mjs
+tests/                Vitest suites: the pure helpers above, plus route tests for
+                      practice/sessions, stats/home, and me (helpers/fakeDb.ts)
 Dockerfile            Cloud Run container (standalone output)
 ```
 
@@ -422,8 +460,11 @@ dev server loads it automatically; for raw `node` invocations use
 `APIBIBLE_ID_*` for that version is empty or the upstream key does not
 serve it. Fill the ID in `.env` and restart.
 
-**No audio in practice sessions** — `public/sounds/*.mp3` is empty; the
-player no-ops silently until assets are dropped in. See
+**No audio in practice sessions** — there are no audio files to install;
+the five cues are synthesized at runtime with the Web Audio API
+(`lib/sounds/player.ts`). Check the sound toggle in the profile sheet, then
+that the browser exposes `AudioContext` and the tab is not muted. The
+player no-ops silently when either is unavailable. See
 `public/sounds/README.md`.
 
 **`pnpm install` is slow or fails offline** — confirm the devcontainer

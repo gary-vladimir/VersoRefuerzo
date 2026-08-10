@@ -165,10 +165,17 @@ Opens Drizzle Studio in your browser; you should see empty tables for
 pnpm test
 ```
 
-All suites should pass. These cover the pure helpers (SM-2, mastery,
-queue, chunking, cloze, compare, tokenize, reference, streak,
-scramble). If any fail, stop and report the failure — the rest of the
-test plan assumes a clean baseline.
+All suites should pass. They cover the pure helpers (SM-2, mastery, queue,
+chunking, cloze, compare, tokenize, reference, streak, scramble, practice
+source, validation) plus route-level tests for `POST
+/api/practice/sessions`, `GET /api/stats/home`, and `PATCH /api/me`. If any
+fail, stop and report the failure — the rest of the test plan assumes a
+clean baseline.
+
+The same checks run in CI (`.github/workflows/ci.yml`), along with
+`pnpm check:migrations`, `pnpm lint`, `pnpm build`, and `pnpm typecheck`.
+Note the ordering: `typecheck` must run *after* `build`, because
+`typedRoutes` generates the `Route` union into `.next/types`.
 
 ---
 
@@ -248,6 +255,18 @@ that `(ref, version)`.
    stay gone on refresh (the sweep on the next read finalizes the
    delete).
 
+### 7.4b Library filters (specs §6.3)
+
+1. Go to *Library → Todos los versos*.
+2. The chip row under the search box filters by status (`Todos`, `Nuevos`,
+   `Aprendiendo`, `Memorizados`); a second row filters by collection.
+3. Tap the `Romanos` chip → only verses in that collection remain. Tap it
+   again → the filter clears.
+4. If you have a verse in no collection at all, a `Sin colección` chip
+   appears at the end of the row and isolates those verses.
+5. Status chip + collection chip + search compose: with `Romanos` selected,
+   typing in the search box narrows within that collection.
+
 ### 7.5 Classic practice (M4 — SRS, queue, streak)
 
 1. Add 2–3 more verses so the queue is non-trivial (e.g.
@@ -270,6 +289,27 @@ While in a session, also try:
 - **Saltar** → defers the card to the end of the current session.
 - **Pista** (hint) — only available if you set a hint on the verse.
 - **Repasar ahora** from Card View — drops you into a one-card Classic.
+
+### 7.5b Practice source pool (specs §6.4)
+
+1. Go to *Practicar*. A `Practicar desde` card sits above the five mode
+   tiles with three options: **Todos**, **Colección**, **Personalizar**.
+2. **Todos** is selected by default; the tiles link to the plain mode URLs.
+3. Tap **Colección**. The tiles grey out and a line reads *Elige una
+   colección para continuar*. Pick `Romanos` → the tiles re-enable.
+4. Tap **Clásico**. The URL carries
+   `?source=collection&collectionId=…`, and the session serves only verses
+   from `Romanos`.
+5. Go back and tap **Personalizar**. Pick two verses; the counter reads
+   `2 versos elegidos`. Launch **Palabras revueltas** — only those two
+   verses can come up. Tap *Otro verso* a few times to confirm the pool
+   sticks (the games re-render the same URL).
+6. Copy the URL from step 4 into a new tab. The same pool is reproduced —
+   the selection lives in the query string, not in memory.
+7. Hand-edit the URL to a bogus `collectionId` and reload. It degrades to
+   the full library rather than erroring.
+8. From *Library → Colecciones → Romanos*, the **Practicar esta colección**
+   button drops you straight into the scoped Classic session.
 
 ### 7.6 First-letter mode (M5)
 
@@ -333,8 +373,9 @@ While in a session, also try:
 3. Toggle the language between **ES** and **EN** — the entire UI
    re-renders in the new locale without a full page reload. URL stays
    the same.
-4. Toggle **Sound effects** off and back on. No-ops silently if you
-   haven't added MP3 files yet (expected — see note below).
+4. Toggle **Sound effects** off, take a practice action, then toggle it
+   back on. Audio feedback should stop and resume — the cues are
+   synthesized at runtime, so there is nothing to install.
 5. Click **Cerrar sesión** → cookie is cleared, you land on `/login`.
 6. Sign back in → goes straight to Home (no onboarding the second
    time).
@@ -363,6 +404,18 @@ While in a session, also try:
 3. Open a Card View. The flip should degrade to a 200ms cross-fade,
    not a 3D flip.
 
+### 7.14b Error and not-found boundaries
+
+1. Visit `http://localhost:3000/this-route-does-not-exist` → a *No
+   encontramos esta página* card with a link home, not a raw 404.
+2. Stop the dev server, edit `.env` to point `DATABASE_URL` at a bad host,
+   restart, and load Home → an *Algo salió mal* card with a **Reintentar**
+   button. In dev the underlying message is shown below it; in a production
+   build it is hidden. Restore `.env` afterwards.
+3. On a throttled connection (DevTools → Network → Slow 3G), navigating
+   between Home / Practicar / Biblioteca should paint a skeleton rather
+   than hanging on the previous screen.
+
 ### 7.15 Account deletion (M7 / AC-11)
 
 1. Profile sheet → **Borrar cuenta** → confirm.
@@ -376,19 +429,27 @@ While in a session, also try:
 
 ## 8. Known gaps to be aware of
 
-These are documented in `README.md` section 1 and the M6/M7 review
-notes. If you hit one, it's expected, not a regression:
+These are documented in `README.md` section 1. If you hit one, it's
+expected, not a regression:
 
-- The five sound MP3 files in `public/sounds/` are not committed yet;
-  `lib/sounds/player.ts` no-ops silently. Toggling the switch still
-  persists.
-- The Profile sheet closes on Escape but does not yet trap focus
-  inside the dialog.
-- The login screen and Profile sheet do not yet expose privacy / terms
-  links.
-- The `POST /api/practice/sessions` route writes the session row,
-  verse update, and streak update as three separate statements — not a
-  single transaction.
+- `POST /api/practice/sessions` writes the session row and the verse SRS
+  update atomically via `db.batch`, but the streak bump is still a separate
+  follow-up statement. A bump lost to a crash between the two self-heals on
+  the next session.
+- Word Scramble and Verse Match chips are tap-to-place, not drag-and-drop.
+- Word Scramble segments can be uneven — a 3-word round next to a 10-word
+  one — because the split prefers punctuation inside the word window.
+- There is no dedicated move-to-collection dialog; use a verse's *Editar* →
+  *Colecciones*. Bulk verse add is not implemented.
+- The error and not-found screens are Spanish-only even with the UI toggled
+  to English: they render outside a session, so no locale preference is
+  readable.
+
+Four gaps listed in earlier revisions of this document are now closed and
+*should* work — treat a failure as a regression: the sound cues (synthesized
+at runtime with the Web Audio API, no MP3 files involved), the focus trap in
+the Profile sheet, the privacy / terms links on login and profile, and the
+atomic session + verse write.
 
 ---
 
