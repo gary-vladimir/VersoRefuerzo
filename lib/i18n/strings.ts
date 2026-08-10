@@ -171,6 +171,14 @@ export const T = {
     deleteAccountCancel: "Cancelar",
     privacyLink: "Privacidad",
     termsLink: "Términos",
+
+    // Error / not-found boundaries
+    errorTitle: "Algo salió mal",
+    errorBody: "No pudimos cargar esta pantalla. Vuelve a intentarlo.",
+    errorRetry: "Reintentar",
+    errorHome: "Ir al inicio",
+    notFoundTitle: "No encontramos esta página",
+    notFoundBody: "El enlace puede estar roto o la página ya no existe.",
   },
   en: {
     appName: "VersoRefuerzo",
@@ -329,6 +337,14 @@ export const T = {
     deleteAccountCancel: "Cancel",
     privacyLink: "Privacy",
     termsLink: "Terms",
+
+    // Error / not-found boundaries
+    errorTitle: "Something went wrong",
+    errorBody: "We couldn't load this screen. Please try again.",
+    errorRetry: "Try again",
+    errorHome: "Go home",
+    notFoundTitle: "We couldn't find this page",
+    notFoundBody: "The link may be broken, or the page no longer exists.",
   },
 } as const;
 
