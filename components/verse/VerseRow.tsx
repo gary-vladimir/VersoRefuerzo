@@ -30,6 +30,7 @@ import { useToast } from "@/components/ui/Toast";
 type Strings = {
   edit: string;
   delete: string;
+  more: string;
   deleted: string;
   undo: string;
   loading: string;
@@ -55,8 +56,15 @@ export function VerseRow({ verse, textPreview, locale, strings }: Props) {
       if (!menuRef.current) return;
       if (!menuRef.current.contains(e.target as Node)) setMenuOpen(false);
     }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setMenuOpen(false);
+    }
     document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDocClick);
+      document.removeEventListener("keydown", onKey);
+    };
   }, [menuOpen]);
 
   const color = isCardColor(verse.color) ? verse.color : "indigo";
@@ -97,7 +105,11 @@ export function VerseRow({ verse, textPreview, locale, strings }: Props) {
         gap: 12,
         boxShadow: "var(--shadow-xs)",
         position: "relative",
-        overflow: "hidden",
+        // No overflow clipping here: the overflow menu drops below the row
+        // and was being cut off. The entrance animation leaves each row in
+        // its own stacking context, so the open row also has to sit above
+        // its later siblings or they paint over the menu.
+        zIndex: menuOpen ? 10 : undefined,
       }}
       className="vr-card-rise"
     >
@@ -110,6 +122,8 @@ export function VerseRow({ verse, textPreview, locale, strings }: Props) {
           bottom: 0,
           width: 4,
           background: `var(--card-${color}-bg)`,
+          borderTopLeftRadius: "var(--r-xl)",
+          borderBottomLeftRadius: "var(--r-xl)",
         }}
       />
 
@@ -229,7 +243,7 @@ export function VerseRow({ verse, textPreview, locale, strings }: Props) {
           onClick={() => setMenuOpen((v) => !v)}
           aria-haspopup="menu"
           aria-expanded={menuOpen}
-          aria-label="more"
+          aria-label={strings.more}
           className="vr-press"
           style={{
             width: 32,

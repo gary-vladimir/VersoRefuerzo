@@ -270,6 +270,7 @@ export default async function CollectionDetailPage({
                 delete: t.delete,
                 deleted: t.verseDeleted,
                 undo: t.undo,
+                more: t.moreActions,
                 loading: t.loadingText,
               }}
             />

@@ -176,6 +176,8 @@ export default async function LibraryPage({
           delete: t.delete,
           deleted: t.verseDeleted,
           undo: t.undo,
+          more: t.moreActions,
+          clearSearch: t.clearSearch,
           loading: t.loadingText,
           versesCount: t.versesCount,
           emptyCollectionsTitle: t.emptyCollectionsTitle,
