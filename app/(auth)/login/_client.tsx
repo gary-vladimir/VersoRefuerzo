@@ -62,9 +62,14 @@ export default function LoginClient() {
         ? "/"
         : "/onboarding";
     } catch (e) {
+      setLoading(false);
+      // Closing the Google popup is a choice, not a failure.
+      const code = (e as { code?: string } | null)?.code;
+      if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") {
+        return;
+      }
       console.error(e);
       setError(t.signInError);
-      setLoading(false);
     }
   }
 
