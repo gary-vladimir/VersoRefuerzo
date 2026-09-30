@@ -15,7 +15,7 @@
 // The (app) server layout is the auth + onboarding gate; this shell sits
 // inside it.
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { setSoundEnabled } from "@/lib/sounds/player";
 import { T } from "@/lib/i18n/strings";
 import type { User } from "@/db/schema";
@@ -38,18 +38,26 @@ export function AppShell({ user, children }: Props) {
   const locale: "es" | "en" = user.locale === "en" ? "en" : "es";
   const t = T[locale];
 
+  // Stable callbacks: ProfileSheet's focus-trap effect depends on onClose,
+  // so a fresh function on every render (e.g. the router.refresh after a
+  // language toggle) tore the trap down and bounced focus to the page
+  // behind the open sheet.
+  const openProfile = useCallback(() => setProfileOpen(true), []);
+  const closeProfile = useCallback(() => setProfileOpen(false), []);
+  const sheetApi = useMemo(() => ({ open: openProfile }), [openProfile]);
+
   // Keep the player module's enabled flag in sync with user prefs.
   useEffect(() => {
     setSoundEnabled(user.soundEnabled);
   }, [user.soundEnabled]);
 
   return (
-    <ProfileSheetContext.Provider value={{ open: () => setProfileOpen(true) }}>
+    <ProfileSheetContext.Provider value={sheetApi}>
       <TimezoneSync current={user.timezone} />
 
       <DesktopSidebar
         user={user}
-        onProfileClick={() => setProfileOpen(true)}
+        onProfileClick={openProfile}
         strings={{
           home: t.home,
           practice: t.practice,
@@ -71,7 +79,7 @@ export function AppShell({ user, children }: Props) {
       <ProfileSheet
         user={user}
         open={profileOpen}
-        onClose={() => setProfileOpen(false)}
+        onClose={closeProfile}
       />
     </ProfileSheetContext.Provider>
   );
