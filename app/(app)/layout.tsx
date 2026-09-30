@@ -1,15 +1,18 @@
 // Authed app shell. Every route under (app)/ flows through here.
 //
 // Two redirects:
-//   1. No verified session  -> /login (and clear the stale cookie so the
-//      browser doesn't keep re-presenting it on every refresh)
+//   1. No verified session  -> /login. A stale cookie is left in place on
+//      purpose: Next only allows cookie writes in Route Handlers and Server
+//      Actions, so deleting it here threw and replaced the redirect with the
+//      error screen. /login ignores an unverifiable cookie and the next
+//      sign-in overwrites it, so there is no redirect loop.
 //   2. First-run user (hasCompletedOnboarding === false) -> /onboarding
 //      (skipped if already on /onboarding, so the user can complete it)
 //
 // pathname is read from the `x-pathname` header set by middleware.ts.
 
 import { redirect } from "next/navigation";
-import { headers, cookies } from "next/headers";
+import { headers } from "next/headers";
 import { getServerUser } from "@/lib/auth/session";
 import { ToastProvider } from "@/components/ui/Toast";
 import { AppShell } from "@/components/layout/AppShell";
@@ -23,11 +26,7 @@ export default async function AppLayout({
   const pathname = h.get("x-pathname") ?? "/";
 
   const user = await getServerUser();
-  if (!user) {
-    const store = await cookies();
-    if (store.get("__session")) store.delete("__session");
-    redirect("/login");
-  }
+  if (!user) redirect("/login");
   if (!user.hasCompletedOnboarding && pathname !== "/onboarding") {
     redirect("/onboarding");
   }
