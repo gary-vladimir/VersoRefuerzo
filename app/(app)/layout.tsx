@@ -16,6 +16,7 @@ import { headers } from "next/headers";
 import { getServerUser } from "@/lib/auth/session";
 import { ToastProvider } from "@/components/ui/Toast";
 import { AppShell } from "@/components/layout/AppShell";
+import { T } from "@/lib/i18n/strings";
 
 export default async function AppLayout({
   children,
@@ -31,14 +32,16 @@ export default async function AppLayout({
     redirect("/onboarding");
   }
 
+  const dismissLabel = T[user.locale === "en" ? "en" : "es"].dismiss;
+
   // Onboarding lives outside the shell — it's a single full-screen step
   // before the user has anything to navigate to.
   if (pathname === "/onboarding") {
-    return <ToastProvider>{children}</ToastProvider>;
+    return <ToastProvider dismissLabel={dismissLabel}>{children}</ToastProvider>;
   }
 
   return (
-    <ToastProvider>
+    <ToastProvider dismissLabel={dismissLabel}>
       <AppShell user={user}>{children}</AppShell>
     </ToastProvider>
   );

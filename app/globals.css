@@ -112,6 +112,17 @@ textarea {
   }
 }
 
+/* Snackbar dock. On phones it floats above the bottom tab bar instead of
+   covering it; on desktop there is no tab bar, so it sits near the edge. */
+.vr-toast-dock {
+  bottom: calc(var(--tabbar-h) + 12px);
+}
+@media (min-width: 1024px) {
+  .vr-toast-dock {
+    bottom: calc(20px + env(safe-area-inset-bottom));
+  }
+}
+
 /* Icon picker grid — auto-fills so each cell stays >= 40px (a comfortable
    tap target) on narrow phones instead of cramming 8 tiny columns. */
 .vr-icon-grid {

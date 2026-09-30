@@ -17,6 +17,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { Close } from "@/components/icons/UiIcons";
+import { UNDO_WINDOW_MS } from "@/lib/constants";
 
 type ToastSpec = {
   message: string;
@@ -39,7 +40,13 @@ export function useToast(): ToastApi {
 
 const EXIT_MS = 200;
 
-export function ToastProvider({ children }: { children: React.ReactNode }) {
+export function ToastProvider({
+  children,
+  dismissLabel,
+}: {
+  children: React.ReactNode;
+  dismissLabel: string;
+}) {
   const [toast, setToast] = useState<Live | null>(null);
   const seq = useRef(0);
 
@@ -58,7 +65,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           key={toast.id}
           message={toast.message}
           actionLabel={toast.actionLabel}
-          durationMs={toast.durationMs ?? 5000}
+          durationMs={toast.durationMs ?? UNDO_WINDOW_MS}
+          dismissLabel={dismissLabel}
           onAction={toast.onAction}
           // Guard against a stale exit clearing a newer toast.
           onClosed={() =>
@@ -76,12 +84,14 @@ function ToastView({
   onAction,
   onClosed,
   durationMs,
+  dismissLabel,
 }: {
   message: string;
   actionLabel?: string;
   onAction?: () => void;
   onClosed: () => void;
   durationMs: number;
+  dismissLabel: string;
 }) {
   const [leaving, setLeaving] = useState(false);
   const autoTimer = useRef<number | null>(null);
@@ -119,7 +129,8 @@ function ToastView({
       style={{
         position: "fixed",
         left: "50%",
-        bottom: "calc(20px + env(safe-area-inset-bottom))",
+        // `bottom` comes from .vr-toast-dock (globals.css) so it can clear
+        // the mobile tab bar and drop lower on desktop.
         transform: "translateX(-50%)",
         background: "var(--c-ink)",
         color: "#fff",
@@ -136,7 +147,7 @@ function ToastView({
         zIndex: "var(--z-toast)",
         overflow: "hidden",
       }}
-      className={leaving ? "vr-toast-out" : "vr-toast-in"}
+      className={`vr-toast-dock ${leaving ? "vr-toast-out" : "vr-toast-in"}`}
     >
       <span style={{ flex: 1 }}>{message}</span>
       {actionLabel && (
@@ -163,7 +174,7 @@ function ToastView({
       <button
         type="button"
         onClick={beginClose}
-        aria-label="dismiss"
+        aria-label={dismissLabel}
         className="vr-press"
         style={{
           background: "transparent",
