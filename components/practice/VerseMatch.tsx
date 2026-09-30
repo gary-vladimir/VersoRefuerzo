@@ -16,7 +16,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { isCardColor, isVerseIcon, type CardColorId, type VerseIconId } from "@/lib/catalog";
 import { formatDisplay } from "@/lib/bible/reference";
-import { wordsOnly } from "@/lib/bible/tokenize";
+import { tokenize } from "@/lib/bible/tokenize";
 import { VerseIcon } from "@/components/icons/VerseIcons";
 import { Close, Heart, HeartFilled } from "@/components/icons/UiIcons";
 import { play } from "@/lib/sounds/player";
@@ -53,7 +53,12 @@ export function VerseMatch({ verses, locale, strings: t }: Props) {
   const items = useMemo(
     () =>
       verses.map(({ verse, text }) => {
-        const fallback = wordsOnly(text).slice(0, 3).join(" ");
+        // Original casing (wordsOnly lowercases, which read oddly for a
+        // verse opening like "Porque de tal").
+        const fallback = tokenize(text)
+          .slice(0, 3)
+          .map((tok) => tok.word)
+          .join(" ");
         return {
           id: verse.id,
           verse,
@@ -238,7 +243,10 @@ export function VerseMatch({ verses, locale, strings: t }: Props) {
         <div style={columnHeaderStyle}>{t.references}</div>
         <div style={columnHeaderStyle}>{t.hints}</div>
 
-        {items.map((it) => {
+        {/* Explicit rows keep the two columns aligned. With only the right
+            column pinned, auto-placement flowed the references into both
+            columns and pushed the hints below them. */}
+        {items.map((it, row) => {
           const isMatched = matched.has(it.id);
           const isSelected = selectedLeft === it.id;
           const isWrong = wrongFlash?.left === it.id;
@@ -253,6 +261,8 @@ export function VerseMatch({ verses, locale, strings: t }: Props) {
               className={isWrong ? "vr-press vr-shake" : "vr-press"}
               style={{
                 ...cellStyle,
+                gridColumn: 1,
+                gridRow: row + 2,
                 background: isMatched ? "var(--c-card-soft)" : "#fff",
                 opacity: isMatched ? 0.5 : 1,
                 boxShadow: isWrong
@@ -281,24 +291,40 @@ export function VerseMatch({ verses, locale, strings: t }: Props) {
               >
                 <VerseIcon id={icon} size={16} color="#fff" strokeWidth={2.4} />
               </span>
-              <span
-                style={{
-                  fontFamily: "var(--font-display)",
-                  fontWeight: 800,
-                  fontSize: 13,
-                  letterSpacing: "-0.2px",
-                  textAlign: "left",
-                  color: "var(--c-text)",
-                }}
-              >
-                {formatDisplay(it.verse.canonicalRef, locale)}
+              <span style={{ textAlign: "left", minWidth: 0 }}>
+                <span
+                  style={{
+                    display: "block",
+                    fontFamily: "var(--font-display)",
+                    fontWeight: 800,
+                    fontSize: 13,
+                    letterSpacing: "-0.2px",
+                    color: "var(--c-text)",
+                  }}
+                >
+                  {formatDisplay(it.verse.canonicalRef, locale)}
+                </span>
+                {/* The same passage can be in the library twice (two
+                    versions); the version tells those rows apart. */}
+                <span
+                  style={{
+                    display: "block",
+                    fontSize: 9,
+                    fontWeight: 700,
+                    letterSpacing: 0.6,
+                    color: "var(--c-muted)",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {it.verse.version}
+                </span>
               </span>
             </button>
           );
         })}
 
         {/* Right column rendered in its stable shuffle. */}
-        {rightOrderRef.current!.map((rid) => {
+        {rightOrderRef.current!.map((rid, row) => {
           const it = items.find((i) => i.id === rid)!;
           const isMatched = matched.has(rid);
           const isSelected = selectedRight === rid;
@@ -327,6 +353,7 @@ export function VerseMatch({ verses, locale, strings: t }: Props) {
                 color: "var(--c-text)",
                 lineHeight: 1.4,
                 gridColumn: 2,
+                gridRow: row + 2,
               }}
             >
               {it.hint}
