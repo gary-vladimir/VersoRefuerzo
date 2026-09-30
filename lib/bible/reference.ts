@@ -101,10 +101,18 @@ export type ParsedRef = {
 // Parse one user-typed reference. Returns null if the parser can't produce a
 // single contiguous passage. Multiple-passage inputs (e.g. "Jn 3:16, Rm 8:28")
 // are rejected — v1 is one passage per verse card.
+//
+// The UI locale only decides which book names are tried first: a Spanish
+// user typing "John 3:16" (or an English user landing on the "Juan 14:6"
+// onboarding pre-fill) still gets a match from the other language.
 export function parseReference(input: string, locale: "es" | "en" = "es"): ParsedRef | null {
   const cleaned = input.trim();
   if (!cleaned) return null;
+  const other = locale === "es" ? "en" : "es";
+  return parseWith(cleaned, locale) ?? parseWith(cleaned, other);
+}
 
+function parseWith(cleaned: string, locale: "es" | "en"): ParsedRef | null {
   let osis: string;
   try {
     osis = getParser(locale).parse(cleaned).osis();
@@ -116,8 +124,15 @@ export function parseReference(input: string, locale: "es" | "en" = "es"): Parse
   if (osis.includes(",")) return null;
 
   const usfm = osisToUsfm(osis);
-  if (!usfm) return null;
+  // Whole books and whole chapters ("Juan", "Salmos 23") parse fine but are
+  // not memorizable cards, and the API rejects anything that is not
+  // verse-level, so the form must not show them as valid.
+  if (!usfm || !isValidUsfmRef(usfm)) return null;
   const bookCode = usfm.split(".")[0]!;
+  // A range spanning two books is never a card someone memorizes, and it
+  // would pull an enormous passage from API.Bible.
+  const endBook = usfm.split("-")[1]?.split(".")[0];
+  if (endBook && endBook !== bookCode) return null;
   return {
     canonical: usfm,
     bookCode,

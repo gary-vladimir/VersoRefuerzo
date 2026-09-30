@@ -49,6 +49,23 @@ describe("parseReference", () => {
   it("rejects multi-passage input", () => {
     expect(parseReference("Juan 3:16, Romanos 8:28", "es")).toBeNull();
   });
+
+  // The API only accepts verse-level refs; the form used to show a green
+  // check for these and then fail on save.
+  it("rejects whole books and whole chapters", () => {
+    expect(parseReference("Juan", "es")).toBeNull();
+    expect(parseReference("Juan 14", "es")).toBeNull();
+    expect(parseReference("Salmos 23", "es")).toBeNull();
+  });
+
+  it("rejects ranges that span two books", () => {
+    expect(parseReference("Génesis 1:1 - Éxodo 1:1", "es")).toBeNull();
+  });
+
+  it("falls back to the other language's book names", () => {
+    expect(parseReference("Juan 14:6", "en")?.canonical).toBe("JHN.14.6");
+    expect(parseReference("John 3:16", "es")?.canonical).toBe("JHN.3.16");
+  });
 });
 
 describe("formatDisplay", () => {
