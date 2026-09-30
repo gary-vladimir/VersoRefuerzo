@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isValidTimeZone, TimeZoneInput } from "@/lib/validation/schemas";
+import { isValidTimeZone, NewVerseInput, TimeZoneInput } from "@/lib/validation/schemas";
 
 describe("isValidTimeZone", () => {
   it("accepts real IANA zones", () => {
@@ -37,5 +37,19 @@ describe("TimeZoneInput", () => {
 
   it("fails on an absurdly long value", () => {
     expect(TimeZoneInput.safeParse("A/".repeat(100)).success).toBe(false);
+  });
+});
+
+describe("NewVerseInput", () => {
+  it("de-duplicates collection ids", () => {
+    const id = "33333333-3333-4333-8333-333333333333";
+    const parsed = NewVerseInput.parse({
+      canonicalRef: "JHN.14.6",
+      version: "NBLA",
+      icon: "bible",
+      color: "indigo",
+      collectionIds: [id, id],
+    });
+    expect(parsed.collectionIds).toEqual([id]);
   });
 });

@@ -48,13 +48,20 @@ const CanonicalRef = z.string().refine(isValidUsfmRef, {
   message: "canonicalRef must be a USFM-dotted reference like JHN.14.6",
 });
 
+// De-duplicated so ownership checks can compare counts and inserts never
+// hit the (verseId, collectionId) primary key twice.
+const CollectionIds = z
+  .array(z.string().uuid())
+  .max(20)
+  .transform((ids) => [...new Set(ids)]);
+
 export const NewVerseInput = z.object({
   canonicalRef: CanonicalRef,
   version: VersionEnum,
   icon: z.enum(VERSE_ICON_IDS),
   color: z.enum(CARD_COLOR_IDS),
   hint: z.string().trim().max(120).optional().nullable(),
-  collectionIds: z.array(z.string().uuid()).max(20).optional().default([]),
+  collectionIds: CollectionIds.optional().default([]),
 });
 export type NewVerseInput = z.infer<typeof NewVerseInput>;
 
@@ -66,6 +73,6 @@ export const PatchVerseInput = z.object({
   // in M3; left optional so M3 can decide without a schema rev.
   canonicalRef: CanonicalRef.optional(),
   version: VersionEnum.optional(),
-  collectionIds: z.array(z.string().uuid()).max(20).optional(),
+  collectionIds: CollectionIds.optional(),
 });
 export type PatchVerseInput = z.infer<typeof PatchVerseInput>;

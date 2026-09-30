@@ -49,10 +49,14 @@ export default async function EditVersePage({
       .from(collectionsTable)
       .where(and(eq(collectionsTable.userId, user.id), isNull(collectionsTable.deletedAt)))
       .orderBy(asc(collectionsTable.name)),
+    // Only live collections: a link to one still inside its undo window
+    // would be pre-selected but invisible in the picker, and the PATCH would
+    // then be rejected as `invalid_collection`.
     db
       .select({ collectionId: vcTable.collectionId })
       .from(vcTable)
-      .where(eq(vcTable.verseId, verse.id)),
+      .innerJoin(collectionsTable, eq(vcTable.collectionId, collectionsTable.id))
+      .where(and(eq(vcTable.verseId, verse.id), isNull(collectionsTable.deletedAt))),
     db
       .select({ value: count() })
       .from(versesTable)

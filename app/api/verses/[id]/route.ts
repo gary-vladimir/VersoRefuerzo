@@ -157,6 +157,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     updateValues.srsState = INITIAL_SRS_STATE;
     updateValues.mastery = 0;
     updateValues.status = "new";
+    // A new passage has not been practiced today, whatever the old one was.
+    updateValues.lastPracticedAt = null;
   }
 
   const updated = await db
@@ -170,10 +172,17 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     // verse used to belong to (M3 review P2). We add what's new before
     // removing what's gone — worst case a transient is the user keeps both
     // sets, which is far cheaper to recover from than losing all memberships.
+    // Diff against live collections only. A collection inside its undo
+    // window is invisible to the form, so it can never be in `want`; diffing
+    // against it would drop the link and an Undo would restore the
+    // collection without this verse.
     const existingLinks = await db
       .select({ collectionId: verseCollections.collectionId })
       .from(verseCollections)
-      .where(eq(verseCollections.verseId, verse.id));
+      .innerJoin(collectionsTable, eq(verseCollections.collectionId, collectionsTable.id))
+      .where(
+        and(eq(verseCollections.verseId, verse.id), isNull(collectionsTable.deletedAt)),
+      );
     const have = new Set(existingLinks.map((l) => l.collectionId));
     const want = new Set(collectionIds);
     const toAdd = [...want].filter((id) => !have.has(id));
