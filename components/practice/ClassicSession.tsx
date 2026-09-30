@@ -81,6 +81,9 @@ type Props = {
   locale: "es" | "en";
   sessionMode?: SessionMode;
   showAloudTip: boolean;
+  // Where the summary's "practice again" link should lead: the same mode
+  // and source pool this session was started with.
+  againHref: string;
   strings: Strings;
 };
 
@@ -89,6 +92,7 @@ export function ClassicSession({
   locale,
   sessionMode = "classic",
   showAloudTip,
+  againHref,
   strings: t,
 }: Props) {
   const router = useRouter();
@@ -109,9 +113,11 @@ export function ClassicSession({
   const [aloudTipOpen, setAloudTipOpen] = useState(showAloudTip);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // Per-session aggregates for the summary screen.
+  // Per-session aggregates for the summary screen. A verse graded `Otra vez`
+  // comes back later in the session, so "reviewed" counts distinct verses
+  // and "correct" only credits a verse's first grade.
   const sessionStartRef = useRef<number>(Date.now());
-  const reviewedRef = useRef<number>(0);
+  const reviewedIdsRef = useRef<Set<string>>(new Set());
   const correctRef = useRef<number>(0);
   const cardStartRef = useRef<number>(Date.now());
   const aloudOkRef = useRef<HTMLButtonElement | null>(null);
@@ -181,8 +187,21 @@ export function ClassicSession({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aloudTipOpen]);
 
+  // Session finished: hand the totals to the summary screen. Navigation is
+  // a side effect, so it lives here rather than in render.
+  useEffect(() => {
+    if (phase !== "done" || initialQueue.length === 0) return;
+    const params = new URLSearchParams({
+      reviewed: String(reviewedIdsRef.current.size),
+      correct: String(correctRef.current),
+      elapsedMs: String(Date.now() - sessionStartRef.current),
+      again: againHref,
+    });
+    router.replace(`/practice/summary?${params.toString()}`);
+  }, [phase, initialQueue.length, againHref, router]);
+
   // Empty-state — nothing due.
-  if (!current && phase === "done" && reviewedRef.current === 0) {
+  if (initialQueue.length === 0) {
     return (
       <main
         style={{
@@ -237,19 +256,7 @@ export function ClassicSession({
     );
   }
 
-  // Done state — push to summary so the user sees their session totals.
-  if (phase === "done") {
-    const elapsedMs = Date.now() - sessionStartRef.current;
-    const params = new URLSearchParams({
-      reviewed: String(reviewedRef.current),
-      correct: String(correctRef.current),
-      elapsedMs: String(elapsedMs),
-    });
-    router.replace(`/practice/summary?${params.toString()}`);
-    return null;
-  }
-
-  if (!current) return null;
+  if (phase === "done" || !current) return null;
 
   const color: CardColorId = isCardColor(current.color) ? current.color : "indigo";
   const icon: VerseIconId = isVerseIcon(current.icon) ? current.icon : "bible";
@@ -294,6 +301,7 @@ export function ClassicSession({
     // SM-2 update server-side because they're both RECALL.
     const apiMode = modeOverride ?? sessionMode;
     let ok = false;
+    let nextSrs: SrsState | null = null;
     try {
       const res = await fetch("/api/practice/sessions", {
         method: "POST",
@@ -308,6 +316,12 @@ export function ClassicSession({
         }),
       });
       ok = res.ok;
+      if (ok) {
+        const body = (await res.json().catch(() => null)) as {
+          verse?: { srsState?: SrsState };
+        } | null;
+        nextSrs = body?.verse?.srsState ?? null;
+      }
     } catch {
       ok = false;
     }
@@ -321,14 +335,24 @@ export function ClassicSession({
     }
     // §6.9 audio cues: pluck on a passing grade, thud on Otra vez.
     play(q >= 3 ? "pluck" : "thud");
-    reviewedRef.current += 1;
-    if (q >= 4) correctRef.current += 1;
+    const firstGrade = !reviewedIdsRef.current.has(current.id);
+    reviewedIdsRef.current.add(current.id);
+    if (firstGrade && q >= 4) correctRef.current += 1;
+    // `Otra vez` promises "<1 min": the verse is failed for today, and it
+    // is marked practiced so no later queue load would bring it back. Put
+    // it at the end of this session instead (a relearning step), carrying
+    // the post-lapse state so the next interval preview is accurate.
+    let nextQueue = queue;
+    if (q < 3) {
+      nextQueue = [...queue, { ...current, srsState: nextSrs ?? current.srsState }];
+      setQueue(nextQueue);
+    }
     setTypedActive(false);
-    advance();
+    advance(nextQueue.length);
   }
 
-  function advance() {
-    if (pos + 1 >= queue.length) {
+  function advance(queueLength: number = queue.length) {
+    if (pos + 1 >= queueLength) {
       setPhase("done");
     } else {
       setPos(pos + 1);
@@ -338,8 +362,10 @@ export function ClassicSession({
   }
 
   function skipCard() {
-    if (queue.length <= 1) {
-      setPhase("done");
+    // Nothing left behind this card to defer it past: skipping the last
+    // remaining card ends the session (it would otherwise swap in itself).
+    if (pos >= queue.length - 1) {
+      exit();
       return;
     }
     // Pull current to the end without recording a session.
@@ -351,7 +377,7 @@ export function ClassicSession({
   }
 
   function exit() {
-    if (reviewedRef.current === 0) {
+    if (reviewedIdsRef.current.size === 0) {
       router.push("/");
       return;
     }

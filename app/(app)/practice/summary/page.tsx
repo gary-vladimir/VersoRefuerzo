@@ -13,7 +13,16 @@ type SearchParams = Promise<{
   reviewed?: string;
   correct?: string;
   elapsedMs?: string;
+  again?: string;
 }>;
+
+// The "practice again" target rides in the query string, so only accept an
+// in-app practice path: anything else (another origin, a protocol-relative
+// URL) falls back to Classic.
+function safeAgainHref(raw: string | undefined): string {
+  if (raw && raw.startsWith("/practice/") && !raw.startsWith("//")) return raw;
+  return "/practice/classic";
+}
 
 export default async function SummaryPage({
   searchParams,
@@ -28,11 +37,14 @@ export default async function SummaryPage({
   const reviewed = Math.max(0, parseInt(sp.reviewed ?? "0", 10) || 0);
   const correct = Math.max(0, parseInt(sp.correct ?? "0", 10) || 0);
   const elapsedMs = Math.max(0, parseInt(sp.elapsedMs ?? "0", 10) || 0);
+  // Accuracy can never exceed the verses reviewed, whatever the URL says.
+  const correctClamped = Math.min(correct, reviewed);
 
   return (
     <SessionSummary
       reviewed={reviewed}
-      correct={correct}
+      correct={correctClamped}
+      againHref={safeAgainHref(sp.again)}
       elapsedMs={elapsedMs}
       streak={user.currentStreak}
       strings={{

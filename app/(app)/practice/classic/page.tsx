@@ -9,7 +9,11 @@ import { redirect } from "next/navigation";
 import { getServerUser } from "@/lib/auth/session";
 import { T } from "@/lib/i18n/strings";
 import { loadClassicQueue } from "@/lib/practice/loadClassicQueue";
-import { parsePracticeSource, type RawSearchParams } from "@/lib/practice/source";
+import {
+  parsePracticeSource,
+  practiceSourceSearch,
+  type RawSearchParams,
+} from "@/lib/practice/source";
 import { ClassicSession } from "@/components/practice/ClassicSession";
 
 type SearchParams = Promise<RawSearchParams & { verse?: string; random?: string }>;
@@ -25,11 +29,17 @@ export default async function ClassicPage({
   const t = T[locale];
 
   const sp = await searchParams;
-  const queue = await loadClassicQueue(user, {
-    oneVerseId: typeof sp.verse === "string" ? sp.verse.trim() || null : null,
-    random: sp.random === "1" || sp.random === "true",
-    source: parsePracticeSource(sp),
-  });
+  const oneVerseId = typeof sp.verse === "string" ? sp.verse.trim() || null : null;
+  const random = sp.random === "1" || sp.random === "true";
+  const source = parsePracticeSource(sp);
+  const queue = await loadClassicQueue(user, { oneVerseId, random, source });
+
+  // "Practice again" from the summary repeats this exact session shape.
+  const againHref = oneVerseId
+    ? `/practice/classic?verse=${encodeURIComponent(oneVerseId)}`
+    : random
+      ? "/practice/classic?random=1"
+      : `/practice/classic${practiceSourceSearch(source)}`;
 
   const aloudTip = locale === "es"
     ? "Recita el verso en voz alta — pronunciarlo mejora la memorización."
@@ -41,6 +51,7 @@ export default async function ClassicPage({
       locale={locale}
       sessionMode="classic"
       showAloudTip={!user.hasSeenAloudTip}
+      againHref={againHref}
       strings={{
         recall: locale === "es" ? "Recuerda este verso" : "Recall this verse",
         reciteAloud:

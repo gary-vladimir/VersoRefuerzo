@@ -8,6 +8,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import type { Route } from "next";
 import { play } from "@/lib/sounds/player";
 import { Sparkles } from "@/components/icons/UiIcons";
 
@@ -24,12 +25,20 @@ type Strings = {
 type Props = {
   reviewed: number;
   correct: number;
+  againHref: string;
   elapsedMs: number;
   streak: number | null;
   strings: Strings;
 };
 
-export function SessionSummary({ reviewed, correct, elapsedMs, streak, strings: t }: Props) {
+export function SessionSummary({
+  reviewed,
+  correct,
+  againHref,
+  elapsedMs,
+  streak,
+  strings: t,
+}: Props) {
   const totalSeconds = Math.max(0, Math.round(elapsedMs / 1000));
   const m = Math.floor(totalSeconds / 60);
   const s = totalSeconds % 60;
@@ -180,7 +189,7 @@ export function SessionSummary({ reviewed, correct, elapsedMs, streak, strings: 
           {t.done}
         </Link>
         <Link
-          href="/practice/classic"
+          href={againHref as Route}
           className="vr-press"
           style={{
             background: "transparent",
