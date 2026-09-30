@@ -70,37 +70,26 @@ export async function upsertUserFromIdToken(
   const decoded = await adminAuth().verifyIdToken(idToken);
   const db = getDb();
 
-  const existing = await db
-    .select()
-    .from(users)
-    .where(eq(users.googleSub, decoded.uid))
-    .limit(1);
-
-  if (existing[0]) {
-    const updated = await db
-      .update(users)
-      .set({
-        email: decoded.email ?? existing[0].email,
-        displayName: decoded.name ?? existing[0].displayName,
-        photoUrl: decoded.picture ?? existing[0].photoUrl,
+  // Single upsert keyed on the Firebase uid. A select-then-insert let two
+  // concurrent first sign-ins (double tap, two tabs) both miss and the
+  // second insert hit the unique index as a 500. Profile fields refresh on
+  // every sign-in; the timezone only moves when the browser reported one.
+  const email = decoded.email ?? "";
+  const displayName = decoded.name ?? decoded.email?.split("@")[0] ?? "User";
+  const photoUrl = decoded.picture ?? null;
+  const rows = await db
+    .insert(users)
+    .values({ googleSub: decoded.uid, email, displayName, photoUrl, timezone })
+    .onConflictDoUpdate({
+      target: users.googleSub,
+      set: {
+        ...(decoded.email ? { email } : {}),
+        ...(decoded.name ? { displayName } : {}),
+        ...(decoded.picture ? { photoUrl } : {}),
         ...(timezone ? { timezone } : {}),
         updatedAt: new Date(),
-      })
-      .where(eq(users.id, existing[0].id))
-      .returning();
-    return updated[0]!;
-  }
-
-  const inserted = await db
-    .insert(users)
-    .values({
-      googleSub: decoded.uid,
-      email: decoded.email ?? "",
-      displayName:
-        decoded.name ?? decoded.email?.split("@")[0] ?? "User",
-      photoUrl: decoded.picture ?? null,
-      timezone,
+      },
     })
     .returning();
-  return inserted[0]!;
+  return rows[0]!;
 }
