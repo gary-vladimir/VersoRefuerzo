@@ -10,6 +10,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { User } from "@/db/schema";
 import { NavIcon, type NavName } from "./NavIcons";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 
 type Strings = {
   home: string;
@@ -49,8 +50,6 @@ export function DesktopSidebar({ user, onProfileClick, strings: t }: Props) {
       match: (p) => p.startsWith("/library"),
     },
   ];
-
-  const initial = user.displayName.trim().charAt(0).toUpperCase() || "?";
 
   return (
     <aside
@@ -174,41 +173,7 @@ export function DesktopSidebar({ user, onProfileClick, strings: t }: Props) {
           textAlign: "left",
         }}
       >
-        {user.photoUrl ? (
-          // Plain <img> avoids next/image domain config for a 36-px avatar.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={user.photoUrl}
-            alt=""
-            width={36}
-            height={36}
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: "50%",
-              objectFit: "cover",
-            }}
-          />
-        ) : (
-          <span
-            aria-hidden
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: "50%",
-              background: "var(--brand-rose)",
-              color: "#fff",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontFamily: "var(--font-display)",
-              fontWeight: 800,
-              fontSize: 14,
-            }}
-          >
-            {initial}
-          </span>
-        )}
+        <UserAvatar displayName={user.displayName} photoUrl={user.photoUrl} size={36} />
         <span style={{ flex: 1, minWidth: 0 }}>
           <span
             style={{

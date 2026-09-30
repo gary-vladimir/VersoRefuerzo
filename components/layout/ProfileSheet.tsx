@@ -21,6 +21,7 @@ import { getClientAuth } from "@/lib/auth/firebase-client";
 import { setSoundEnabled, play } from "@/lib/sounds/player";
 import { T, type Locale } from "@/lib/i18n/strings";
 import type { User } from "@/db/schema";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 
 type Props = {
   user: User;
@@ -206,7 +207,7 @@ export function ProfileSheet({ user, open, onClose }: Props) {
             marginBottom: 18,
           }}
         >
-          <Avatar user={user} />
+          <UserAvatar displayName={user.displayName} photoUrl={user.photoUrl} size={48} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div
               id="vr-profile-title"
@@ -346,49 +347,6 @@ export function ProfileSheet({ user, open, onClose }: Props) {
         </div>
       </div>
     </div>
-  );
-}
-
-function Avatar({ user }: { user: User }) {
-  if (user.photoUrl) {
-    // Plain <img> — Next/Image needs domain config; not worth a remoteImage
-    // setup for a 40-px avatar.
-    // eslint-disable-next-line @next/next/no-img-element
-    return (
-      <img
-        src={user.photoUrl}
-        alt=""
-        width={48}
-        height={48}
-        style={{
-          width: 48,
-          height: 48,
-          borderRadius: "50%",
-          objectFit: "cover",
-        }}
-      />
-    );
-  }
-  const initial = user.displayName.trim().charAt(0).toUpperCase() || "?";
-  return (
-    <span
-      aria-hidden
-      style={{
-        width: 48,
-        height: 48,
-        borderRadius: "50%",
-        background: "var(--brand-rose)",
-        color: "#fff",
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontFamily: "var(--font-display)",
-        fontWeight: 800,
-        fontSize: 18,
-      }}
-    >
-      {initial}
-    </span>
   );
 }
 
