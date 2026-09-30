@@ -10,7 +10,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import type { Route } from "next";
 import { play } from "@/lib/sounds/player";
-import { Sparkles } from "@/components/icons/UiIcons";
+import { Flame, Sparkles } from "@/components/icons/UiIcons";
 
 type Strings = {
   title: string;
@@ -154,8 +154,8 @@ export function SessionSummary({
               fontSize: 13,
             }}
           >
-            <span aria-hidden className="vr-flame">
-              🔥
+            <span aria-hidden className="vr-flame" style={{ display: "inline-flex" }}>
+              <Flame size={16} strokeWidth={1.6} color="var(--c-amber-400)" />
             </span>
             {streak}
           </div>

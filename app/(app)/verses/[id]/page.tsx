@@ -7,7 +7,7 @@
 // the `Repasar ahora` (§17.4) link to start a one-card Classic session
 // against this specific verse.
 //
-// The `💡 Pista` button is always visible and is orthogonal to grading per
+// The `Pista` (hint) button is always visible and is orthogonal to grading per
 // §16.5. If text isn't cached yet we lazy-fetch via /api/bible/text on first
 // reveal.
 

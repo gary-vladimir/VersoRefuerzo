@@ -134,11 +134,24 @@ export const Heart = (p: Props) => (
   </Svg>
 );
 
+// Filled glyphs take the fill from the `color` prop, like the stroke. A bare
+// `currentColor` resolves to the parent's CSS text color instead, which
+// painted the intentos hearts dark with a rose outline.
 export const HeartFilled = (p: Props) => (
   <Svg {...p}>
     <path
       d="M12 21s-7-4.5-9.5-9.5C0.5 7 4 3 7.5 3c2 0 3.5 1 4.5 2.5C13 4 14.5 3 16.5 3 20 3 23.5 7 21.5 11.5 19 16.5 12 21 12 21z"
-      fill="currentColor"
+      fill={p.color ?? "currentColor"}
+    />
+  </Svg>
+);
+
+// Streak flame (DesignBundle/icons.jsx :: flame), filled.
+export const Flame = (p: Props) => (
+  <Svg {...p}>
+    <path
+      d="M12 3c0 4 5 5 5 11a5 5 0 11-10 0c0-3 2-3 2-7 2 1 3 1 3-4z"
+      fill={p.color ?? "currentColor"}
     />
   </Svg>
 );

@@ -1,6 +1,8 @@
 // Small flame chip rendering the user's current streak (specs.md §6.6).
 // Server-renderable; visual only.
 
+import { Flame } from "@/components/icons/UiIcons";
+
 type Props = {
   current: number;
   ariaLabel?: string;
@@ -24,8 +26,12 @@ export function StreakChip({ current, ariaLabel }: Props) {
         boxShadow: inactive ? "none" : "0 2px 8px rgba(251,191,36,0.25)",
       }}
     >
-      <span aria-hidden className={inactive ? undefined : "vr-flame"} style={{ fontSize: 14 }}>
-        🔥
+      <span
+        aria-hidden
+        className={inactive ? undefined : "vr-flame"}
+        style={{ display: "inline-flex" }}
+      >
+        <Flame size={15} strokeWidth={1.6} color={inactive ? "var(--c-soft)" : "#F97316"} />
       </span>
       <span
         style={{

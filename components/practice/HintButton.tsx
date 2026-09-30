@@ -3,6 +3,8 @@
 // Always-available hint pill (specs.md §16.4 + §16.5).
 // Renders nothing when the verse has no hint.
 
+import { Bulb } from "@/components/icons/UiIcons";
+
 type Props = {
   hint: string | null;
   shown: boolean;
@@ -35,7 +37,7 @@ export function HintButton({ hint, shown, onToggle, label }: Props) {
         backdropFilter: "blur(8px)",
       }}
     >
-      <span aria-hidden>💡</span> {label}
+      <Bulb size={14} /> {label}
     </button>
   );
 }

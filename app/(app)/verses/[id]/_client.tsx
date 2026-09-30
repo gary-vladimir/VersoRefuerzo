@@ -15,7 +15,7 @@ import { VerseIcon } from "@/components/icons/VerseIcons";
 import { useToast } from "@/components/ui/Toast";
 import { QualityButtons } from "@/components/practice/QualityButtons";
 import { play } from "@/lib/sounds/player";
-import { Pencil, Trash, Eye, Refresh, Bulb } from "@/components/icons/UiIcons";
+import { Pencil, Trash, Eye, Refresh, Bulb, Check } from "@/components/icons/UiIcons";
 import type { Quality } from "@/lib/srs/sm2";
 import type { Verse } from "@/db/schema";
 
@@ -295,15 +295,19 @@ export function CardViewClient({
           </>
         ) : graded ? (
           <p
+            role="status"
             style={{
-              textAlign: "center",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
               fontSize: 13,
               color: "var(--c-emerald-500)",
               margin: "0 0 14px",
               fontWeight: 700,
             }}
           >
-            ✓ {t.graded}
+            <Check size={14} strokeWidth={3} /> {t.graded}
           </p>
         ) : (
           <>
