@@ -28,7 +28,11 @@ import { planChunks, stageForReps } from "@/lib/srs/chunk";
 import { endOfTzDay, isSameTzDay, localDayNumber } from "@/lib/streak/streak";
 import { ALL_VERSES, type PracticeSource } from "@/lib/practice/source";
 import { sourceFilter } from "@/lib/practice/sourceFilter";
+import { getVerseText, type VersionKey } from "@/lib/bible/apibible";
 import type { QueueItem } from "@/components/practice/ClassicSession";
+
+// Upper bound on on-demand API.Bible fetches per queue load.
+const MAX_TEXT_PRIMES = 5;
 
 export type LoadOpts = {
   oneVerseId?: string | null;
@@ -132,6 +136,30 @@ export async function loadClassicQueue(
   const cacheByKey = new Map<string, { text: string; copyright: string | null }>();
   for (const c of cached) {
     cacheByKey.set(`${c.ref}|${c.version}`, { text: c.text, copyright: c.copyright });
+  }
+
+  // 3a. Self-heal verses whose text never reached the cache (API.Bible was
+  // down when they were saved). Home counts them as due, so dropping them
+  // here left "1 verse for today" leading to an empty session. A few are
+  // fetched on demand; any that still fail are skipped as before.
+  const missing = new Map<string, { ref: string; version: string }>();
+  for (const v of verses) {
+    const key = `${v.canonicalRef}|${v.version}`;
+    if (!cacheByKey.has(key)) missing.set(key, { ref: v.canonicalRef, version: v.version });
+  }
+  if (missing.size > 0) {
+    const primed = await Promise.allSettled(
+      [...missing.values()]
+        .slice(0, MAX_TEXT_PRIMES)
+        .map((m) => getVerseText(m.ref, m.version as VersionKey)),
+    );
+    for (const r of primed) {
+      if (r.status !== "fulfilled") continue;
+      cacheByKey.set(`${r.value.canonicalRef}|${r.value.version}`, {
+        text: r.value.text,
+        copyright: r.value.copyrightAttribution,
+      });
+    }
   }
 
   // 4. Filter uncached + interleave (or pass-through for one-verse mode).

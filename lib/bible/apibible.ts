@@ -75,6 +75,8 @@ export type FetchResult = {
 
 const inFlight = new Map<string, Promise<FetchResult>>();
 
+const FETCH_TIMEOUT_MS = 8_000;
+
 export async function getVerseText(
   canonicalRef: string,
   version: VersionKey,
@@ -130,7 +132,12 @@ async function doGetVerseText(
     "&include-verse-spans=false";
 
   console.info(`[apibible] fetching ${canonicalRef} ${version} (uncached)`);
-  const res = await fetch(url, { headers: { "api-key": apiKey } });
+  // Bounded: this runs inside page renders and the verse-create request, so
+  // a stalled upstream must fail fast rather than hang them.
+  const res = await fetch(url, {
+    headers: { "api-key": apiKey },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     throw new Error(`API.Bible ${res.status}: ${body.slice(0, 200)}`);
