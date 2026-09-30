@@ -102,6 +102,13 @@ export async function POST(req: NextRequest) {
   }
   const classification: "recall" | "recognition" = isRecall ? "recall" : "recognition";
 
+  // A recall pass is graded by the user (or the typed-recall comparison);
+  // without a grade the old fallback of 0 silently recorded a blackout and
+  // reset the verse's interval.
+  if (isRecall && data.quality == null) {
+    return NextResponse.json({ error: "quality_required" }, { status: 400 });
+  }
+
   // The chunk *stage* the user practiced is derived from the verse's
   // pre-grade rep count (specs.md §15.7 / chunk.stageForReps) so every
   // recall mode agrees with what the queue route rendered (M5 review #1).
@@ -117,8 +124,7 @@ export async function POST(req: NextRequest) {
   // remains on `INITIAL_SRS_STATE` for legacy rows but is read nowhere.
   let nextSrs: SrsState;
   if (isRecall) {
-    const q = (data.quality ?? 0) as Quality;
-    nextSrs = applyRecallGrade(verse.srsState, q, now);
+    nextSrs = applyRecallGrade(verse.srsState, data.quality as Quality, now);
   } else {
     nextSrs = applyRecognitionTouch(verse.srsState, data.outcome === "correct");
   }

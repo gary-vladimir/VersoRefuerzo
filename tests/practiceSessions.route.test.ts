@@ -142,6 +142,17 @@ describe("POST /api/practice/sessions — guards", () => {
 });
 
 describe("POST /api/practice/sessions — recall modes", () => {
+  it("400s a recall attempt that carries no grade", async () => {
+    const res = await post({
+      verseId: VERSE_ID,
+      mode: "classic",
+      outcome: "correct",
+      durationMs: 1000,
+    });
+    expect(res.status).toBe(400);
+    expect(db.calls.some((c) => c.method === "batch")).toBe(false);
+  });
+
   it("grades with SM-2 and advances the due date", async () => {
     const res = await post({
       verseId: VERSE_ID,

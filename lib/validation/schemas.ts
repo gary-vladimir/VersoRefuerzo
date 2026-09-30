@@ -10,6 +10,7 @@ import { isValidUsfmRef } from "@/lib/bible/reference";
 
 const VersionEnum = z.enum(["NBLA", "NVI", "RVR1960"]);
 export type Version = z.infer<typeof VersionEnum>;
+export const VersionInput = VersionEnum;
 
 // The stored timezone is fed straight into dayjs.tz() by the streak, queue,
 // and stats paths, and an unknown zone makes Intl throw. Validate it at the
