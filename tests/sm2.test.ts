@@ -42,6 +42,19 @@ describe("applyRecallGrade", () => {
     expect(failed.easeFactor).toBeLessThan(s.easeFactor);
   });
 
+  // Regression: a pass right after a lapse multiplied the lapsed 0-day
+  // interval by the ease factor, so the verse stayed due today on every
+  // later pass and never re-entered the spacing schedule.
+  it("a pass after a lapse schedules at least one day out", () => {
+    let s = INITIAL_SRS_STATE;
+    for (let i = 0; i < 3; i++) s = applyRecallGrade(s, 4, NOW);
+    s = applyRecallGrade(s, 1, NOW);
+    const recovered = applyRecallGrade(s, 4, NOW);
+    expect(recovered.interval).toBeGreaterThanOrEqual(1);
+    const next = applyRecallGrade(recovered, 4, NOW);
+    expect(next.interval).toBeGreaterThan(recovered.interval);
+  });
+
   it("clamps ease factor", () => {
     let s = INITIAL_SRS_STATE;
     for (let i = 0; i < 30; i++) s = applyRecallGrade(s, 1, NOW);

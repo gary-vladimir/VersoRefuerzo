@@ -64,8 +64,11 @@ export function applyRecallGrade(
     interval = 6;
     repetitions = prev.repetitions + 1;
   } else {
+    // A lapse leaves `interval` at 0 while keeping `repetitions`, so the
+    // first pass after it would multiply 0 by the ease factor and stay due
+    // today forever. Floor at one day: relearning restarts the spacing.
     interval = Math.min(
-      Math.round(prev.interval * easeFactor),
+      Math.max(1, Math.round(prev.interval * easeFactor)),
       MAX_INTERVAL_DAYS,
     );
     repetitions = prev.repetitions + 1;
