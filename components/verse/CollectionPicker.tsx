@@ -14,6 +14,7 @@ export type CollectionPickerProps = {
   onChange: (ids: string[]) => void;
   onCreate: (name: string, colorKey: CollectionColorId) => Promise<Collection>;
   newLabel: string;
+  namePlaceholder: string;
 };
 
 // Renders the user's existing collections as toggleable chips, plus a
@@ -25,6 +26,7 @@ export function CollectionPicker({
   onChange,
   onCreate,
   newLabel,
+  namePlaceholder,
 }: CollectionPickerProps) {
   const [creating, setCreating] = useState(false);
   const [draftName, setDraftName] = useState("");
@@ -132,7 +134,8 @@ export function CollectionPicker({
                 setDraftName("");
               }
             }}
-            placeholder="Nombre…"
+            placeholder={namePlaceholder}
+            aria-label={namePlaceholder}
             maxLength={40}
             style={{
               border: "none",
@@ -188,7 +191,7 @@ export function CollectionPicker({
       )}
 
       {error && (
-        <p style={{ width: "100%", color: "#B91C1C", fontSize: 12, margin: 0 }}>
+        <p role="alert" style={{ width: "100%", color: "#B91C1C", fontSize: 12, margin: 0 }}>
           {error}
         </p>
       )}

@@ -73,6 +73,7 @@ export function VerseForm({
   strings: t,
 }: VerseFormProps) {
   const router = useRouter();
+  const msg = FORM_MESSAGES[locale];
   const [refInput, setRefInput] = useState(initialReference);
   const [version, setVersion] = useState<string>(
     initialVersion && versions.includes(initialVersion)
@@ -117,7 +118,9 @@ export function VerseForm({
     });
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
-      throw new Error(j.error === "duplicate_name" ? "Ya existe esa colección" : "No se pudo crear");
+      throw new Error(
+        j.error === "duplicate_name" ? msg.duplicateCollection : msg.createCollectionFailed,
+      );
     }
     const { collection } = (await res.json()) as { collection: Collection };
     setCollections((prev) => [...prev, collection].sort((a, b) => a.name.localeCompare(b.name)));
@@ -146,7 +149,7 @@ export function VerseForm({
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
-        throw new Error(j.error || `${res.status}`);
+        throw new Error(errorMessage(j.error));
       }
       // Persist last-used version (specs §17.1) — best effort, create only.
       if (!isEdit) {
@@ -159,8 +162,23 @@ export function VerseForm({
       router.push(isEdit && verseId ? `/verses/${verseId}` : "/");
       router.refresh();
     } catch (e) {
-      setSubmitError(e instanceof Error ? e.message : "error");
+      // A thrown fetch (offline) has no API error code behind it.
+      setSubmitError(e instanceof TypeError ? msg.network : e instanceof Error ? e.message : msg.generic);
       setSubmitting(false);
+    }
+  }
+
+  // API error codes are for code, not people.
+  function errorMessage(code: unknown): string {
+    switch (code) {
+      case "version_unavailable":
+        return msg.versionUnavailable;
+      case "invalid_collection":
+        return msg.invalidCollection;
+      case "not_found":
+        return msg.notFound;
+      default:
+        return msg.generic;
     }
   }
 
@@ -253,7 +271,7 @@ export function VerseForm({
       >
         {/* Reference */}
         <div>
-          <FormLabel>{t.reference}</FormLabel>
+          <FormLabel htmlFor="vr-ref-input">{t.reference}</FormLabel>
           <div
             style={{
               background: "#fff",
@@ -271,6 +289,7 @@ export function VerseForm({
             }}
           >
             <input
+              id="vr-ref-input"
               value={refInput}
               onChange={(e) => setRefInput(e.target.value)}
               placeholder={locale === "es" ? "Juan 14:6" : "John 14:6"}
@@ -395,6 +414,7 @@ export function VerseForm({
         {/* Hint */}
         <div>
           <FormLabel
+            htmlFor="vr-hint-input"
             hint={
               locale === "es" ? "Solo aparece si te rindes" : "Only shows if you give up"
             }
@@ -412,6 +432,7 @@ export function VerseForm({
             }}
           >
             <input
+              id="vr-hint-input"
               value={hint}
               onChange={(e) => setHint(e.target.value.slice(0, 120))}
               placeholder={t.hintPlaceholder}
@@ -457,6 +478,7 @@ export function VerseForm({
             onChange={setCollectionIds}
             onCreate={createCollection}
             newLabel={locale === "es" ? "Nueva" : "New"}
+            namePlaceholder={msg.collectionName}
           />
         </div>
       </div>
@@ -480,7 +502,9 @@ export function VerseForm({
         }}
       >
         {submitError && (
-          <p style={{ color: "#B91C1C", fontSize: 13, margin: 0 }}>{submitError}</p>
+          <p role="alert" style={{ color: "#B91C1C", fontSize: 13, margin: 0 }}>
+            {submitError}
+          </p>
         )}
         <button
           type="button"
@@ -514,12 +538,37 @@ export function VerseForm({
   );
 }
 
+const FORM_MESSAGES = {
+  es: {
+    versionUnavailable: "Esa versión ya no está disponible. Elige otra.",
+    invalidCollection: "Una de las colecciones ya no existe. Revisa tu selección.",
+    notFound: "Este verso ya no existe.",
+    network: "Sin conexión. Revisa tu internet e inténtalo de nuevo.",
+    generic: "No se pudo guardar. Inténtalo de nuevo.",
+    duplicateCollection: "Ya existe esa colección",
+    createCollectionFailed: "No se pudo crear la colección",
+    collectionName: "Nombre…",
+  },
+  en: {
+    versionUnavailable: "That version is no longer available. Pick another one.",
+    invalidCollection: "One of the collections no longer exists. Check your selection.",
+    notFound: "This verse no longer exists.",
+    network: "You're offline. Check your connection and try again.",
+    generic: "Couldn't save. Please try again.",
+    duplicateCollection: "That collection already exists",
+    createCollectionFailed: "Couldn't create the collection",
+    collectionName: "Name…",
+  },
+} as const;
+
 function FormLabel({
   children,
   hint,
+  htmlFor,
 }: {
   children: React.ReactNode;
   hint?: string;
+  htmlFor?: string;
 }) {
   return (
     <div
@@ -531,6 +580,7 @@ function FormLabel({
       }}
     >
       <label
+        htmlFor={htmlFor}
         style={{
           fontSize: 11,
           fontWeight: 800,
