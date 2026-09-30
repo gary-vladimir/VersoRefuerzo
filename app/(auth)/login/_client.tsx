@@ -13,17 +13,24 @@ import { signInWithPopup, signOut } from "firebase/auth";
 import { getClientAuth, googleProvider } from "@/lib/auth/firebase-client";
 import { T } from "@/lib/i18n/strings";
 
+// Star field as [left %, top %, size px, delay s]. Percentages so the stars
+// spread over the whole screen; fixed pixels bunched them into the top-left
+// phone-sized corner on desktop.
 const STARS: Array<[number, number, number, number]> = [
-  [40, 80, 2, 0],
-  [80, 200, 3, 0.5],
-  [300, 120, 2, 1],
-  [160, 280, 3, 0.3],
-  [340, 350, 2, 0.8],
-  [60, 420, 2, 1.2],
-  [280, 460, 3, 0.4],
-  [200, 520, 2, 1.5],
-  [100, 140, 2, 2],
-  [320, 250, 2, 0.2],
+  [10, 9, 2, 0],
+  [21, 22, 3, 0.5],
+  [78, 13, 2, 1],
+  [42, 31, 3, 0.3],
+  [88, 39, 2, 0.8],
+  [15, 47, 2, 1.2],
+  [72, 51, 3, 0.4],
+  [52, 58, 2, 1.5],
+  [26, 16, 2, 2],
+  [84, 28, 2, 0.2],
+  [6, 72, 2, 0.9],
+  [93, 66, 3, 1.7],
+  [34, 84, 2, 0.6],
+  [64, 90, 2, 1.1],
 ];
 
 export default function LoginClient() {
@@ -95,8 +102,8 @@ export default function LoginClient() {
           className="vr-twinkle"
           style={{
             position: "absolute",
-            left: x,
-            top: y,
+            left: `${x}%`,
+            top: `${y}%`,
             width: s,
             height: s,
             borderRadius: "50%",
