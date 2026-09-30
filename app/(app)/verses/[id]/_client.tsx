@@ -240,7 +240,8 @@ export function CardViewClient({
         <button
           type="button"
           onClick={() => (revealed ? setRevealed(false) : reveal())}
-          aria-label={revealed ? "front" : "back"}
+          aria-label={t.revealVerse}
+          aria-pressed={revealed}
           className="vr-flip-host"
           style={{
             width: 320,

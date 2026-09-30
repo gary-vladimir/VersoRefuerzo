@@ -7,15 +7,17 @@ export function IconPicker({
   value,
   color,
   onChange,
+  label,
 }: {
   value: VerseIconId;
   color: CardColorId;
   onChange: (id: VerseIconId) => void;
+  label: string;
 }) {
   return (
     <div
       role="radiogroup"
-      aria-label="Ícono"
+      aria-label={label}
       className="vr-icon-grid"
       style={{
         background: "#fff",

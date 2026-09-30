@@ -389,7 +389,7 @@ export function VerseForm({
           >
             {t.color}
           </FormLabel>
-          <ColorPicker value={color} onChange={setColor} />
+          <ColorPicker value={color} onChange={setColor} locale={locale} label={t.color} />
         </div>
 
         {/* Icon */}
@@ -404,6 +404,7 @@ export function VerseForm({
           <IconPicker
             value={icon}
             color={color}
+            label={t.icon}
             onChange={(id) => {
               setIcon(id);
               setIconTouched(true);

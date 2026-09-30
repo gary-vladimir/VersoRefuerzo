@@ -5,14 +5,18 @@ import { CARD_COLORS, type CardColorId } from "@/lib/catalog";
 export function ColorPicker({
   value,
   onChange,
+  locale,
+  label,
 }: {
   value: CardColorId;
   onChange: (id: CardColorId) => void;
+  locale: "es" | "en";
+  label: string;
 }) {
   return (
     <div
       role="radiogroup"
-      aria-label="Color"
+      aria-label={label}
       style={{ display: "flex", gap: 8 }}
     >
       {CARD_COLORS.map((c) => {
@@ -23,7 +27,7 @@ export function ColorPicker({
             type="button"
             role="radio"
             aria-checked={sel}
-            aria-label={c.labelEs}
+            aria-label={locale === "es" ? c.labelEs : c.labelEn}
             onClick={() => onChange(c.id)}
             className="vr-press"
             style={{
