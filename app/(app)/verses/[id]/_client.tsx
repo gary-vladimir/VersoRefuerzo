@@ -493,6 +493,13 @@ const primaryButtonStyle: React.CSSProperties = {
   cursor: "pointer",
 };
 
+function verseFontSize(text: string | null): number {
+  const n = text?.length ?? 0;
+  if (n > 320) return 14;
+  if (n > 200) return 15.5;
+  return 17;
+}
+
 function FrontFace({
   color,
   icon,
@@ -696,11 +703,15 @@ function BackFace({
         </div>
       </div>
 
+      {/* The card has a fixed height (it has to, to flip), so long
+          passages shrink a step and then scroll instead of being clipped. */}
       <p
         style={{
           flex: 1,
+          minHeight: 0,
+          overflowY: "auto",
           fontFamily: "var(--font-serif)",
-          fontSize: 17,
+          fontSize: verseFontSize(text),
           lineHeight: 1.5,
           color: "var(--c-text)",
           margin: 0,
