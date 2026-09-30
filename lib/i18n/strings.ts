@@ -162,6 +162,11 @@ export const T = {
     practiceModeWordScramble: "Palabras revueltas",
     practiceModeMatch: "Empareja versos",
     practiceModeGap: "Completa el verso",
+    // Mini-game empty states
+    practiceEmptyLibrary: "Agrega tu primer verso para practicar.",
+    practiceEmptyPool: "No hay versos disponibles en esta selección.",
+    practiceNeedTwo: "Necesitas al menos dos versos para emparejar.",
+    practicePickAnother: "Elegir otra selección",
     // Profile sheet (§16.3, §6.8, §6.9, §17.8)
     profileTitle: "Tu perfil",
     language: "Idioma",
@@ -329,6 +334,10 @@ export const T = {
     practiceModeWordScramble: "Word scramble",
     practiceModeMatch: "Verse match",
     practiceModeGap: "Fill the gap",
+    practiceEmptyLibrary: "Add your first verse to practice.",
+    practiceEmptyPool: "There are no verses available in this selection.",
+    practiceNeedTwo: "You need at least two verses to play Match.",
+    practicePickAnother: "Pick another selection",
     profileTitle: "Your profile",
     language: "Language",
     soundEffects: "Sound effects",

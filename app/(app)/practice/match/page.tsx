@@ -2,12 +2,12 @@
 // Server samples up to 5 cached verses from the §6.4 source pool for one round.
 
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { getServerUser } from "@/lib/auth/session";
 import { T } from "@/lib/i18n/strings";
 import { loadMiniGameVerses } from "@/lib/practice/loadMiniGameVerses";
 import { parsePracticeSource, type RawSearchParams } from "@/lib/practice/source";
 import { VerseMatch } from "@/components/practice/VerseMatch";
+import { PracticeEmptyState } from "@/components/practice/PracticeEmptyState";
 
 const ROUND_SIZE = 5;
 
@@ -21,16 +21,22 @@ export default async function MatchPage({
   const locale: "es" | "en" = user.locale === "en" ? "en" : "es";
   const t = T[locale];
 
-  const pool = await loadMiniGameVerses(
-    user.id,
-    ROUND_SIZE,
-    parsePracticeSource(await searchParams),
-  );
+  const source = parsePracticeSource(await searchParams);
+  const pool = await loadMiniGameVerses(user.id, ROUND_SIZE, source);
 
-  if (pool.verses.length < 2) return <NeedMore locale={locale} t={t} />;
+  if (pool.verses.length < 2) {
+    return source.kind === "all" ? (
+      <PracticeEmptyState message={t.practiceNeedTwo} ctaLabel={t.addVerse} ctaHref="/verses/new" />
+    ) : (
+      <PracticeEmptyState message={t.practiceNeedTwo} ctaLabel={t.practicePickAnother} ctaHref="/practice" />
+    );
+  }
 
   return (
     <VerseMatch
+      // Fresh key per render so "Another round" (router.refresh) remounts
+      // the game instead of keeping the finished round's state.
+      key={crypto.randomUUID()}
       verses={pool.verses}
       locale={locale}
       strings={{
@@ -52,67 +58,5 @@ export default async function MatchPage({
         retry: locale === "es" ? "Reintentar" : "Retry",
       }}
     />
-  );
-}
-
-function NeedMore({
-  locale,
-  t,
-}: {
-  locale: "es" | "en";
-  t: (typeof T)["es"] | (typeof T)["en"];
-}) {
-  return (
-    <main
-      style={{
-        minHeight: "100dvh",
-        background: "var(--c-bg)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 24,
-      }}
-    >
-      <div
-        style={{
-          background: "#fff",
-          borderRadius: "var(--r-2xl)",
-          padding: "28px 24px",
-          textAlign: "center",
-          boxShadow: "var(--shadow-sm)",
-          maxWidth: 360,
-        }}
-      >
-        <p
-          style={{
-            margin: "0 0 16px",
-            fontFamily: "var(--font-serif)",
-            fontStyle: "italic",
-            color: "var(--c-muted)",
-            fontSize: 15,
-          }}
-        >
-          {locale === "es"
-            ? "Necesitas al menos dos versos para emparejar."
-            : "You need at least two verses to play Match."}
-        </p>
-        <Link
-          href="/verses/new"
-          style={{
-            display: "inline-block",
-            background: "var(--brand-primary)",
-            color: "#fff",
-            textDecoration: "none",
-            borderRadius: "var(--r-full)",
-            padding: "10px 18px",
-            fontFamily: "var(--font-display)",
-            fontWeight: 700,
-            fontSize: 14,
-          }}
-        >
-          {t.addVerse}
-        </Link>
-      </div>
-    </main>
   );
 }
