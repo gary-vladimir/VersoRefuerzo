@@ -7,7 +7,6 @@
 // pool from `lib/bible/fallback-distractors.ts`.
 
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { getServerUser } from "@/lib/auth/session";
 import { T } from "@/lib/i18n/strings";
 import { loadMiniGameVerses } from "@/lib/practice/loadMiniGameVerses";
@@ -15,6 +14,8 @@ import { parsePracticeSource, type RawSearchParams } from "@/lib/practice/source
 import { chooseBlanks } from "@/lib/srs/cloze";
 import { fallbackPoolFor } from "@/lib/bible/fallback-distractors";
 import { FillTheGap } from "@/components/practice/FillTheGap";
+import { PracticeEmptyState } from "@/components/practice/PracticeEmptyState";
+import { textLocaleForVersion } from "@/lib/catalog";
 
 // Mirrors the cloze stopword set, just inlined here so the page can drop
 // stopwords from the *distractor* pool too. Picking "el" or "la" as a
@@ -43,12 +44,23 @@ export default async function GapPage({
 
   // Sample one verse to play; loader also returns the pool's word list so
   // we can build distractors without a second round-trip.
-  const pool = await loadMiniGameVerses(user.id, 1, parsePracticeSource(await searchParams));
+  const source = parsePracticeSource(await searchParams);
+  const pool = await loadMiniGameVerses(user.id, 1, source);
   const pick = pool.verses[0];
 
-  if (!pick) return <NotEnoughVerses locale={locale} t={t} />;
+  if (!pick) {
+    return source.kind === "all" ? (
+      <PracticeEmptyState message={t.practiceEmptyLibrary} ctaLabel={t.addVerse} ctaHref="/verses/new" />
+    ) : (
+      <PracticeEmptyState message={t.practiceEmptyPool} ctaLabel={t.practicePickAnother} ctaHref="/practice" />
+    );
+  }
 
-  const plan = chooseBlanks(pick.text, pick.verse.srsState.repetitions, locale);
+  // Stopwords and the fallback distractor pool follow the language of the
+  // verse text, not the UI: English distractors next to a Spanish verse
+  // would give the answer away.
+  const textLocale = textLocaleForVersion(pick.verse.version);
+  const plan = chooseBlanks(pick.text, pick.verse.srsState.repetitions, textLocale);
 
   // Build the per-blank distractor lists. A distractor must:
   //   - not be the correct answer (case-insensitive)
@@ -63,7 +75,7 @@ export default async function GapPage({
   const correctSet = new Set(
     plan.blankIndices.map((i) => plan.tokens[i]!.word.toLowerCase()),
   );
-  const stopwords = locale === "es" ? ES_STOP : EN_STOP;
+  const stopwords = textLocale === "es" ? ES_STOP : EN_STOP;
 
   function isValid(w: string, correct: string): boolean {
     return (
@@ -76,7 +88,7 @@ export default async function GapPage({
   }
 
   const userPool = pool.wordPool;
-  const fallbackPool = fallbackPoolFor(locale).map((w) => w.toLowerCase());
+  const fallbackPool = fallbackPoolFor(textLocale).map((w) => w.toLowerCase());
 
   const distractorsPerBlank: string[][] = plan.blankIndices.map((tokIdx) => {
     const correct = plan.tokens[tokIdx]!.word.toLowerCase();
@@ -95,6 +107,9 @@ export default async function GapPage({
 
   return (
     <FillTheGap
+      // Fresh key per render so "Another verse" (router.refresh) remounts
+      // the game instead of keeping the finished round's state.
+      key={crypto.randomUUID()}
       verse={pick.verse}
       copyright={pick.copyright}
       plan={plan}
@@ -127,66 +142,4 @@ function shuffle<T>(arr: T[]): T[] {
     [out[i], out[j]] = [out[j]!, out[i]!];
   }
   return out;
-}
-
-function NotEnoughVerses({
-  locale,
-  t,
-}: {
-  locale: "es" | "en";
-  t: (typeof T)["es"] | (typeof T)["en"];
-}) {
-  return (
-    <main
-      style={{
-        minHeight: "100dvh",
-        background: "var(--c-bg)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 24,
-      }}
-    >
-      <div
-        style={{
-          background: "#fff",
-          borderRadius: "var(--r-2xl)",
-          padding: "28px 24px",
-          textAlign: "center",
-          boxShadow: "var(--shadow-sm)",
-          maxWidth: 360,
-        }}
-      >
-        <p
-          style={{
-            margin: "0 0 16px",
-            fontFamily: "var(--font-serif)",
-            fontStyle: "italic",
-            color: "var(--c-muted)",
-            fontSize: 15,
-          }}
-        >
-          {locale === "es"
-            ? "Agrega tu primer verso para practicar."
-            : "Add your first verse to practice."}
-        </p>
-        <Link
-          href="/verses/new"
-          style={{
-            display: "inline-block",
-            background: "var(--brand-primary)",
-            color: "#fff",
-            textDecoration: "none",
-            borderRadius: "var(--r-full)",
-            padding: "10px 18px",
-            fontFamily: "var(--font-display)",
-            fontWeight: 700,
-            fontSize: 14,
-          }}
-        >
-          {t.addVerse}
-        </Link>
-      </div>
-    </main>
-  );
 }

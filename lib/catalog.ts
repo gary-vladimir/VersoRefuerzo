@@ -68,3 +68,17 @@ export function isVerseIcon(s: string): s is VerseIconId {
 export function isCollectionColor(s: string): s is CollectionColorId {
   return (COLLECTION_COLOR_IDS as readonly string[]).includes(s);
 }
+
+// Language each Bible version's text is written in. Every v1 version is
+// Spanish, so text-level logic (cloze stopwords, distractor pools) must key
+// off the version, never off the UI locale: an English UI still practices
+// Spanish verses.
+const VERSION_TEXT_LOCALE: Record<string, "es" | "en"> = {
+  NBLA: "es",
+  NVI: "es",
+  RVR1960: "es",
+};
+
+export function textLocaleForVersion(version: string): "es" | "en" {
+  return VERSION_TEXT_LOCALE[version] ?? "es";
+}

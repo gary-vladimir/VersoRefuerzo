@@ -91,7 +91,12 @@ export function FillTheGap({
     const tokIdx = plan.blankIndices[active];
     if (tokIdx === undefined) return [];
     const correct = plan.tokens[tokIdx]!.word;
-    const distractors = (distractorsPerBlank[active] ?? []).slice(0, 3);
+    // Distractors arrive lowercased. Give them the answer's capitalization
+    // so a capitalized "Señor" or a sentence-initial word is not the only
+    // capitalized button on the row.
+    const distractors = (distractorsPerBlank[active] ?? [])
+      .slice(0, 3)
+      .map((d) => matchCase(d, correct));
     const options = shuffle([correct, ...distractors]);
     optionsCacheRef.current.set(active, options);
     return options;
@@ -462,6 +467,13 @@ export function FillTheGap({
       )}
     </main>
   );
+}
+
+// Copy the leading-capital pattern of `model` onto `word`.
+function matchCase(word: string, model: string): string {
+  const first = model.charAt(0);
+  const isUpper = first !== first.toLowerCase() && first === first.toUpperCase();
+  return isUpper ? word.charAt(0).toUpperCase() + word.slice(1) : word.toLowerCase();
 }
 
 // Compare loosely so an option that differs only in case still counts.
