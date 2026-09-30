@@ -14,9 +14,11 @@ export type Token = {
 };
 
 // Match runs of word characters (Unicode letter/number, plus apostrophes
-// inside a word so "don't" is one token). Anything else between matches
-// is treated as separator+punctuation.
-const WORD_RE = /[\p{L}\p{N}]+(?:[''][\p{L}\p{N}]+)*/gu;
+// inside a word so "don't" and "don\u2019t" are one token). The typographic
+// apostrophe is written as an escape: a literal one is indistinguishable
+// from the ASCII quote on screen, which is how it went missing before.
+// Anything else between matches is treated as separator+punctuation.
+const WORD_RE = /[\p{L}\p{N}]+(?:['\u2019][\p{L}\p{N}]+)*/gu;
 
 export function tokenize(text: string): Token[] {
   const out: Token[] = [];

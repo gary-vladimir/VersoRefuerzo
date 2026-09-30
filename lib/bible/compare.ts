@@ -60,7 +60,7 @@ export function gradeFromSimilarity(similarity: number): Quality {
 // number suffix that sneaks through.
 // Combining Diacritical Marks block: U+0300..U+036F. After NFD splits
 // "fortaléce" into "fortaléce", this strip drops the accent.
-const COMBINING_MARKS = /[̀-ͯ]/g;
+const COMBINING_MARKS = /[\u0300-\u036f]/g;
 
 export function normalizeTokens(text: string): string[] {
   const normalized = text.normalize("NFD").replace(COMBINING_MARKS, "").toLowerCase();

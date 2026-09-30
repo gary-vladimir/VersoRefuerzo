@@ -79,3 +79,10 @@ describe("wordsOnly", () => {
     ]);
   });
 });
+
+describe("tokenize apostrophes", () => {
+  it("keeps ASCII and typographic apostrophes inside one word", () => {
+    expect(tokenize("don't stop").map((t) => t.word)).toEqual(["don't", "stop"]);
+    expect(tokenize("don’t stop").map((t) => t.word)).toEqual(["don’t", "stop"]);
+  });
+});
