@@ -146,7 +146,22 @@ export default async function CollectionDetailPage({
           </div>
           <CollectionActions
             id={collection.id}
-            strings={{ delete: t.delete, deleted: t.collectionDeleted, undo: t.undo }}
+            name={collection.name}
+            description={collection.description}
+            colorKey={collection.colorKey}
+            strings={{
+              edit: t.editCollection,
+              delete: t.delete,
+              deleted: t.collectionDeleted,
+              undo: t.undo,
+              name: t.collectionNameLabel,
+              description: t.collectionDescriptionLabel,
+              color: t.color,
+              save: t.saveChanges,
+              cancel: t.cancel,
+              duplicateName: t.collectionDuplicateName,
+              saveFailed: t.collectionSaveFailed,
+            }}
           />
         </div>
         {collection.description && (
