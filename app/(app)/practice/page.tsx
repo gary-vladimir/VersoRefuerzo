@@ -192,6 +192,8 @@ export default async function PracticeHubPage() {
           sourceMaxReached: t.sourceMaxReached,
           sourceNeedsPick: t.sourceNeedsPick,
           sourceNeedsCollection: t.sourceNeedsCollection,
+          emptyLibrary: t.practiceEmptyLibrary,
+          addVerse: t.addVerse,
         }}
       />
     </main>

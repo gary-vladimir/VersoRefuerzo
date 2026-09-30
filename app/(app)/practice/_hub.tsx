@@ -50,6 +50,8 @@ export type HubStrings = {
   sourceMaxReached: (n: number) => string;
   sourceNeedsPick: string;
   sourceNeedsCollection: string;
+  emptyLibrary: string;
+  addVerse: string;
 };
 
 type Kind = "all" | "collection" | "custom";
@@ -90,6 +92,53 @@ export function PracticeHub({
 
   const query = practiceSourceQuery(source);
   const atMax = picked.length >= MAX_CUSTOM_VERSES;
+
+  // §17.2: with nothing in the library every mode would open empty, so
+  // point at the one action that helps instead.
+  if (verses.length === 0) {
+    return (
+      <section
+        style={{
+          margin: "24px 20px",
+          padding: "24px 20px",
+          borderRadius: "var(--r-2xl)",
+          background: "#fff",
+          boxShadow: "var(--shadow-sm)",
+          textAlign: "center",
+        }}
+      >
+        <p
+          style={{
+            margin: "0 0 16px",
+            color: "var(--c-muted)",
+            fontFamily: "var(--font-serif)",
+            fontStyle: "italic",
+            fontSize: 15,
+          }}
+        >
+          {s.emptyLibrary}
+        </p>
+        <Link
+          href="/verses/new"
+          className="vr-press"
+          style={{
+            display: "inline-block",
+            padding: "11px 20px",
+            borderRadius: 999,
+            background: "var(--brand-primary)",
+            color: "#fff",
+            fontFamily: "var(--font-display)",
+            fontWeight: 700,
+            fontSize: 13,
+            textDecoration: "none",
+            boxShadow: "0 8px 20px rgb(var(--card-indigo-rgb) / 0.35)",
+          }}
+        >
+          {s.addVerse}
+        </Link>
+      </section>
+    );
+  }
 
   function toggleVerse(id: string) {
     setPicked((prev) => {
