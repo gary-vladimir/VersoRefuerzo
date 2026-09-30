@@ -17,6 +17,7 @@ import {
 } from "@/db/schema";
 import { T } from "@/lib/i18n/strings";
 import { UNDO_WINDOW_MS } from "@/lib/constants";
+import { firstVerseHref } from "@/lib/bible/defaults";
 import {
   deriveEffectiveStreak,
   endOfTzDay,
@@ -147,7 +148,7 @@ export default async function Home() {
           <EmptyHero
             body={t.emptyHomeNoVerses}
             cta={t.addFirstVerse}
-            href="/verses/new?ref=Juan%2014%3A6"
+            href={firstVerseHref(locale) as Route}
           />
         ) : dueVerses.length === 0 ? (
           <EmptyHero

@@ -32,3 +32,11 @@ const BOOK_ICON: Record<string, string> = {
 export function defaultIconForBook(usfmBookCode: string): string {
   return BOOK_ICON[usfmBookCode] ?? "bible";
 }
+
+// The §17.2 / §17.7 "start with John 14:6" suggestion as a New Verse link,
+// with the book named in the user's language so the pre-filled reference
+// matches the copy that recommends it.
+export function firstVerseHref(locale: "es" | "en"): string {
+  const ref = locale === "es" ? "Juan 14:6" : "John 14:6";
+  return `/verses/new?ref=${encodeURIComponent(ref)}`;
+}

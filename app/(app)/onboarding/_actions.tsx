@@ -4,9 +4,11 @@ import { useState } from "react";
 
 export default function OnboardingActions({
   primaryLabel,
+  primaryHref,
   skipLabel,
 }: {
   primaryLabel: string;
+  primaryHref: string;
   skipLabel: string;
 }) {
   const [loading, setLoading] = useState<null | "primary" | "skip">(null);
@@ -36,7 +38,7 @@ export default function OnboardingActions({
       <button
         type="button"
         // §17.7: opens New Verse pre-filled with Juan 14:6.
-        onClick={() => complete("/verses/new?ref=Juan%2014%3A6", "primary")}
+        onClick={() => complete(primaryHref, "primary")}
         disabled={loading !== null}
         className="vr-press"
         style={{

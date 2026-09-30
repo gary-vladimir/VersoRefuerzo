@@ -5,6 +5,7 @@
 import { redirect } from "next/navigation";
 import { getServerUser } from "@/lib/auth/session";
 import { T } from "@/lib/i18n/strings";
+import { firstVerseHref } from "@/lib/bible/defaults";
 import OnboardingActions from "./_actions";
 
 export default async function OnboardingPage() {
@@ -117,6 +118,7 @@ export default async function OnboardingPage() {
 
       <OnboardingActions
         primaryLabel={t.addFirstVerse}
+        primaryHref={firstVerseHref(user.locale === "en" ? "en" : "es")}
         skipLabel={t.skip}
       />
     </main>
