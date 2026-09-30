@@ -20,6 +20,8 @@ import { signOut } from "firebase/auth";
 import { getClientAuth } from "@/lib/auth/firebase-client";
 import { setSoundEnabled, play } from "@/lib/sounds/player";
 import { T, type Locale } from "@/lib/i18n/strings";
+import { deriveEffectiveStreak } from "@/lib/streak/streak";
+import { Flame } from "@/components/icons/UiIcons";
 import type { User } from "@/db/schema";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 
@@ -88,6 +90,15 @@ export function ProfileSheet({ user, open, onClose }: Props) {
   }, [open, onClose]);
 
   if (!open) return null;
+
+  const currentStreak = deriveEffectiveStreak({
+    state: {
+      currentStreak: user.currentStreak,
+      bestStreak: user.bestStreak,
+      lastStreakAt: (user.lastStreakAt ?? null) as string | null,
+    },
+    tz: user.timezone,
+  });
 
   async function patchMe(body: Record<string, unknown>) {
     setBusy(true);
@@ -234,6 +245,26 @@ export function ProfileSheet({ user, open, onClose }: Props) {
             </div>
           </div>
         </header>
+
+        {/* Streak (§16.3): the current run as Home shows it, plus the best. */}
+        <Row label={t.streakRow}>
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              fontSize: 13,
+              fontWeight: 700,
+              color: "var(--c-text)",
+            }}
+          >
+            <Flame size={15} strokeWidth={1.6} color="#F97316" />
+            {t.streakLabel(currentStreak)}
+            <span style={{ color: "var(--c-muted)", fontWeight: 600 }}>
+              · {t.bestStreak(user.bestStreak)}
+            </span>
+          </span>
+        </Row>
 
         {/* Language */}
         <Row label={t.language}>

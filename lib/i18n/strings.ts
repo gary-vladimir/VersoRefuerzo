@@ -178,6 +178,8 @@ export const T = {
     // Profile sheet (§16.3, §6.8, §6.9, §17.8)
     profileTitle: "Tu perfil",
     language: "Idioma",
+    streakRow: "Racha",
+    bestStreak: (n: number) => `Mejor: ${n} ${n === 1 ? "día" : "días"}`,
     soundEffects: "Efectos de sonido",
     deleteAccountConfirm: "¿Eliminar tu cuenta? Esto borra tus versos, colecciones y racha. No se puede deshacer.",
     deleteAccountConfirmCta: "Sí, eliminar",
@@ -356,6 +358,8 @@ export const T = {
     practicePickAnother: "Pick another selection",
     profileTitle: "Your profile",
     language: "Language",
+    streakRow: "Streak",
+    bestStreak: (n: number) => `Best: ${n} ${n === 1 ? "day" : "days"}`,
     soundEffects: "Sound effects",
     deleteAccountConfirm: "Delete your account? This wipes your verses, collections, and streak. It can't be undone.",
     deleteAccountConfirmCta: "Yes, delete",
