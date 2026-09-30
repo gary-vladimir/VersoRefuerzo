@@ -13,8 +13,9 @@
 // Server-only — pulls Drizzle and the dailySeed PRNG.
 
 import "server-only";
-import { and, eq, inArray, isNull, lt } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
+import { sweepDeletedVerses } from "@/lib/softDelete";
 import {
   verses as versesTable,
   verseCollections as vcTable,
@@ -27,7 +28,6 @@ import { planChunks, stageForReps } from "@/lib/srs/chunk";
 import { endOfTzDay, isSameTzDay, localDayNumber } from "@/lib/streak/streak";
 import { ALL_VERSES, type PracticeSource } from "@/lib/practice/source";
 import { sourceFilter } from "@/lib/practice/sourceFilter";
-import { UNDO_WINDOW_MS } from "@/lib/constants";
 import type { QueueItem } from "@/components/practice/ClassicSession";
 
 export type LoadOpts = {
@@ -46,10 +46,7 @@ export async function loadClassicQueue(
   const db = getDb();
 
   // 1. Sweep committed-deletable rows so the surface matches the spec.
-  const cutoff = new Date(Date.now() - UNDO_WINDOW_MS);
-  await db
-    .delete(versesTable)
-    .where(and(eq(versesTable.userId, user.id), lt(versesTable.deletedAt, cutoff)));
+  await sweepDeletedVerses(db, user.id);
 
   // 2. Resolve random mode by picking one cached candidate up front.
   let oneVerseId = opts.oneVerseId ?? null;

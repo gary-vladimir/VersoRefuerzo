@@ -4,9 +4,10 @@
 
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { and, asc, eq, inArray, isNull, lt } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import { getServerUser } from "@/lib/auth/session";
 import { getDb } from "@/db/client";
+import { sweepDeletedVerses, sweepDeletedCollections } from "@/lib/softDelete";
 import {
   collections as collectionsTable,
   verses as versesTable,
@@ -15,7 +16,6 @@ import {
 } from "@/db/schema";
 import { COLLECTION_COLORS } from "@/lib/catalog";
 import { T } from "@/lib/i18n/strings";
-import { UNDO_WINDOW_MS } from "@/lib/constants";
 import { VerseRow } from "@/components/verse/VerseRow";
 import { CollectionActions } from "@/components/verse/CollectionActions";
 
@@ -31,13 +31,8 @@ export default async function CollectionDetailPage({
   const db = getDb();
   const { id } = await params;
 
-  const cutoff = new Date(Date.now() - UNDO_WINDOW_MS);
-  await db
-    .delete(versesTable)
-    .where(and(eq(versesTable.userId, user.id), lt(versesTable.deletedAt, cutoff)));
-  await db
-    .delete(collectionsTable)
-    .where(and(eq(collectionsTable.userId, user.id), lt(collectionsTable.deletedAt, cutoff)));
+  await sweepDeletedVerses(db, user.id);
+  await sweepDeletedCollections(db, user.id);
 
   const found = await db
     .select()

@@ -11,9 +11,10 @@
 //                    collectionIds, chunk: { stage, text, total } }> }
 
 import { NextResponse, type NextRequest } from "next/server";
-import { and, eq, inArray, isNull, lt } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import { getServerUser } from "@/lib/auth/session";
 import { getDb } from "@/db/client";
+import { sweepDeletedVerses } from "@/lib/softDelete";
 import {
   verses as versesTable,
   verseCollections as vcTable,
@@ -25,7 +26,6 @@ import { planChunks, stageForReps } from "@/lib/srs/chunk";
 import { endOfTzDay, isSameTzDay, localDayNumber } from "@/lib/streak/streak";
 import { parsePracticeSource } from "@/lib/practice/source";
 import { sourceFilter } from "@/lib/practice/sourceFilter";
-import { UNDO_WINDOW_MS } from "@/lib/constants";
 
 export const runtime = "nodejs";
 
@@ -37,10 +37,7 @@ export async function GET(req: NextRequest) {
   const db = getDb();
 
   // Same housekeeping sweep as /api/verses (no background workers).
-  const cutoff = new Date(Date.now() - UNDO_WINDOW_MS);
-  await db
-    .delete(versesTable)
-    .where(and(eq(versesTable.userId, user.id), lt(versesTable.deletedAt, cutoff)));
+  await sweepDeletedVerses(db, user.id);
 
   const source = parsePracticeSource(
     Object.fromEntries(req.nextUrl.searchParams.entries()),

@@ -1,7 +1,8 @@
 // /api/collections/[id]/restore  — undo a collection soft-delete inside the
 // 5-second window (specs.md §17.5). Mirrors the verse restore endpoint.
 //
-// We only restore if `deletedAt` is non-null AND younger than UNDO_WINDOW_MS.
+// We only restore if `deletedAt` is non-null AND inside the retention window
+// (lib/constants.ts :: SOFT_DELETE_RETENTION_MS, a little longer than the toast).
 // Past the window the housekeeping sweep at GET /api/collections hard-deletes
 // the row, so a stale undo returns 404. Memberships were never removed during
 // the window, so a restored collection keeps all its verse links.
@@ -11,7 +12,7 @@ import { and, eq, isNotNull, gt } from "drizzle-orm";
 import { getServerUser } from "@/lib/auth/session";
 import { getDb } from "@/db/client";
 import { collections } from "@/db/schema";
-import { UNDO_WINDOW_MS } from "@/lib/constants";
+import { restoreCutoff } from "@/lib/softDelete";
 
 export const runtime = "nodejs";
 
@@ -24,7 +25,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
   }
   const { id } = await params;
   const db = getDb();
-  const cutoff = new Date(Date.now() - UNDO_WINDOW_MS);
+  const cutoff = restoreCutoff();
 
   const restored = await db
     .update(collections)

@@ -6,7 +6,7 @@
 //   - status: 'new' | 'learning' | 'mastered'
 //
 // GET also acts as the housekeeping sweep for soft-deleted rows (PLAN.md):
-// any verse whose `deletedAt` is older than UNDO_WINDOW_MS is hard-deleted
+// any verse whose restore window (lib/softDelete.ts) has passed is hard-deleted
 // before the list is returned. No background workers, no in-memory timers —
 // the next read commits the delete. Recently-deleted rows are kept on disk
 // (just hidden) so /restore can resurrect them.
@@ -17,9 +17,10 @@
 // create a verse whose text has no path to ever load).
 
 import { NextResponse, type NextRequest } from "next/server";
-import { and, asc, eq, isNull, inArray, lt } from "drizzle-orm";
+import { and, asc, eq, isNull, inArray } from "drizzle-orm";
 import { getServerUser } from "@/lib/auth/session";
 import { getDb } from "@/db/client";
+import { sweepDeletedVerses } from "@/lib/softDelete";
 import {
   verses,
   verseCollections,
@@ -28,7 +29,6 @@ import {
 } from "@/db/schema";
 import { NewVerseInput } from "@/lib/validation/schemas";
 import { getVerseText, availableVersions } from "@/lib/bible/apibible";
-import { UNDO_WINDOW_MS } from "@/lib/constants";
 
 export const runtime = "nodejs";
 
@@ -40,10 +40,7 @@ export async function GET(req: NextRequest) {
   const db = getDb();
 
   // Housekeeping sweep — commit soft-deletes whose undo window has elapsed.
-  const cutoff = new Date(Date.now() - UNDO_WINDOW_MS);
-  await db
-    .delete(verses)
-    .where(and(eq(verses.userId, user.id), lt(verses.deletedAt, cutoff)));
+  await sweepDeletedVerses(db, user.id);
 
   const sp = req.nextUrl.searchParams;
   const collectionId = sp.get("collectionId");

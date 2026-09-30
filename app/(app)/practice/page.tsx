@@ -10,16 +10,16 @@
 // selector itself and the mode tiles live in the client component `_hub`.
 
 import { redirect } from "next/navigation";
-import { and, asc, eq, isNull, lt } from "drizzle-orm";
+import { and, asc, eq, isNull } from "drizzle-orm";
 import { getServerUser } from "@/lib/auth/session";
 import { getDb } from "@/db/client";
+import { sweepDeletedVerses, sweepDeletedCollections } from "@/lib/softDelete";
 import {
   collections as collectionsTable,
   verses as versesTable,
   verseCollections as vcTable,
 } from "@/db/schema";
 import { T } from "@/lib/i18n/strings";
-import { UNDO_WINDOW_MS } from "@/lib/constants";
 import { formatDisplay } from "@/lib/bible/reference";
 import {
   PracticeHub,
@@ -37,15 +37,8 @@ export default async function PracticeHubPage() {
 
   // Same housekeeping sweep every read does, so a just-deleted collection
   // cannot be offered as a practice source.
-  const cutoff = new Date(Date.now() - UNDO_WINDOW_MS);
-  await db
-    .delete(versesTable)
-    .where(and(eq(versesTable.userId, user.id), lt(versesTable.deletedAt, cutoff)));
-  await db
-    .delete(collectionsTable)
-    .where(
-      and(eq(collectionsTable.userId, user.id), lt(collectionsTable.deletedAt, cutoff)),
-    );
+  await sweepDeletedVerses(db, user.id);
+  await sweepDeletedCollections(db, user.id);
 
   const [allVerses, allCollections, allLinks] = await Promise.all([
     db

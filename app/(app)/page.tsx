@@ -8,15 +8,15 @@
 import Link from "next/link";
 import type { Route } from "next";
 import { redirect } from "next/navigation";
-import { and, asc, eq, inArray, isNull, lt } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import { getServerUser } from "@/lib/auth/session";
 import { getDb } from "@/db/client";
+import { sweepDeletedVerses } from "@/lib/softDelete";
 import {
   verses as versesTable,
   bibleTextCache,
 } from "@/db/schema";
 import { T } from "@/lib/i18n/strings";
-import { UNDO_WINDOW_MS } from "@/lib/constants";
 import { firstVerseHref } from "@/lib/bible/defaults";
 import {
   deriveEffectiveStreak,
@@ -43,10 +43,7 @@ export default async function Home() {
 
   // Sweep before reading so the visible counts match what the queue route
   // would return.
-  const cutoff = new Date(Date.now() - UNDO_WINDOW_MS);
-  await db
-    .delete(versesTable)
-    .where(and(eq(versesTable.userId, user.id), lt(versesTable.deletedAt, cutoff)));
+  await sweepDeletedVerses(db, user.id);
 
   const allVerses = await db
     .select()

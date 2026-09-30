@@ -4,10 +4,11 @@
 // owns the tab state, search filter, and the VerseRow undo flow.
 
 import Link from "next/link";
-import { and, asc, eq, isNull, inArray, lt } from "drizzle-orm";
+import { and, asc, eq, isNull, inArray } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getServerUser } from "@/lib/auth/session";
 import { getDb } from "@/db/client";
+import { sweepDeletedVerses, sweepDeletedCollections } from "@/lib/softDelete";
 import {
   collections as collectionsTable,
   verses as versesTable,
@@ -15,7 +16,6 @@ import {
   bibleTextCache,
 } from "@/db/schema";
 import { T } from "@/lib/i18n/strings";
-import { UNDO_WINDOW_MS } from "@/lib/constants";
 import { LibraryView } from "./_view";
 
 export default async function LibraryPage({
@@ -30,13 +30,8 @@ export default async function LibraryPage({
   const db = getDb();
 
   // Same housekeeping sweep as /api/verses GET — keep the SSR view honest.
-  const cutoff = new Date(Date.now() - UNDO_WINDOW_MS);
-  await db
-    .delete(versesTable)
-    .where(and(eq(versesTable.userId, user.id), lt(versesTable.deletedAt, cutoff)));
-  await db
-    .delete(collectionsTable)
-    .where(and(eq(collectionsTable.userId, user.id), lt(collectionsTable.deletedAt, cutoff)));
+  await sweepDeletedVerses(db, user.id);
+  await sweepDeletedCollections(db, user.id);
 
   const [allVerses, allCollections, allLinks] = await Promise.all([
     db

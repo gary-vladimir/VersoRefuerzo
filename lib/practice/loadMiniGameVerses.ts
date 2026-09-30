@@ -13,14 +13,14 @@
 // API.Bible attribution in the corner per specs.md §9.3.
 
 import "server-only";
-import { and, eq, inArray, isNull, lt } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
+import { sweepDeletedVerses } from "@/lib/softDelete";
 import {
   verses as versesTable,
   bibleTextCache,
   type Verse,
 } from "@/db/schema";
-import { UNDO_WINDOW_MS } from "@/lib/constants";
 import { wordsOnly } from "@/lib/bible/tokenize";
 import { ALL_VERSES, type PracticeSource } from "@/lib/practice/source";
 import { sourceFilter } from "@/lib/practice/sourceFilter";
@@ -47,10 +47,7 @@ export async function loadMiniGameVerses(
   const db = getDb();
 
   // Same housekeeping sweep every read does.
-  const cutoff = new Date(Date.now() - UNDO_WINDOW_MS);
-  await db
-    .delete(versesTable)
-    .where(and(eq(versesTable.userId, userId), lt(versesTable.deletedAt, cutoff)));
+  await sweepDeletedVerses(db, userId);
 
   const candidates = await db
     .select({ verse: versesTable })
