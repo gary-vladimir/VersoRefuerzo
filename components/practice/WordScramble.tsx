@@ -92,7 +92,11 @@ export function WordScramble({ verse, text, copyright, locale, strings: t }: Pro
 
   function tap(chip: Chip) {
     if (done) return;
-    if (chip.correctOrder === expectedNext) {
+    // Verses repeat words ("que", "de", "el"), and identical chips are
+    // indistinguishable, so any chip whose text matches the next expected
+    // token is right, not only the one that happens to carry its index.
+    const expectedRaw = segments[segIdx]?.[expectedNext]?.raw;
+    if (chip.correctOrder === expectedNext || chip.raw === expectedRaw) {
       play("pluck");
       const nextPlaced = [...placed, chip];
       const nextPool = pool.filter((c) => c !== chip);
