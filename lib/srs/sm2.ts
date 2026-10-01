@@ -32,6 +32,13 @@ export const MAX_EASE = 2.8;
 // Ten years is far past any real review schedule and keeps every date valid.
 export const MAX_INTERVAL_DAYS = 3650;
 
+// `Fácil` must space a card further out than `Bien`, or the button means
+// nothing: plain SM-2 gives every first pass one day, so all three passing
+// buttons previewed "1 día". The spec's button labels promise ~4 days for
+// Easy on a new card; afterwards Easy stretches the interval by this factor.
+export const EASY_FIRST_INTERVAL = 4;
+export const EASY_BONUS = 1.3;
+
 export type Quality = 0 | 1 | 2 | 3 | 4 | 5;
 
 // Pure SM-2 update for a recall-class attempt. Returns the next state.
@@ -72,6 +79,16 @@ export function applyRecallGrade(
       MAX_INTERVAL_DAYS,
     );
     repetitions = prev.repetitions + 1;
+  }
+
+  if (quality === 5) {
+    interval =
+      prev.repetitions === 0
+        ? EASY_FIRST_INTERVAL
+        : Math.min(
+            Math.max(interval + 1, Math.round(interval * EASY_BONUS)),
+            MAX_INTERVAL_DAYS,
+          );
   }
 
   return {

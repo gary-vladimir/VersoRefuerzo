@@ -55,6 +55,16 @@ describe("applyRecallGrade", () => {
     expect(next.interval).toBeGreaterThan(recovered.interval);
   });
 
+  it("spaces Easy further out than Good", () => {
+    const good = applyRecallGrade(INITIAL_SRS_STATE, 4, NOW);
+    const easy = applyRecallGrade(INITIAL_SRS_STATE, 5, NOW);
+    expect(good.interval).toBe(1);
+    expect(easy.interval).toBe(4);
+    const good2 = applyRecallGrade(good, 4, NOW);
+    const easy2 = applyRecallGrade(good, 5, NOW);
+    expect(easy2.interval).toBeGreaterThan(good2.interval);
+  });
+
   it("clamps ease factor", () => {
     let s = INITIAL_SRS_STATE;
     for (let i = 0; i < 30; i++) s = applyRecallGrade(s, 1, NOW);
