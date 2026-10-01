@@ -73,6 +73,13 @@ export function ProfileSheet({ user, open, onClose }: Props) {
       if (focusables.length === 0) return;
       const first = focusables[0]!;
       const last = focusables[focusables.length - 1]!;
+      // Focus can drop to <body> (e.g. a re-render). Pull it back inside
+      // rather than letting Tab walk the page behind the modal.
+      if (!panel.contains(document.activeElement)) {
+        e.preventDefault();
+        (e.shiftKey ? last : first).focus();
+        return;
+      }
       if (e.shiftKey && document.activeElement === first) {
         e.preventDefault();
         last.focus();
@@ -116,13 +123,14 @@ export function ProfileSheet({ user, open, onClose }: Props) {
   }
 
   async function toggleLocale(next: Locale) {
-    if (next === localeDraft) return;
+    if (busy || next === localeDraft) return;
     setLocaleDraft(next);
     const ok = await patchMe({ locale: next });
     if (!ok) setLocaleDraft(locale);
   }
 
   async function toggleSound() {
+    if (busy) return;
     const next = !soundDraft;
     setSoundDraft(next);
     setSoundEnabled(next);
@@ -275,13 +283,14 @@ export function ProfileSheet({ user, open, onClose }: Props) {
             ]}
             value={localeDraft}
             onChange={(v) => toggleLocale(v as Locale)}
-            disabled={busy}
           />
         </Row>
 
         {/* Sound */}
         <Row label={t.soundEffects}>
-          <Switch checked={soundDraft} onChange={toggleSound} disabled={busy} />
+          {/* Not disabled while saving (the handlers ignore taps instead):
+              disabling the focused control threw focus out of the dialog. */}
+          <Switch checked={soundDraft} onChange={toggleSound} />
         </Row>
 
         <div
