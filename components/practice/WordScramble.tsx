@@ -21,6 +21,7 @@ import { Close, Heart, HeartFilled } from "@/components/icons/UiIcons";
 import { play } from "@/lib/sounds/player";
 import type { Verse } from "@/db/schema";
 import { T } from "@/lib/i18n/strings";
+import { seededShuffle } from "@/lib/random";
 
 const STARTING_INTENTOS = 3;
 
@@ -40,6 +41,8 @@ type Strings = {
 type Props = {
   verse: Verse;
   text: string;
+  // Server-picked so the chip order matches between SSR and hydration.
+  seed: number;
   copyright: string | null;
   locale: "es" | "en";
   strings: Strings;
@@ -47,7 +50,7 @@ type Props = {
 
 type Chip = { tokenIndex: number; raw: string; correctOrder: number };
 
-export function WordScramble({ verse, text, copyright, locale, strings: t }: Props) {
+export function WordScramble({ verse, text, seed, copyright, locale, strings: t }: Props) {
   const router = useRouter();
   const color: CardColorId = isCardColor(verse.color) ? verse.color : "indigo";
   const icon: VerseIconId = isVerseIcon(verse.icon) ? verse.icon : "bible";
@@ -64,13 +67,14 @@ export function WordScramble({ verse, text, copyright, locale, strings: t }: Pro
   // pool doesn't reshuffle on React strict-mode double-mount in dev.
   const segmentChipsRef = useRef<Chip[][] | null>(null);
   if (segmentChipsRef.current === null) {
-    segmentChipsRef.current = segments.map((segTokens) =>
-      shuffle(
+    segmentChipsRef.current = segments.map((segTokens, segI) =>
+      seededShuffle(
         segTokens.map((tok, i) => ({
           tokenIndex: i,
           raw: tok.raw,
           correctOrder: i,
         })),
+        seed + segI,
       ),
     );
   }
@@ -408,7 +412,8 @@ export function WordScramble({ verse, text, copyright, locale, strings: t }: Pro
               fontFamily: "var(--font-serif)",
             }}
           >
-            {t.niceTry}
+            {/* §16.7: the neutral line is for running out of tries. */}
+            {done === "win" ? T[locale].miniGameWin : t.niceTry}
           </p>
           {submitFailed && (
             <p
@@ -469,15 +474,6 @@ export function WordScramble({ verse, text, copyright, locale, strings: t }: Pro
       )}
     </main>
   );
-}
-
-function shuffle<T>(arr: T[]): T[] {
-  const out = arr.slice();
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [out[i], out[j]] = [out[j]!, out[i]!];
-  }
-  return out;
 }
 
 const iconButtonStyle: React.CSSProperties = {

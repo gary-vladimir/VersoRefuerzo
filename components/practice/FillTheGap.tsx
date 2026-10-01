@@ -29,6 +29,8 @@ import { Close, Bulb, Heart, HeartFilled } from "@/components/icons/UiIcons";
 import { play } from "@/lib/sounds/player";
 import type { Verse } from "@/db/schema";
 import type { BlankPlan } from "@/lib/srs/cloze";
+import { seededShuffle } from "@/lib/random";
+import { T } from "@/lib/i18n/strings";
 
 const STARTING_INTENTOS = 3;
 
@@ -52,6 +54,9 @@ type Props = {
   // (already excluding the correct word). The component picks a final
   // 4-option order client-side.
   distractorsPerBlank: string[][];
+  // Server-picked so each blank's option order matches between SSR and
+  // hydration.
+  seed: number;
   locale: "es" | "en";
   strings: Strings;
 };
@@ -61,6 +66,7 @@ export function FillTheGap({
   copyright,
   plan,
   distractorsPerBlank,
+  seed,
   locale,
   strings: t,
 }: Props) {
@@ -97,10 +103,10 @@ export function FillTheGap({
     const distractors = (distractorsPerBlank[active] ?? [])
       .slice(0, 3)
       .map((d) => matchCase(d, correct));
-    const options = shuffle([correct, ...distractors]);
+    const options = seededShuffle([correct, ...distractors], seed + active);
     optionsCacheRef.current.set(active, options);
     return options;
-  }, [active, plan, distractorsPerBlank]);
+  }, [active, plan, distractorsPerBlank, seed]);
 
   function tap(option: string) {
     if (done) return;
@@ -406,7 +412,8 @@ export function FillTheGap({
               fontFamily: "var(--font-serif)",
             }}
           >
-            {t.niceTry}
+            {/* §16.7: the neutral line is for running out of tries. */}
+            {done === "win" ? T[locale].miniGameWin : t.niceTry}
           </p>
           {submitFailed && (
             <p
@@ -479,15 +486,6 @@ function matchCase(word: string, model: string): string {
 // Compare loosely so an option that differs only in case still counts.
 function eqLoose(a: string, b: string): boolean {
   return a.localeCompare(b, undefined, { sensitivity: "base" }) === 0;
-}
-
-function shuffle<T>(arr: T[]): T[] {
-  const out = arr.slice();
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [out[i], out[j]] = [out[j]!, out[i]!];
-  }
-  return out;
 }
 
 const iconButtonStyle: React.CSSProperties = {

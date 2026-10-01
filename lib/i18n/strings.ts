@@ -175,6 +175,7 @@ export const T = {
     practiceEmptyPool: "No hay versos disponibles en esta selección.",
     practiceNeedTwo: "Necesitas al menos dos versos para emparejar.",
     practicePickAnother: "Elegir otra selección",
+    miniGameWin: "¡Sigue así!",
     scrambleTriesLeft: (n: number) => `Te quedan ${n} intentos`,
     scrambleSegment: (current: number, total: number) => `Segmento ${current}/${total}`,
     matchSaveFailed: (n: number) =>
@@ -360,6 +361,7 @@ export const T = {
     practiceEmptyPool: "There are no verses available in this selection.",
     practiceNeedTwo: "You need at least two verses to play Match.",
     practicePickAnother: "Pick another selection",
+    miniGameWin: "Keep it up!",
     scrambleTriesLeft: (n: number) => `${n} tries left`,
     scrambleSegment: (current: number, total: number) => `Segment ${current}/${total}`,
     matchSaveFailed: (n: number) =>

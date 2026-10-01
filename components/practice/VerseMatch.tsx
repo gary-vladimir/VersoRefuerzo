@@ -22,6 +22,7 @@ import { Close, Heart, HeartFilled } from "@/components/icons/UiIcons";
 import { play } from "@/lib/sounds/player";
 import type { Verse } from "@/db/schema";
 import { T } from "@/lib/i18n/strings";
+import { seededShuffle } from "@/lib/random";
 
 const STARTING_INTENTOS = 3;
 
@@ -39,13 +40,16 @@ type Strings = {
 
 type Props = {
   verses: Array<{ verse: Verse; text: string; copyright: string | null }>;
+  // Picked on the server so the hint column shuffles identically during
+  // SSR and hydration.
+  seed: number;
   locale: "es" | "en";
   strings: Strings;
 };
 
 type Side = "left" | "right";
 
-export function VerseMatch({ verses, locale, strings: t }: Props) {
+export function VerseMatch({ verses, seed, locale, strings: t }: Props) {
   const router = useRouter();
 
   // Build the hint column: prefer the user's own hint, fall back to the
@@ -59,10 +63,13 @@ export function VerseMatch({ verses, locale, strings: t }: Props) {
           .slice(0, 3)
           .map((tok) => tok.word)
           .join(" ");
+        // Only the excerpt is cut short, so only it gets an ellipsis; the
+        // user's own hint is shown as written.
+        const own = verse.hint?.trim();
         return {
           id: verse.id,
           verse,
-          hint: (verse.hint?.trim() || fallback || "—") + "…",
+          hint: own || (fallback ? `${fallback}…` : "—"),
         };
       }),
     [verses],
@@ -72,7 +79,7 @@ export function VerseMatch({ verses, locale, strings: t }: Props) {
   // across renders so the user isn't tracking a moving target.
   const rightOrderRef = useRef<string[] | null>(null);
   if (rightOrderRef.current === null) {
-    rightOrderRef.current = shuffle(items.map((i) => i.id));
+    rightOrderRef.current = seededShuffle(items.map((i) => i.id), seed);
   }
 
   const [matched, setMatched] = useState<Set<string>>(new Set());
@@ -395,7 +402,8 @@ export function VerseMatch({ verses, locale, strings: t }: Props) {
               fontFamily: "var(--font-serif)",
             }}
           >
-            {t.niceTry}
+            {/* §16.7: the neutral line is for running out of tries. */}
+            {done === "win" ? T[locale].miniGameWin : t.niceTry}
           </p>
           {failedCount > 0 && (
             <p
@@ -475,15 +483,6 @@ function Attribution({
       {[...copyrights].join(" · ")}
     </p>
   );
-}
-
-function shuffle<T>(arr: T[]): T[] {
-  const out = arr.slice();
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [out[i], out[j]] = [out[j]!, out[i]!];
-  }
-  return out;
 }
 
 const iconButtonStyle: React.CSSProperties = {
