@@ -10,6 +10,7 @@ import { redirect } from "next/navigation";
 import { getServerUser } from "@/lib/auth/session";
 import { T } from "@/lib/i18n/strings";
 import { loadMiniGameVerses } from "@/lib/practice/loadMiniGameVerses";
+import { newSeed } from "@/lib/random";
 import { parsePracticeSource, type RawSearchParams } from "@/lib/practice/source";
 import { chooseBlanks } from "@/lib/srs/cloze";
 import { fallbackPoolFor } from "@/lib/bible/fallback-distractors";
@@ -76,10 +77,15 @@ export default async function GapPage({
     plan.blankIndices.map((i) => plan.tokens[i]!.word.toLowerCase()),
   );
   const stopwords = textLocale === "es" ? ES_STOP : EN_STOP;
+  // Words already printed in this verse are easy to rule out ("hermana" is
+  // visibly not the blank when it sits two words earlier), so they never
+  // serve as distractors.
+  const verseWords = new Set(plan.tokens.map((tok) => tok.word.toLowerCase()));
 
   function isValid(w: string, correct: string): boolean {
     return (
       !correctSet.has(w) &&
+      !verseWords.has(w) &&
       w !== correct &&
       w.length >= 2 &&
       !/^\d+$/.test(w) &&
@@ -110,6 +116,7 @@ export default async function GapPage({
       // Fresh key per render so "Another verse" (router.refresh) remounts
       // the game instead of keeping the finished round's state.
       key={crypto.randomUUID()}
+      seed={newSeed()}
       verse={pick.verse}
       copyright={pick.copyright}
       plan={plan}
