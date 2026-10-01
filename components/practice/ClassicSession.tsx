@@ -261,6 +261,9 @@ export function ClassicSession({
   const color: CardColorId = isCardColor(current.color) ? current.color : "indigo";
   const icon: VerseIconId = isVerseIcon(current.icon) ? current.icon : "bible";
   const refDisplay = formatDisplay(current.canonicalRef, locale);
+  // The verse stays on screen while its grade saves; flipping back to the
+  // front for that moment looked like the card had been reset.
+  const showBack = phase === "revealed" || phase === "submitting";
 
   function dismissAloudTip() {
     if (!aloudTipOpen) return;
@@ -527,7 +530,7 @@ export function ClassicSession({
           </div>
         ) : (
           <div
-            key={current.id + ":" + phase}
+            key={`${pos}:${current.id}:${showBack ? "back" : "front"}`}
             className="vr-card-rise"
             style={{
               width: "100%",
@@ -535,17 +538,17 @@ export function ClassicSession({
               minHeight: 360,
               borderRadius: "var(--r-3xl)",
               background:
-                phase === "revealed" ? "#fff" : `var(--card-${color}-bg)`,
+                showBack ? "#fff" : `var(--card-${color}-bg)`,
               boxShadow: "var(--shadow-xl)",
               padding: 24,
-              color: phase === "revealed" ? "var(--c-text)" : "#fff",
+              color: showBack ? "var(--c-text)" : "#fff",
               position: "relative",
               overflow: "hidden",
               display: "flex",
               flexDirection: "column",
             }}
           >
-            {phase !== "revealed" ? (
+            {!showBack ? (
               <>
                 <div
                   style={{
