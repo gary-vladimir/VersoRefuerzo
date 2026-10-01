@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { getServerUser } from "@/lib/auth/session";
 import { T } from "@/lib/i18n/strings";
 import { loadMiniGameVerses } from "@/lib/practice/loadMiniGameVerses";
+import { newSeed } from "@/lib/random";
 import { parsePracticeSource, type RawSearchParams } from "@/lib/practice/source";
 import { VerseMatch } from "@/components/practice/VerseMatch";
 import { PracticeEmptyState } from "@/components/practice/PracticeEmptyState";
@@ -37,6 +38,7 @@ export default async function MatchPage({
       // Fresh key per render so "Another round" (router.refresh) remounts
       // the game instead of keeping the finished round's state.
       key={crypto.randomUUID()}
+      seed={newSeed()}
       verses={pool.verses}
       locale={locale}
       strings={{

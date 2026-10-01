@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { getServerUser } from "@/lib/auth/session";
 import { T } from "@/lib/i18n/strings";
 import { loadMiniGameVerses } from "@/lib/practice/loadMiniGameVerses";
+import { newSeed } from "@/lib/random";
 import { parsePracticeSource, type RawSearchParams } from "@/lib/practice/source";
 import { WordScramble } from "@/components/practice/WordScramble";
 import { PracticeEmptyState } from "@/components/practice/PracticeEmptyState";
@@ -38,6 +39,7 @@ export default async function ScramblePage({
       // key per render remounts the game so its round state resets instead
       // of carrying the finished round over onto the new verse.
       key={crypto.randomUUID()}
+      seed={newSeed()}
       verse={pick.verse}
       text={pick.text}
       copyright={pick.copyright}

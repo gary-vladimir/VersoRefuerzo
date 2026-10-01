@@ -14,6 +14,7 @@
 // stays per its SRS state, and the *next* fetch reflects that.
 
 import type { SrsState } from "@/db/schema";
+import { seededShuffle } from "@/lib/random";
 
 export type QueueVerse = {
   id: string;
@@ -68,7 +69,7 @@ export function interleave(
 
   // Order the buckets themselves with a seeded shuffle so two users on
   // overlapping libraries don't see the same starting collection.
-  const orderedKeys = shuffle([...buckets.keys()], seed);
+  const orderedKeys = seededShuffle([...buckets.keys()], seed);
 
   // Round-robin pull until every bucket is empty.
   const out: QueueVerse[] = [];
@@ -108,27 +109,4 @@ export function dailySeed(userId: string, dayNumber: number): number {
     h = Math.imul(h, 16777619);
   }
   return h >>> 0;
-}
-
-// Mulberry32 — a 4-line PRNG that's good enough for shuffling and
-// deterministic given the seed.
-function rng(seed: number) {
-  let a = seed >>> 0;
-  return function next() {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function shuffle<T>(arr: T[], seed: number): T[] {
-  const out = arr.slice();
-  const r = rng(seed);
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(r() * (i + 1));
-    [out[i], out[j]] = [out[j]!, out[i]!];
-  }
-  return out;
 }
