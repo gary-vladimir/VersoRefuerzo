@@ -13,6 +13,7 @@
 
 import { useState } from "react";
 import { tolerantCompare, type CompareResult } from "@/lib/bible/compare";
+import { tokenize } from "@/lib/bible/tokenize";
 import { play } from "@/lib/sounds/player";
 import { QualityButtons } from "./QualityButtons";
 import type { Quality } from "@/lib/srs/sm2";
@@ -145,6 +146,7 @@ export function TypedRecall({
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
+              flexWrap: "wrap",
               gap: 8,
             }}
           >
@@ -153,7 +155,8 @@ export function TypedRecall({
               style={{
                 fontFamily: "var(--font-display)",
                 fontWeight: 800,
-                fontSize: 22,
+                fontSize: 18,
+                whiteSpace: "nowrap",
                 color:
                   result.quality >= 4
                     ? "var(--c-emerald-500)"
@@ -175,7 +178,12 @@ export function TypedRecall({
             </span>
           </div>
 
-          <DiffPanel result={result} locale={locale} labels={{ yourEntry: t.yourEntry, canonical: t.canonical }} />
+          <DiffPanel
+            result={result}
+            typed={draft}
+            canonicalText={canonicalText}
+            labels={{ yourEntry: t.yourEntry, canonical: t.canonical }}
+          />
 
           <QualityButtons
             srs={srs}
@@ -193,14 +201,21 @@ export function TypedRecall({
 
 function DiffPanel({
   result,
-  locale,
+  typed,
+  canonicalText,
   labels,
 }: {
   result: CompareResult;
-  locale: "es" | "en";
+  typed: string;
+  canonicalText: string;
   labels: { yourEntry: string; canonical: string };
 }) {
-  void locale;
+  // The comparison runs on normalized words (no case, accents, or
+  // punctuation), but people should read the verse as written. Both come
+  // from the same tokenizer, so they line up word for word; if they ever
+  // did not, fall back to the normalized words.
+  const original = tokenize(canonicalText).map((tok) => tok.raw);
+  const shown = original.length === result.canonicalTokens.length ? original : result.canonicalTokens;
   return (
     <div
       style={{
@@ -212,15 +227,13 @@ function DiffPanel({
       <div>
         <div style={smallLabelStyle}>{labels.yourEntry}</div>
         <div style={diffBoxStyle}>
-          {result.typedTokens.length > 0
-            ? result.typedTokens.join(" ")
-            : "—"}
+          {typed.trim() || "—"}
         </div>
       </div>
       <div>
         <div style={smallLabelStyle}>{labels.canonical}</div>
         <div style={diffBoxStyle}>
-          {result.canonicalTokens.map((tok, i) => (
+          {shown.map((tok, i) => (
             <span
               key={`${tok}-${i}`}
               style={{
