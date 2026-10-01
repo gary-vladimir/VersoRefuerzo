@@ -77,13 +77,13 @@ export default async function LibraryPage({
 
   const versesById = new Map(allVerses.map((v) => [v.id, v]));
 
+  // Count only live verses: a link to a verse still inside its undo window
+  // made the card say "1 verse" over an empty stack.
   const collectionsWithSamples = allCollections.map((c) => {
-    const ids = versesByCollection.get(c.id) ?? [];
-    const sample = ids
+    const members = (versesByCollection.get(c.id) ?? [])
       .map((id) => versesById.get(id))
-      .filter((v): v is (typeof allVerses)[number] => !!v)
-      .slice(0, 3);
-    return { collection: c, sample, count: ids.length };
+      .filter((v): v is (typeof allVerses)[number] => !!v);
+    return { collection: c, sample: members.slice(0, 3), count: members.length };
   });
 
   // Per-verse membership, for the §6.3 collection filter chips on the

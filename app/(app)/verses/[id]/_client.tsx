@@ -553,22 +553,26 @@ function FrontFace({
           background: "rgba(255,255,255,0.08)",
         }}
       />
+      {/* Centering and floating live on separate elements: the vr-float
+          keyframes animate `transform`, which replaced the centering
+          translate and pushed the icon into the reference text. */}
       <span
-        className="vr-float"
         style={{
           position: "absolute",
-          top: "50%",
+          top: "45%",
           left: "50%",
           transform: "translate(-50%, -50%)",
         }}
       >
-        <VerseIcon
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          id={icon as any}
-          size={130}
-          color="#fff"
-          strokeWidth={1.6}
-        />
+        <span className="vr-float" style={{ display: "block" }}>
+          <VerseIcon
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            id={icon as any}
+            size={130}
+            color="#fff"
+            strokeWidth={1.6}
+          />
+        </span>
       </span>
       <div style={{ position: "relative" }}>
         <div
