@@ -28,6 +28,7 @@ import { QualityButtons } from "./QualityButtons";
 import { HintButton } from "./HintButton";
 import { SkipLink } from "./SkipLink";
 import { TypedRecall } from "./TypedRecall";
+import { T } from "@/lib/i18n/strings";
 import type { Quality } from "@/lib/srs/sm2";
 
 export type QueueItem = {
@@ -71,7 +72,6 @@ type Strings = {
   typedYourEntry: string;
   typedCanonical: string;
   typedAutoGraded: string;
-  typedMatchPercent: (n: number) => string;
 };
 
 export type SessionMode = "classic" | "first_letter";
@@ -517,7 +517,7 @@ export function ClassicSession({
                 yourEntry: t.typedYourEntry,
                 canonical: t.typedCanonical,
                 autoGraded: t.typedAutoGraded,
-                matchPercent: t.typedMatchPercent,
+                matchPercent: T[locale].typedMatchPercent,
                 again: t.again,
                 hard: t.hard,
                 good: t.good,

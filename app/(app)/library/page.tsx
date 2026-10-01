@@ -174,7 +174,6 @@ export default async function LibraryPage({
           more: t.moreActions,
           clearSearch: t.clearSearch,
           loading: t.loadingText,
-          versesCount: t.versesCount,
           emptyCollectionsTitle: t.emptyCollectionsTitle,
           emptyCollectionsBody: t.emptyCollectionsBody,
           createFirst: t.createFirstCollection,

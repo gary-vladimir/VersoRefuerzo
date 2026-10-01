@@ -19,7 +19,6 @@ type Strings = {
   time: string;
   done: string;
   again: string;
-  units: { verses: (n: number) => string; minSec: (m: number, s: number) => string };
 };
 
 type Props = {
@@ -137,7 +136,7 @@ export function SessionSummary({
         >
           <Stat label={t.reviewed} value={String(reviewed)} />
           {accuracyPct != null && <Stat label={t.accuracy} value={`${accuracyPct}%`} />}
-          <Stat label={t.time} value={t.units.minSec(m, s)} />
+          <Stat label={t.time} value={`${m}:${String(s).padStart(2, "0")}`} />
         </div>
 
         {streak != null && (

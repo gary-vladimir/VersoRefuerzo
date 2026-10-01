@@ -16,6 +16,7 @@ import { CollectionCard } from "@/components/verse/CollectionCard";
 import { formatDisplay } from "@/lib/bible/reference";
 import { COLLECTION_COLORS } from "@/lib/catalog";
 import { Search, Close } from "@/components/icons/UiIcons";
+import { T } from "@/lib/i18n/strings";
 
 type Strings = {
   collections: string;
@@ -28,7 +29,6 @@ type Strings = {
   more: string;
   clearSearch: string;
   loading: string;
-  versesCount: (n: number) => string;
   emptyCollectionsTitle: string;
   emptyCollectionsBody: string;
   createFirst: string;
@@ -384,7 +384,7 @@ export function LibraryView({
                 key={entry.collection.id}
                 collection={entry.collection}
                 sample={entry.sample}
-                countLabel={t.versesCount(entry.count)}
+                countLabel={T[locale].versesCount(entry.count)}
               />
             ))}
           </section>

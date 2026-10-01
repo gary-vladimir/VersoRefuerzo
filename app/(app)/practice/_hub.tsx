@@ -23,6 +23,7 @@ import {
 } from "@/lib/practice/source";
 import { ModeIcon, type ModeName } from "@/components/practice/ModeIcons";
 import { Chevron } from "@/components/icons/UiIcons";
+import { T } from "@/lib/i18n/strings";
 
 export type HubCollection = { id: string; name: string; colorKey: string; count: number };
 export type HubVerse = { id: string; label: string; color: string };
@@ -44,10 +45,8 @@ export type HubStrings = {
   sourcePickVerses: string;
   sourceNoCollections: string;
   sourceNoVerses: string;
-  sourceSelectedCount: (n: number) => string;
   sourceClearSelection: string;
   sourceSelectAll: string;
-  sourceMaxReached: (n: number) => string;
   sourceNeedsPick: string;
   sourceNeedsCollection: string;
   emptyLibrary: string;
@@ -60,8 +59,10 @@ export function PracticeHub({
   tiles,
   collections,
   verses,
+  locale,
   strings: s,
 }: {
+  locale: "es" | "en";
   tiles: HubTile[];
   collections: HubCollection[];
   verses: HubVerse[];
@@ -358,8 +359,8 @@ export function PracticeHub({
                     aria-live="polite"
                     style={{ marginTop: 8, fontSize: 12, color: "var(--c-muted)" }}
                   >
-                    {s.sourceSelectedCount(picked.length)}
-                    {atMax ? ` · ${s.sourceMaxReached(MAX_CUSTOM_VERSES)}` : ""}
+                    {T[locale].sourceSelectedCount(picked.length)}
+                    {atMax ? ` · ${T[locale].sourceMaxReached(MAX_CUSTOM_VERSES)}` : ""}
                   </div>
                 </>
               )}

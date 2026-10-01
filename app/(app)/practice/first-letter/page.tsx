@@ -74,7 +74,6 @@ export default async function FirstLetterPage({
         typedYourEntry: t.typedYourEntry,
         typedCanonical: t.typedCanonical,
         typedAutoGraded: t.typedAutoGraded,
-        typedMatchPercent: t.typedMatchPercent,
       }}
     />
   );

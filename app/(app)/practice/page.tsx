@@ -177,6 +177,7 @@ export default async function PracticeHubPage() {
         tiles={tiles}
         collections={collections}
         verses={verses}
+        locale={locale}
         strings={{
           sourceLabel: t.sourceLabel,
           sourceAll: t.sourceAll,
@@ -186,10 +187,8 @@ export default async function PracticeHubPage() {
           sourcePickVerses: t.sourcePickVerses,
           sourceNoCollections: t.sourceNoCollections,
           sourceNoVerses: t.sourceNoVerses,
-          sourceSelectedCount: t.sourceSelectedCount,
           sourceClearSelection: t.sourceClearSelection,
           sourceSelectAll: t.sourceSelectAll,
-          sourceMaxReached: t.sourceMaxReached,
           sourceNeedsPick: t.sourceNeedsPick,
           sourceNeedsCollection: t.sourceNeedsCollection,
           emptyLibrary: t.practiceEmptyLibrary,

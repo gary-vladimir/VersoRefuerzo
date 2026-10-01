@@ -83,7 +83,6 @@ export default async function ClassicPage({
         typedYourEntry: t.typedYourEntry,
         typedCanonical: t.typedCanonical,
         typedAutoGraded: t.typedAutoGraded,
-        typedMatchPercent: t.typedMatchPercent,
       }}
     />
   );

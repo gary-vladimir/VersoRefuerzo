@@ -18,6 +18,7 @@ import { play } from "@/lib/sounds/player";
 import { Pencil, Trash, Eye, Refresh, Bulb, Check } from "@/components/icons/UiIcons";
 import type { Quality } from "@/lib/srs/sm2";
 import type { Verse } from "@/db/schema";
+import { T } from "@/lib/i18n/strings";
 
 type Strings = {
   back: string;
@@ -29,7 +30,6 @@ type Strings = {
   showHint: string;
   hint: string;
   practiceNow: string;
-  masteryPercent: (pct: number) => string;
   copyrightFallback: string;
   recite: string;
   loading: string;
@@ -468,7 +468,7 @@ export function CardViewClient({
             boxShadow: "var(--shadow-xs)",
           }}
         >
-          {t.masteryPercent(masteryPct)}
+          {T[locale].masteryPercent(masteryPct)}
         </span>
       </div>
     </main>

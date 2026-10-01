@@ -21,6 +21,7 @@ import { VerseIcon } from "@/components/icons/VerseIcons";
 import { Close, Heart, HeartFilled } from "@/components/icons/UiIcons";
 import { play } from "@/lib/sounds/player";
 import type { Verse } from "@/db/schema";
+import { T } from "@/lib/i18n/strings";
 
 const STARTING_INTENTOS = 3;
 
@@ -33,7 +34,6 @@ type Strings = {
   ranOut: string;
   references: string;
   hints: string;
-  saveFailed: (n: number) => string;
   retry: string;
 };
 
@@ -407,7 +407,7 @@ export function VerseMatch({ verses, locale, strings: t }: Props) {
                 color: "#B91C1C",
               }}
             >
-              {t.saveFailed(failedCount)}{" "}
+              {T[locale].matchSaveFailed(failedCount)}{" "}
               <button
                 type="button"
                 onClick={retryFailed}

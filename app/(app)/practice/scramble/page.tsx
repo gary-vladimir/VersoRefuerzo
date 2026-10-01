@@ -54,12 +54,6 @@ export default async function ScramblePage({
         playAgain: locale === "es" ? "Otro verso" : "Another verse",
         backHub: t.practice,
         exit: locale === "es" ? "Salir" : "Exit",
-        intentosLeft: (n) =>
-          locale === "es" ? `Te quedan ${n} intentos` : `${n} tries left`,
-        segmentLabel: (current, total) =>
-          locale === "es"
-            ? `Segmento ${current}/${total}`
-            : `Segment ${current}/${total}`,
         saveFailed: t.saveFailedRetry,
         retry: locale === "es" ? "Reintentar" : "Retry",
       }}

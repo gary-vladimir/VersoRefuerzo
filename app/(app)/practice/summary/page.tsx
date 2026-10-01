@@ -54,10 +54,6 @@ export default async function SummaryPage({
         time: locale === "es" ? "Tiempo" : "Time",
         done: t.home,
         again: locale === "es" ? "Practicar otra vez" : "Practice again",
-        units: {
-          verses: t.versesCount,
-          minSec: (m, s) => `${m}:${String(s).padStart(2, "0")}`,
-        },
       }}
     />
   );

@@ -175,6 +175,10 @@ export const T = {
     practiceEmptyPool: "No hay versos disponibles en esta selección.",
     practiceNeedTwo: "Necesitas al menos dos versos para emparejar.",
     practicePickAnother: "Elegir otra selección",
+    scrambleTriesLeft: (n: number) => `Te quedan ${n} intentos`,
+    scrambleSegment: (current: number, total: number) => `Segmento ${current}/${total}`,
+    matchSaveFailed: (n: number) =>
+      `${n} ${n === 1 ? "intento no se guardó" : "intentos no se guardaron"}.`,
     // Profile sheet (§16.3, §6.8, §6.9, §17.8)
     profileTitle: "Tu perfil",
     language: "Idioma",
@@ -356,6 +360,10 @@ export const T = {
     practiceEmptyPool: "There are no verses available in this selection.",
     practiceNeedTwo: "You need at least two verses to play Match.",
     practicePickAnother: "Pick another selection",
+    scrambleTriesLeft: (n: number) => `${n} tries left`,
+    scrambleSegment: (current: number, total: number) => `Segment ${current}/${total}`,
+    matchSaveFailed: (n: number) =>
+      `${n} ${n === 1 ? "attempt didn't save" : "attempts didn't save"}.`,
     profileTitle: "Your profile",
     language: "Language",
     streakRow: "Streak",

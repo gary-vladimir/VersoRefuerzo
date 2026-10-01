@@ -20,6 +20,7 @@ import { VerseIcon } from "@/components/icons/VerseIcons";
 import { Close, Heart, HeartFilled } from "@/components/icons/UiIcons";
 import { play } from "@/lib/sounds/player";
 import type { Verse } from "@/db/schema";
+import { T } from "@/lib/i18n/strings";
 
 const STARTING_INTENTOS = 3;
 
@@ -32,8 +33,6 @@ type Strings = {
   playAgain: string;
   backHub: string;
   exit: string;
-  intentosLeft: (n: number) => string;
-  segmentLabel: (current: number, total: number) => string;
   saveFailed: string;
   retry: string;
 };
@@ -256,7 +255,7 @@ export function WordScramble({ verse, text, copyright, locale, strings: t }: Pro
           </div>
         </div>
         <span
-          aria-label={t.intentosLeft(intentos)}
+          aria-label={T[locale].scrambleTriesLeft(intentos)}
           style={{
             background: "#fff",
             padding: "8px 12px",
@@ -293,7 +292,7 @@ export function WordScramble({ verse, text, copyright, locale, strings: t }: Pro
             textAlign: "right",
           }}
         >
-          {t.segmentLabel(segIdx + 1, segments.length)}
+          {T[locale].scrambleSegment(segIdx + 1, segments.length)}
         </p>
       )}
 
