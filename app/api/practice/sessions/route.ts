@@ -92,7 +92,24 @@ export async function POST(req: NextRequest) {
   // happens once the user's hit ~6 reps on this verse). The promotion is
   // computed server-side from the verse's repetition count + cached text
   // length so the client can't cheat the schedule by lying about density.
-  const cachedText = await loadCachedText(db, verse.canonicalRef, verse.version);
+  //
+  // The cached text and the 30-day session window (§15.5 unaided-recall
+  // guard, used below) are independent reads, so they share a round trip.
+  const windowStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const [cachedText, recentSessions] = await Promise.all([
+    loadCachedText(db, verse.canonicalRef, verse.version),
+    db
+      .select()
+      .from(practiceSessions)
+      .where(
+        and(
+          eq(practiceSessions.userId, user.id),
+          eq(practiceSessions.verseId, verse.id),
+          gte(practiceSessions.startedAt, windowStart),
+        ),
+      )
+      .orderBy(desc(practiceSessions.startedAt)),
+  ]);
   const totalChunks = cachedText ? planChunks(cachedText).chunks.length : 1;
   let isRecall = RECALL_MODES.has(data.mode);
   if (data.mode === "gap" && cachedText) {
@@ -147,19 +164,6 @@ export async function POST(req: NextRequest) {
   // sessions (§15.5 unaided-recall guard) BEFORE the insert and fold this
   // in-flight attempt in memory, so the session insert and the verse update
   // can be written together atomically below.
-  const windowStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  const recentSessions = await db
-    .select()
-    .from(practiceSessions)
-    .where(
-      and(
-        eq(practiceSessions.userId, user.id),
-        eq(practiceSessions.verseId, verse.id),
-        gte(practiceSessions.startedAt, windowStart),
-      ),
-    )
-    .orderBy(desc(practiceSessions.startedAt));
-
   const inFlight: PracticeSession = { id: "pending", ...sessionRow };
   const lastUnaided = findLastUnaidedRecall([inFlight, ...recentSessions]);
   const mastery = deriveMastery(nextSrs);
