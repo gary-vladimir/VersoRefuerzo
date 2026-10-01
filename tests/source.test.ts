@@ -3,7 +3,9 @@ import {
   ALL_VERSES,
   MAX_CUSTOM_VERSES,
   isSameSource,
+  parsePracticeScope,
   parsePracticeSource,
+  practiceSessionSearch,
   practiceSourceQuery,
   practiceSourceSearch,
   type PracticeSource,
@@ -120,5 +122,24 @@ describe("isSameSource", () => {
       isSameSource({ kind: "custom", verseIds: [A, B] }, { kind: "custom", verseIds: [B, A] }),
     ).toBe(false);
     expect(isSameSource(ALL_VERSES, { kind: "custom", verseIds: [A] })).toBe(false);
+  });
+});
+
+describe("practice scope", () => {
+  it("defaults to the due queue and only accepts 'all'", () => {
+    expect(parsePracticeScope({})).toBe("due");
+    expect(parsePracticeScope({ scope: "all" })).toBe("all");
+    expect(parsePracticeScope({ scope: "everything" })).toBe("due");
+  });
+
+  it("serialises the pool and the scope together", () => {
+    expect(practiceSessionSearch(ALL_VERSES, "due")).toBe("");
+    expect(practiceSessionSearch(ALL_VERSES, "all")).toBe("?scope=all");
+    expect(
+      practiceSessionSearch(
+        { kind: "collection", collectionId: "11111111-1111-4111-8111-111111111111" },
+        "all",
+      ),
+    ).toBe("?source=collection&collectionId=11111111-1111-4111-8111-111111111111&scope=all");
   });
 });

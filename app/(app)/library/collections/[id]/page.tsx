@@ -248,7 +248,7 @@ export default async function CollectionDetailPage({
           <Link
             href={{
               pathname: "/practice/classic",
-              query: { source: "collection", collectionId: collection.id },
+              query: { source: "collection", collectionId: collection.id, scope: "all" },
             }}
             className="vr-press"
             style={{

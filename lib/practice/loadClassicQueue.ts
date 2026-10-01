@@ -26,9 +26,14 @@ import {
 import { buildDueQueue, dailySeed } from "@/lib/srs/queue";
 import { planChunks, stageForReps } from "@/lib/srs/chunk";
 import { endOfTzDay, isSameTzDay, localDayNumber } from "@/lib/streak/streak";
-import { ALL_VERSES, type PracticeSource } from "@/lib/practice/source";
+import {
+  ALL_VERSES,
+  type PracticeScope,
+  type PracticeSource,
+} from "@/lib/practice/source";
 import { sourceFilter } from "@/lib/practice/sourceFilter";
 import { getVerseText, type VersionKey } from "@/lib/bible/apibible";
+import { newSeed, seededShuffle } from "@/lib/random";
 import type { QueueItem } from "@/components/practice/ClassicSession";
 
 // Upper bound on on-demand API.Bible fetches per queue load.
@@ -40,6 +45,12 @@ export type LoadOpts = {
   // Which pool the hub selected (specs.md §6.4). Ignored when `oneVerseId`
   // or `random` is set — those are explicit single-verse drills.
   source?: PracticeSource;
+  // "due": today's spaced-repetition queue (the Home hero, §16.1).
+  // "all": every verse in the pool, shuffled. Sessions started from the
+  // practice hub or a collection use this: picking a mode and a pool means
+  // "practice these", not "practice whichever happen to be due", which left
+  // the hub saying "nothing due" right after the daily review.
+  scope?: PracticeScope;
 };
 
 export async function loadClassicQueue(
@@ -176,12 +187,13 @@ export async function loadClassicQueue(
     : versesWithText.filter((v) => !isSameTzDay(v.lastPracticedAt, user.timezone));
 
   const ordered = oneVerseId
-    ? versesWithText.map((v) => ({
-        id: v.id,
-        dueAt: v.srsState.dueAt,
-        collectionIds: linksByVerse.get(v.id) ?? [],
-      }))
-    : buildDueQueue(
+    ? versesWithText.map((v) => ({ id: v.id }))
+    : opts.scope === "all"
+      ? seededShuffle(
+          versesWithText.map((v) => ({ id: v.id })),
+          newSeed(),
+        )
+      : buildDueQueue(
         candidatesForQueue.map((v) => ({
           id: v.id,
           srsState: v.srsState,

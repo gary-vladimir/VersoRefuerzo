@@ -10,8 +10,9 @@ import { getServerUser } from "@/lib/auth/session";
 import { T } from "@/lib/i18n/strings";
 import { loadClassicQueue } from "@/lib/practice/loadClassicQueue";
 import {
+  parsePracticeScope,
   parsePracticeSource,
-  practiceSourceSearch,
+  practiceSessionSearch,
   type RawSearchParams,
 } from "@/lib/practice/source";
 import { ClassicSession } from "@/components/practice/ClassicSession";
@@ -32,14 +33,15 @@ export default async function ClassicPage({
   const oneVerseId = typeof sp.verse === "string" ? sp.verse.trim() || null : null;
   const random = sp.random === "1" || sp.random === "true";
   const source = parsePracticeSource(sp);
-  const queue = await loadClassicQueue(user, { oneVerseId, random, source });
+  const scope = parsePracticeScope(sp);
+  const queue = await loadClassicQueue(user, { oneVerseId, random, source, scope });
 
   // "Practice again" from the summary repeats this exact session shape.
   const againHref = oneVerseId
     ? `/practice/classic?verse=${encodeURIComponent(oneVerseId)}`
     : random
       ? "/practice/classic?random=1"
-      : `/practice/classic${practiceSourceSearch(source)}`;
+      : `/practice/classic${practiceSessionSearch(source, scope)}`;
 
   const aloudTip = locale === "es"
     ? "Recita el verso en voz alta — pronunciarlo mejora la memorización."
@@ -70,10 +72,13 @@ export default async function ClassicPage({
         aloudTip,
         aloudTipOk: "OK",
         copyrightFallback: t.cardCopyrightFallback,
+        // A whole-pool session is only empty when the pool itself is.
         emptyQueue:
-          locale === "es"
-            ? "No hay versos para hoy. Vuelve mañana o agrega uno nuevo."
-            : "Nothing due today. Come back tomorrow or add a new verse.",
+          scope === "all"
+            ? t.practiceEmptyPool
+            : locale === "es"
+              ? "No hay versos para hoy. Vuelve mañana o agrega uno nuevo."
+              : "Nothing due today. Come back tomorrow or add a new verse.",
         emptyQueueCta: t.home,
         saveFailed: t.saveFailedRetry,
         typedPrompt: t.typedPrompt,

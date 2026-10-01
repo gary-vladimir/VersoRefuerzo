@@ -103,6 +103,7 @@ export default async function PracticeHubPage() {
       description: t.classicHubDesc,
       href: "/practice/classic",
       mode: "classic",
+      extraQuery: { scope: "all" },
       gradient: "var(--brand-primary)",
     },
     {
@@ -110,6 +111,7 @@ export default async function PracticeHubPage() {
       description: t.firstLetterDesc,
       href: "/practice/first-letter",
       mode: "firstLetter",
+      extraQuery: { scope: "all" },
       gradient: "var(--brand-sky)",
     },
     {

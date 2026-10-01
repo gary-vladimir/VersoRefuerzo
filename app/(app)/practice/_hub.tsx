@@ -34,6 +34,9 @@ export type HubTile = {
   href: Route;
   mode: ModeName;
   gradient: string;
+  // Added to the pool query for this tile only (Classic and First-letter
+  // pass `scope=all` so they practice the whole pool, not just what is due).
+  extraQuery?: Record<string, string>;
 };
 
 export type HubStrings = {
@@ -495,7 +498,7 @@ function ModeTile({
 
   return (
     <Link
-      href={{ pathname: tile.href, query }}
+      href={{ pathname: tile.href, query: { ...query, ...tile.extraQuery } }}
       className="vr-tile vr-press"
       style={shell}
     >

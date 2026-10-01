@@ -73,6 +73,25 @@ export function practiceSourceSearch(src: PracticeSource): string {
   return q ? `?${q}` : "";
 }
 
+// Which verses of the pool a Classic-shell session covers: "due" is today's
+// spaced-repetition queue (the Home hero), "all" is the whole pool shuffled
+// (sessions started from the practice hub or a collection). Rides in the
+// query string as `scope=all`; absent means "due".
+export type PracticeScope = "due" | "all";
+
+export function parsePracticeScope(sp: RawSearchParams): PracticeScope {
+  return one(sp.scope) === "all" ? "all" : "due";
+}
+
+// The source query plus the scope, for links that start a Classic-shell
+// session.
+export function practiceSessionSearch(src: PracticeSource, scope: PracticeScope): string {
+  const q = new URLSearchParams(practiceSourceQuery(src));
+  if (scope === "all") q.set("scope", "all");
+  const s = q.toString();
+  return s ? `?${s}` : "";
+}
+
 export function isSameSource(a: PracticeSource, b: PracticeSource): boolean {
   if (a.kind !== b.kind) return false;
   if (a.kind === "collection" && b.kind === "collection") {

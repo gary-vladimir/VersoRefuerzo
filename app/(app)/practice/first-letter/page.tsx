@@ -10,8 +10,9 @@ import { getServerUser } from "@/lib/auth/session";
 import { T } from "@/lib/i18n/strings";
 import { loadClassicQueue } from "@/lib/practice/loadClassicQueue";
 import {
+  parsePracticeScope,
   parsePracticeSource,
-  practiceSourceSearch,
+  practiceSessionSearch,
   type RawSearchParams,
 } from "@/lib/practice/source";
 import { ClassicSession } from "@/components/practice/ClassicSession";
@@ -26,8 +27,10 @@ export default async function FirstLetterPage({
   const locale: "es" | "en" = user.locale === "en" ? "en" : "es";
   const t = T[locale];
 
-  const source = parsePracticeSource(await searchParams);
-  const queue = await loadClassicQueue(user, { source });
+  const sp = await searchParams;
+  const source = parsePracticeSource(sp);
+  const scope = parsePracticeScope(sp);
+  const queue = await loadClassicQueue(user, { source, scope });
 
   return (
     <ClassicSession
@@ -37,7 +40,7 @@ export default async function FirstLetterPage({
       // The aloud tip is only meaningful on the very first Classic session
       // per §15.8; first-letter sessions never re-trigger it.
       showAloudTip={false}
-      againHref={`/practice/first-letter${practiceSourceSearch(source)}`}
+      againHref={`/practice/first-letter${practiceSessionSearch(source, scope)}`}
       strings={{
         recall: locale === "es" ? "Primera letra" : "First letter",
         // First-letter renders the cue directly on the card; this string
@@ -60,9 +63,11 @@ export default async function FirstLetterPage({
         aloudTipOk: "OK",
         copyrightFallback: t.cardCopyrightFallback,
         emptyQueue:
-          locale === "es"
-            ? "No hay versos para hoy. Vuelve mañana o agrega uno nuevo."
-            : "Nothing due today. Come back tomorrow or add a new verse.",
+          scope === "all"
+            ? t.practiceEmptyPool
+            : locale === "es"
+              ? "No hay versos para hoy. Vuelve mañana o agrega uno nuevo."
+              : "Nothing due today. Come back tomorrow or add a new verse.",
         emptyQueueCta: t.home,
         saveFailed: t.saveFailedRetry,
         // Typed-recall strings — unused in this mode but the type requires
