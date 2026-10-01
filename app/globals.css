@@ -112,6 +112,24 @@ textarea {
   }
 }
 
+/* Bottom bars fixed to the viewport (New Verse save bar). On desktop they
+   start after the 240-px sidebar instead of covering its user card. */
+@media (min-width: 1024px) {
+  .vr-fixed-bar {
+    left: 240px !important;
+  }
+}
+
+/* Boxed text fields: the box shows the focus ring, so the bare input inside
+   it does not draw a second one. */
+.vr-field:focus-within {
+  outline: 2px solid var(--c-indigo-500);
+  outline-offset: 2px;
+}
+.vr-field input:focus-visible {
+  outline: none;
+}
+
 /* Snackbar dock. On phones it floats above the bottom tab bar instead of
    covering it; on desktop there is no tab bar, so it sits near the edge. */
 .vr-toast-dock {

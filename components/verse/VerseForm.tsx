@@ -273,6 +273,7 @@ export function VerseForm({
         <div>
           <FormLabel htmlFor="vr-ref-input">{t.reference}</FormLabel>
           <div
+            className="vr-field"
             style={{
               background: "#fff",
               borderRadius: "var(--r-lg)",
@@ -425,6 +426,7 @@ export function VerseForm({
             </span>
           </FormLabel>
           <div
+            className="vr-field"
             style={{
               background: "#fff",
               borderRadius: "var(--r-lg)",
@@ -486,6 +488,7 @@ export function VerseForm({
 
       {/* Sticky save */}
       <div
+        className="vr-fixed-bar"
         style={{
           position: "fixed",
           bottom: 0,
