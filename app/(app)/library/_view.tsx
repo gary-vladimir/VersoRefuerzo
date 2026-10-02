@@ -14,7 +14,7 @@ import type { Route } from "next";
 import type { Collection, Verse } from "@/db/schema";
 import { VerseRow } from "@/components/verse/VerseRow";
 import { CollectionCard } from "@/components/verse/CollectionCard";
-import { formatDisplay } from "@/lib/bible/reference";
+import { compareRefs, formatDisplay } from "@/lib/bible/reference";
 import { COLLECTION_COLORS } from "@/lib/catalog";
 import { Search, Close, Plus } from "@/components/icons/UiIcons";
 import {
@@ -45,7 +45,8 @@ type Strings = {
   filterLearning: string;
   filterMastered: string;
   sortRecent: string;
-  sortAlpha: string;
+  sortBible: string;
+  sortLabel: string;
   sortLeastMastered: string;
   noResults: string;
   filterUngrouped: string;
@@ -70,7 +71,9 @@ type VerseEntry = {
 const UNGROUPED = "ungrouped";
 
 type Status = "all" | "new" | "learning" | "mastered";
-type Sort = "recent" | "alpha" | "mastery";
+// "bible" = canonical order (Genesis to Revelation, then chapter and
+// verse), the order people who know the Bible expect to scan a list in.
+type Sort = "bible" | "recent" | "mastery";
 
 type Props = {
   locale: "es" | "en";
@@ -101,7 +104,7 @@ export function LibraryView({
   const closeCreate = useCallback(() => setCreating(false), []);
   const [query, setQuery] = useState(initialQuery);
   const [status, setStatus] = useState<Status>("all");
-  const [sort, setSort] = useState<Sort>("recent");
+  const [sort, setSort] = useState<Sort>("bible");
   // null == no collection constraint. Tapping the active chip clears it.
   const [collectionFilter, setCollectionFilter] = useState<string | null>(null);
   // Automatic book group filter (lib/bible/groups.ts); null == any book.
@@ -144,14 +147,14 @@ export function LibraryView({
     if (bookFilter) list = list.filter((v) => inGroup(v.verse.canonicalRef, bookFilter));
     if (status !== "all") list = list.filter((v) => v.verse.status === status);
     const sorted = [...list];
-    if (sort === "alpha") {
-      sorted.sort((a, b) =>
-        formatDisplay(a.verse.canonicalRef, locale).localeCompare(
-          formatDisplay(b.verse.canonicalRef, locale),
-        ),
-      );
+    if (sort === "bible") {
+      sorted.sort((a, b) => compareRefs(a.verse.canonicalRef, b.verse.canonicalRef));
     } else if (sort === "mastery") {
-      sorted.sort((a, b) => (a.verse.mastery ?? 0) - (b.verse.mastery ?? 0));
+      sorted.sort(
+        (a, b) =>
+          (a.verse.mastery ?? 0) - (b.verse.mastery ?? 0) ||
+          compareRefs(a.verse.canonicalRef, b.verse.canonicalRef),
+      );
     } else {
       sorted.sort((a, b) => b.verse.createdAt.getTime() - a.verse.createdAt.getTime());
     }
@@ -374,11 +377,11 @@ export function LibraryView({
           <select
             value={sort}
             onChange={(e) => setSort(e.target.value as Sort)}
-            aria-label={t.sortRecent}
+            aria-label={t.sortLabel}
             style={selectStyle}
           >
+            <option value="bible">{t.sortBible}</option>
             <option value="recent">{t.sortRecent}</option>
-            <option value="alpha">{t.sortAlpha}</option>
             <option value="mastery">{t.sortLeastMastered}</option>
           </select>
         </div>

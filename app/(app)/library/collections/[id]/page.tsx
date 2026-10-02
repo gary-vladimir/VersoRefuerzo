@@ -15,6 +15,7 @@ import {
   bibleTextCache,
 } from "@/db/schema";
 import { COLLECTION_COLORS } from "@/lib/catalog";
+import { compareRefs } from "@/lib/bible/reference";
 import { T } from "@/lib/i18n/strings";
 import { VerseRow } from "@/components/verse/VerseRow";
 import { CollectionActions } from "@/components/verse/CollectionActions";
@@ -61,7 +62,11 @@ export default async function CollectionDetailPage({
     )
     .orderBy(asc(versesTable.createdAt));
 
-  const verses = rows.map((r) => r.verse);
+  // Bible order (Genesis to Revelation, chapter, verse), not the order the
+  // verses happened to be added in.
+  const verses = rows
+    .map((r) => r.verse)
+    .sort((a, b) => compareRefs(a.canonicalRef, b.canonicalRef));
   const refs = verses.map((v) => v.canonicalRef);
   const cached = refs.length
     ? await db

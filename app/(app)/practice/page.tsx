@@ -20,7 +20,7 @@ import {
   verseCollections as vcTable,
 } from "@/db/schema";
 import { T } from "@/lib/i18n/strings";
-import { formatDisplay } from "@/lib/bible/reference";
+import { compareRefs, formatDisplay } from "@/lib/bible/reference";
 import {
   PracticeHub,
   type HubCollection,
@@ -91,12 +91,16 @@ export default async function PracticeHubPage() {
 
   // Reference labels are localised server-side so the picker does not have
   // to ship the book-name tables to the browser.
-  const verses: HubVerse[] = allVerses.map((v) => ({
-    id: v.id,
-    label: formatDisplay(v.canonicalRef, locale),
-    color: v.color,
-    ref: v.canonicalRef,
-  }));
+  // The hand-picked list is offered in Bible order so a verse is found
+  // where the user expects it.
+  const verses: HubVerse[] = [...allVerses]
+    .sort((a, b) => compareRefs(a.canonicalRef, b.canonicalRef))
+    .map((v) => ({
+      id: v.id,
+      label: formatDisplay(v.canonicalRef, locale),
+      color: v.color,
+      ref: v.canonicalRef,
+    }));
 
   const tiles: HubTile[] = [
     {

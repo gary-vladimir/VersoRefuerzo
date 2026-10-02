@@ -196,6 +196,31 @@ export function isValidUsfmRef(canonical: string): boolean {
 // OSIS map above is written in that order.
 export const BOOK_CODES: readonly string[] = Object.values(OSIS_TO_USFM);
 
+// Canonical Bible order for two references: book (Genesis first, then
+// Exodus... Revelation), then chapter, then verse, then the end of a
+// range, so "ROM.8.28" sorts before "ROM.8.28-ROM.8.30". Use with
+// Array.prototype.sort wherever verses are listed.
+export function compareRefs(a: string, b: string): number {
+  const ka = refSortKey(a);
+  const kb = refSortKey(b);
+  for (let i = 0; i < ka.length; i++) {
+    const d = ka[i]! - kb[i]!;
+    if (d !== 0) return d;
+  }
+  return 0;
+}
+
+function refSortKey(canonical: string): number[] {
+  const [start = "", end = start] = canonical.split("-");
+  const point = (seg: string): number[] => {
+    const [book = "", ch = "0", v = "0"] = seg.split(".");
+    const idx = BOOK_CODES.indexOf(book);
+    // Unknown codes sort last rather than first.
+    return [idx < 0 ? BOOK_CODES.length : idx, Number(ch) || 0, Number(v) || 0];
+  };
+  return [...point(start), ...point(end)];
+}
+
 // Localized book name for a USFM code, e.g. "PRO" -> "Proverbios".
 export function bookName(code: string, locale: "es" | "en"): string {
   return BOOK_NAMES[locale][code] ?? code;

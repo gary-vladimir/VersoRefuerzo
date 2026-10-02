@@ -4,6 +4,7 @@ import {
   formatDisplay,
   isValidUsfmRef,
   bookCodeFromCanonical,
+  compareRefs,
 } from "@/lib/bible/reference";
 
 describe("parseReference", () => {
@@ -101,5 +102,26 @@ describe("bookCodeFromCanonical", () => {
   });
   it("returns null for unknown codes", () => {
     expect(bookCodeFromCanonical("XYZ.1.1")).toBeNull();
+  });
+});
+
+describe("compareRefs", () => {
+  it("sorts in Bible order: book, then chapter, then verse", () => {
+    const refs = ["REV.22.21", "JHN.3.16", "GEN.1.1", "PSA.119.105", "PSA.23.1", "ROM.8.28-ROM.8.30", "ROM.8.28", "EXO.20.3"];
+    expect([...refs].sort(compareRefs)).toEqual([
+      "GEN.1.1",
+      "EXO.20.3",
+      "PSA.23.1",
+      "PSA.119.105",
+      "JHN.3.16",
+      "ROM.8.28",
+      "ROM.8.28-ROM.8.30",
+      "REV.22.21",
+    ]);
+  });
+
+  it("compares chapters and verses numerically, not as text", () => {
+    expect(compareRefs("PSA.9.1", "PSA.10.1")).toBeLessThan(0);
+    expect(compareRefs("JHN.3.9", "JHN.3.16")).toBeLessThan(0);
   });
 });

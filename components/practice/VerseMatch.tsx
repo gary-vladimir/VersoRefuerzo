@@ -15,7 +15,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { isCardColor, isVerseIcon, type CardColorId, type VerseIconId } from "@/lib/catalog";
-import { formatDisplay } from "@/lib/bible/reference";
+import { compareRefs, formatDisplay } from "@/lib/bible/reference";
 import { tokenize } from "@/lib/bible/tokenize";
 import { VerseIcon } from "@/components/icons/VerseIcons";
 import { Close, Heart, HeartFilled } from "@/components/icons/UiIcons";
@@ -56,22 +56,26 @@ export function VerseMatch({ verses, seed, locale, strings: t }: Props) {
   // first 3 words of the cached text per spec §6.4.3.
   const items = useMemo(
     () =>
-      verses.map(({ verse, text }) => {
-        // Original casing (wordsOnly lowercases, which read oddly for a
-        // verse opening like "Porque de tal").
-        const fallback = tokenize(text)
-          .slice(0, 3)
-          .map((tok) => tok.word)
-          .join(" ");
-        // Only the excerpt is cut short, so only it gets an ellipsis; the
-        // user's own hint is shown as written.
-        const own = verse.hint?.trim();
-        return {
-          id: verse.id,
-          verse,
-          hint: own || (fallback ? `${fallback}…` : "—"),
-        };
-      }),
+      // References in Bible order; only the hint column is shuffled, so
+      // the puzzle is unchanged but the left side scans naturally.
+      [...verses]
+        .sort((a, b) => compareRefs(a.verse.canonicalRef, b.verse.canonicalRef))
+        .map(({ verse, text }) => {
+          // Original casing (wordsOnly lowercases, which read oddly for a
+          // verse opening like "Porque de tal").
+          const fallback = tokenize(text)
+            .slice(0, 3)
+            .map((tok) => tok.word)
+            .join(" ");
+          // Only the excerpt is cut short, so only it gets an ellipsis; the
+          // user's own hint is shown as written.
+          const own = verse.hint?.trim();
+          return {
+            id: verse.id,
+            verse,
+            hint: own || (fallback ? `${fallback}…` : "—"),
+          };
+        }),
     [verses],
   );
 
@@ -79,7 +83,10 @@ export function VerseMatch({ verses, seed, locale, strings: t }: Props) {
   // across renders so the user isn't tracking a moving target.
   const rightOrderRef = useRef<string[] | null>(null);
   if (rightOrderRef.current === null) {
-    rightOrderRef.current = seededShuffle(items.map((i) => i.id), seed);
+    rightOrderRef.current = seededShuffle(
+      items.map((i) => i.id),
+      seed,
+    );
   }
 
   const [matched, setMatched] = useState<Set<string>>(new Set());
@@ -190,8 +197,7 @@ export function VerseMatch({ verses, seed, locale, strings: t }: Props) {
     <main
       style={{
         minHeight: "100dvh",
-        background:
-          "linear-gradient(180deg, var(--card-sky-tint) 0%, var(--c-bg) 50%)",
+        background: "linear-gradient(180deg, var(--card-sky-tint) 0%, var(--c-bg) 50%)",
         paddingBottom: "max(32px, calc(20px + env(safe-area-inset-bottom)))",
         fontFamily: "var(--font-sans)",
       }}
@@ -387,8 +393,7 @@ export function VerseMatch({ verses, seed, locale, strings: t }: Props) {
               fontFamily: "var(--font-display)",
               fontWeight: 800,
               fontSize: 18,
-              color:
-                done === "win" ? "var(--c-emerald-500)" : "var(--c-rose-500)",
+              color: done === "win" ? "var(--c-emerald-500)" : "var(--c-rose-500)",
             }}
           >
             {done === "win" ? t.matchedAll : t.ranOut}
