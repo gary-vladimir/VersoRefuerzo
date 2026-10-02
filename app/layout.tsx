@@ -34,6 +34,11 @@ const mono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "VersoRefuerzo",
   description: "Memoriza la Palabra. Una tarjeta a la vez.",
+  // The app is designed light-only, with its own dark login and summary
+  // screens (specs.md §7.8). Dark Reader and similar extensions repaint it
+  // anyway: dark boxes behind the logo and headings, a dark Google button.
+  // This tag tells Dark Reader to leave the page alone.
+  other: { "darkreader-lock": "true" },
 };
 
 // viewportFit: "cover" is what activates env(safe-area-inset-*) on notched
@@ -45,6 +50,9 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: "#faf9fe",
+  // Tell the browser the page is light, so it does not apply its own
+  // automatic dark-mode recoloring to form controls and backgrounds.
+  colorScheme: "light",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
