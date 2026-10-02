@@ -154,13 +154,16 @@ export default async function CollectionDetailPage({
               delete: t.delete,
               deleted: t.collectionDeleted,
               undo: t.undo,
-              name: t.collectionNameLabel,
-              description: t.collectionDescriptionLabel,
-              color: t.color,
-              save: t.saveChanges,
-              cancel: t.cancel,
-              duplicateName: t.collectionDuplicateName,
-              saveFailed: t.collectionSaveFailed,
+              sheet: {
+                title: t.editCollection,
+                name: t.collectionNameLabel,
+                description: t.collectionDescriptionLabel,
+                color: t.color,
+                save: t.saveChanges,
+                cancel: t.cancel,
+                duplicateName: t.collectionDuplicateName,
+                saveFailed: t.collectionSaveFailed,
+              },
             }}
           />
         </div>

@@ -7,15 +7,20 @@
 // Filtering and sorting are in-memory (no URL round-trip) so typing stays
 // instant.
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { Route } from "next";
 import type { Collection, Verse } from "@/db/schema";
 import { VerseRow } from "@/components/verse/VerseRow";
 import { CollectionCard } from "@/components/verse/CollectionCard";
 import { formatDisplay } from "@/lib/bible/reference";
 import { COLLECTION_COLORS } from "@/lib/catalog";
-import { Search, Close } from "@/components/icons/UiIcons";
+import { Search, Close, Plus } from "@/components/icons/UiIcons";
+import {
+  CollectionSheet,
+  type CollectionSheetStrings,
+} from "@/components/verse/CollectionSheet";
 import { T } from "@/lib/i18n/strings";
 
 type Strings = {
@@ -43,6 +48,8 @@ type Strings = {
   sortLeastMastered: string;
   noResults: string;
   filterUngrouped: string;
+  newCollection: string;
+  collectionSheet: CollectionSheetStrings;
 };
 
 type CollectionEntry = { collection: Collection; sample: Verse[]; count: number };
@@ -76,7 +83,13 @@ export function LibraryView({
   verses,
   strings: t,
 }: Props) {
+  const router = useRouter();
   const [tab, setTab] = useState<"collections" | "all">(initialTab);
+  // "Nueva colección" opens the create sheet right here; the new collection
+  // then opens on its own page, whose empty state offers "Agregar verso"
+  // with the collection pre-selected.
+  const [creating, setCreating] = useState(false);
+  const closeCreate = useCallback(() => setCreating(false), []);
   const [query, setQuery] = useState(initialQuery);
   const [status, setStatus] = useState<Status>("all");
   const [sort, setSort] = useState<Sort>("recent");
@@ -151,7 +164,44 @@ export function LibraryView({
         <TabPill active={tab === "all"} onClick={() => setTab("all")}>
           {t.all}
         </TabPill>
+        {tab === "collections" && collections.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setCreating(true)}
+            className="vr-press"
+            style={{
+              marginLeft: "auto",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5,
+              padding: "8px 14px",
+              minHeight: 38,
+              borderRadius: 999,
+              background: "var(--c-indigo-50)",
+              color: "var(--c-indigo-700)",
+              border: "none",
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            <Plus size={12} strokeWidth={3} /> {t.newCollection}
+          </button>
+        )}
       </div>
+
+      {creating && (
+        <CollectionSheet
+          initial={{
+            name: "",
+            description: "",
+            colorKey: COLLECTION_COLORS[collections.length % COLLECTION_COLORS.length]!.id,
+          }}
+          strings={t.collectionSheet}
+          onClose={closeCreate}
+          onSaved={(c) => router.push(`/library/collections/${c.id}`)}
+        />
+      )}
 
       {/* Search filters both tabs. */}
       <div style={{ padding: "12px 20px 0" }}>
@@ -370,7 +420,7 @@ export function LibraryView({
             title={t.emptyCollectionsTitle}
             body={t.emptyCollectionsBody}
             ctaLabel={t.createFirst}
-            ctaHref="/verses/new"
+            onCta={() => setCreating(true)}
           />
         ) : filteredCollections.length === 0 ? (
           <NoResults text={t.noResults} />
@@ -475,17 +525,36 @@ function TabPill({
   );
 }
 
+// The call to action is a link (add a verse) or a button (create a
+// collection in place).
 function EmptyCard({
   title,
   body,
   ctaLabel,
   ctaHref,
+  onCta,
 }: {
   title: string;
   body: string;
   ctaLabel: string;
-  ctaHref: Route;
+  ctaHref?: Route;
+  onCta?: () => void;
 }) {
+  const ctaStyle: React.CSSProperties = {
+    display: "inline-block",
+    padding: "11px 20px",
+    borderRadius: 999,
+    background: "var(--brand-primary)",
+    color: "#fff",
+    fontFamily: "var(--font-display)",
+    fontWeight: 700,
+    fontSize: 13,
+    textDecoration: "none",
+    border: "none",
+    cursor: "pointer",
+    marginTop: body ? 0 : 16,
+    boxShadow: "0 8px 20px rgb(var(--card-indigo-rgb) / 0.35)",
+  };
   return (
     <section
       style={{
@@ -522,25 +591,15 @@ function EmptyCard({
           {body}
         </p>
       )}
-      <Link
-        href={ctaHref}
-        className="vr-press"
-        style={{
-          display: "inline-block",
-          padding: "11px 20px",
-          borderRadius: 999,
-          background: "var(--brand-primary)",
-          color: "#fff",
-          fontFamily: "var(--font-display)",
-          fontWeight: 700,
-          fontSize: 13,
-          textDecoration: "none",
-          marginTop: body ? 0 : 16,
-          boxShadow: "0 8px 20px rgb(var(--card-indigo-rgb) / 0.35)",
-        }}
-      >
-        {ctaLabel}
-      </Link>
+      {onCta ? (
+        <button type="button" onClick={onCta} className="vr-press" style={ctaStyle}>
+          {ctaLabel}
+        </button>
+      ) : (
+        <Link href={ctaHref ?? "/verses/new"} className="vr-press" style={ctaStyle}>
+          {ctaLabel}
+        </Link>
+      )}
     </section>
   );
 }

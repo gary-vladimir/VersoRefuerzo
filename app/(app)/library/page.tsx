@@ -188,6 +188,17 @@ export default async function LibraryPage({
           sortLeastMastered: t.sortLeastMastered,
           noResults: t.noResults,
           filterUngrouped: t.filterUngrouped,
+          newCollection: t.newCollection,
+          collectionSheet: {
+            title: t.newCollection,
+            name: t.collectionNameLabel,
+            description: t.collectionDescriptionLabel,
+            color: t.color,
+            save: t.createCollection,
+            cancel: t.cancel,
+            duplicateName: t.collectionDuplicateName,
+            saveFailed: t.collectionSaveFailed,
+          },
         }}
       />
     </main>
