@@ -12,10 +12,7 @@ import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import { getServerUser } from "@/lib/auth/session";
 import { getDb } from "@/db/client";
 import { sweepDeletedVerses } from "@/lib/softDelete";
-import {
-  verses as versesTable,
-  bibleTextCache,
-} from "@/db/schema";
+import { verses as versesTable, bibleTextCache } from "@/db/schema";
 import { T } from "@/lib/i18n/strings";
 import { firstVerseHref } from "@/lib/bible/defaults";
 import {
@@ -31,6 +28,7 @@ import { InsightsStrip } from "@/components/home/InsightsStrip";
 import { VerseOfTheDay } from "@/components/home/VerseOfTheDay";
 import { VerseRow } from "@/components/verse/VerseRow";
 import { HeaderAvatar } from "@/components/layout/HeaderAvatar";
+import { BrandLogo } from "@/components/ui/BrandLogo";
 
 export default async function Home() {
   const user = await getServerUser();
@@ -116,21 +114,27 @@ export default async function Home() {
           justifyContent: "space-between",
         }}
       >
-        <div>
-          <div style={{ fontSize: 11, color: "var(--c-muted)", fontWeight: 600 }}>
-            {t.greeting(hour)}
-          </div>
-          <div
-            style={{
-              fontFamily: "var(--font-display)",
-              fontWeight: 800,
-              fontSize: 22,
-              color: "var(--c-text)",
-              letterSpacing: "-0.5px",
-              marginTop: 1,
-            }}
-          >
-            {t.helloName(firstName)}
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {/* Phones have no sidebar, so the brand mark sits here. */}
+          <span className="vr-mobile-only" style={{ alignItems: "center" }}>
+            <BrandLogo size={36} priority />
+          </span>
+          <div>
+            <div style={{ fontSize: 11, color: "var(--c-muted)", fontWeight: 600 }}>
+              {t.greeting(hour)}
+            </div>
+            <div
+              style={{
+                fontFamily: "var(--font-display)",
+                fontWeight: 800,
+                fontSize: 22,
+                color: "var(--c-text)",
+                letterSpacing: "-0.5px",
+                marginTop: 1,
+              }}
+            >
+              {t.helloName(firstName)}
+            </div>
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -236,10 +240,7 @@ export default async function Home() {
               </Link>
             </div>
           </div>
-          <div
-            className="vr-stagger"
-            style={{ display: "flex", flexDirection: "column", gap: 8 }}
-          >
+          <div className="vr-stagger" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {recent.map((v) => (
               <VerseRow
                 key={v.id}
@@ -293,15 +294,7 @@ export default async function Home() {
   );
 }
 
-function EmptyHero({
-  body,
-  cta,
-  href,
-}: {
-  body: string;
-  cta: string;
-  href: Route;
-}) {
+function EmptyHero({ body, cta, href }: { body: string; cta: string; href: Route }) {
   return (
     <div
       style={{
@@ -345,4 +338,3 @@ function EmptyHero({
     </div>
   );
 }
-

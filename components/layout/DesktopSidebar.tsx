@@ -11,6 +11,7 @@ import { usePathname } from "next/navigation";
 import type { User } from "@/db/schema";
 import { NavIcon, type NavName } from "./NavIcons";
 import { UserAvatar } from "@/components/ui/UserAvatar";
+import { BrandLogo } from "@/components/ui/BrandLogo";
 
 type Strings = {
   home: string;
@@ -71,18 +72,25 @@ export function DesktopSidebar({ user, onProfileClick, strings: t }: Props) {
         zIndex: "var(--z-sidebar)",
       }}
     >
-      <div
+      <Link
+        href="/"
+        aria-label={t.appName}
         style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
           fontFamily: "var(--font-display)",
           fontWeight: 800,
           fontSize: 18,
           letterSpacing: "-0.4px",
           color: "var(--c-text)",
           padding: "4px 8px",
+          textDecoration: "none",
         }}
       >
+        <BrandLogo size={34} priority />
         {t.appName}
-      </div>
+      </Link>
 
       <Link
         href="/verses/new"

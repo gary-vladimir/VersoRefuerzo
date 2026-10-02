@@ -6,6 +6,7 @@
 // root layout declares as `lang`.
 
 import Link from "next/link";
+import { BrandLogo } from "./BrandLogo";
 
 const primaryButton: React.CSSProperties = {
   display: "inline-block",
@@ -74,6 +75,9 @@ export function MessageScreen({
           width: "100%",
         }}
       >
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
+          <BrandLogo size={64} />
+        </div>
         <h1
           style={{
             margin: "0 0 8px",

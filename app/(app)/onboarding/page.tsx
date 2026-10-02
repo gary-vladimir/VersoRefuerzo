@@ -5,6 +5,7 @@
 import { redirect } from "next/navigation";
 import { getServerUser } from "@/lib/auth/session";
 import { T } from "@/lib/i18n/strings";
+import { BrandLogo } from "@/components/ui/BrandLogo";
 import { firstVerseHref } from "@/lib/bible/defaults";
 import OnboardingActions from "./_actions";
 
@@ -27,27 +28,12 @@ export default async function OnboardingPage() {
         textAlign: "center",
       }}
     >
-      <div
-        className="vr-card-rise"
-        style={{
-          width: 88,
-          height: 88,
-          borderRadius: 24,
-          background: "var(--brand-sunrise)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          boxShadow:
-            "0 18px 40px rgba(168,85,247,0.35), inset 0 1px 0 rgba(255,255,255,0.3)",
-          marginBottom: "var(--s-6)",
-          color: "#fff",
-          fontFamily: "var(--font-display)",
-          fontWeight: 800,
-          fontSize: 32,
-          letterSpacing: "-1px",
-        }}
-      >
-        VR
+      <div className="vr-card-rise" style={{ marginBottom: "var(--s-6)" }}>
+        <BrandLogo
+          size={112}
+          priority
+          style={{ filter: "drop-shadow(0 14px 26px rgba(139,92,246,0.3))" }}
+        />
       </div>
 
       <h1

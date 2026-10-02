@@ -12,6 +12,7 @@ import Link from "next/link";
 import { signInWithPopup, signOut } from "firebase/auth";
 import { getClientAuth, googleProvider } from "@/lib/auth/firebase-client";
 import { T } from "@/lib/i18n/strings";
+import { BrandLogo } from "@/components/ui/BrandLogo";
 
 // Star field as [left %, top %, size px, delay s]. Percentages so the stars
 // spread over the whole screen; fixed pixels bunched them into the top-left
@@ -114,28 +115,18 @@ export default function LoginClient() {
         />
       ))}
 
+      {/* The brand mark in white on the night sky, with a soft violet glow
+          behind it (a drop-shadow follows the mark's own outline). */}
       <div
         className="vr-card-rise"
-        style={{
-          width: 110,
-          height: 110,
-          borderRadius: 32,
-          background: "var(--brand-sunrise)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          boxShadow:
-            "0 24px 60px rgba(168,85,247,0.6), inset 0 1px 0 rgba(255,255,255,0.3)",
-          marginBottom: 28,
-          fontFamily: "var(--font-display)",
-          fontWeight: 800,
-          fontSize: 44,
-          letterSpacing: "-1.5px",
-          position: "relative",
-          zIndex: 2,
-        }}
+        style={{ marginBottom: 26, position: "relative", zIndex: 2 }}
       >
-        VR
+        <BrandLogo
+          size={132}
+          variant="white"
+          priority
+          style={{ filter: "drop-shadow(0 10px 28px rgba(168,85,247,0.75))" }}
+        />
       </div>
 
       <h1
