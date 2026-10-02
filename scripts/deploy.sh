@@ -52,8 +52,9 @@ SET_ENV+="APIBIBLE_ID_RVR1960=${APIBIBLE_ID_RVR1960:-}"
 # `gcloud builds submit` rejects multiple --substitutions flags and
 # treats stray --build-arg-style positionals as filename arguments,
 # which is what the M7 review caught.
+# Only pass substitutions cloudbuild.yaml actually uses: Cloud Build
+# rejects the whole build when a key is not referenced in the template.
 SUBSTITUTIONS="_IMAGE=${IMAGE}"
-SUBSTITUTIONS+=",_REGION=${REGION}"
 SUBSTITUTIONS+=",_FIREBASE_API_KEY=${NEXT_PUBLIC_FIREBASE_API_KEY}"
 SUBSTITUTIONS+=",_FIREBASE_AUTH_DOMAIN=${NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}"
 SUBSTITUTIONS+=",_FIREBASE_PROJECT_ID=${NEXT_PUBLIC_FIREBASE_PROJECT_ID}"
