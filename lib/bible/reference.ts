@@ -192,4 +192,13 @@ export function isValidUsfmRef(canonical: string): boolean {
   return true;
 }
 
+// The 66 USFM book codes in canonical order (Genesis to Revelation). The
+// OSIS map above is written in that order.
+export const BOOK_CODES: readonly string[] = Object.values(OSIS_TO_USFM);
+
+// Localized book name for a USFM code, e.g. "PRO" -> "Proverbios".
+export function bookName(code: string, locale: "es" | "en"): string {
+  return BOOK_NAMES[locale][code] ?? code;
+}
+
 export const __internal = { OSIS_TO_USFM, USFM_TO_OSIS, BOOK_NAMES };
