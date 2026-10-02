@@ -1,39 +1,53 @@
 // Library "Colecciones" tile (specs.md §6.3 / DesignBundle ScreenLibrary).
-// Server-renderable; takes a collection plus a small slice of its member
-// verses to compose the layered "stack of cards" preview.
+// Takes a name, a color preset, and a small slice of member verses to
+// compose the layered "stack of cards" preview. Used for the user's own
+// collections (a link to the collection page) and for the automatic book
+// groups (a button that filters the verse list in place).
 
 import Link from "next/link";
+import type { Route } from "next";
 import { COLLECTION_COLORS } from "@/lib/catalog";
 import { isCardColor, isVerseIcon } from "@/lib/catalog";
 import { VerseIcon } from "@/components/icons/VerseIcons";
-import type { Collection, Verse } from "@/db/schema";
+import type { Verse } from "@/db/schema";
 
 type Props = {
-  collection: Collection;
+  name: string;
+  description: string | null;
+  colorKey: string;
   sample: Verse[];
   countLabel: string;
-};
+} & ({ href: string; onClick?: never } | { onClick: () => void; href?: never });
 
-export function CollectionCard({ collection, sample, countLabel }: Props) {
-  const preset =
-    COLLECTION_COLORS.find((p) => p.id === collection.colorKey) ?? COLLECTION_COLORS[0]!;
+export function CollectionCard({
+  name,
+  description,
+  colorKey,
+  sample,
+  countLabel,
+  href,
+  onClick,
+}: Props) {
+  const preset = COLLECTION_COLORS.find((p) => p.id === colorKey) ?? COLLECTION_COLORS[0]!;
   const stack = sample.slice(0, 3);
-  return (
-    <Link
-      href={`/library/collections/${collection.id}`}
-      className="vr-lift"
-      style={{
-        textDecoration: "none",
-        color: "inherit",
-        background: "#fff",
-        borderRadius: "var(--r-2xl)",
-        padding: 14,
-        boxShadow: "var(--shadow-sm)",
-        position: "relative",
-        overflow: "hidden",
-        display: "block",
-      }}
-    >
+  const shellStyle: React.CSSProperties = {
+    textDecoration: "none",
+    color: "inherit",
+    background: "#fff",
+    borderRadius: "var(--r-2xl)",
+    padding: 14,
+    boxShadow: "var(--shadow-sm)",
+    position: "relative",
+    overflow: "hidden",
+    display: "block",
+    width: "100%",
+    border: "none",
+    textAlign: "left",
+    font: "inherit",
+    cursor: "pointer",
+  };
+  const body = (
+    <>
       <span
         aria-hidden
         style={{
@@ -100,9 +114,9 @@ export function CollectionCard({ collection, sample, countLabel }: Props) {
           letterSpacing: "-0.2px",
         }}
       >
-        {collection.name}
+        {name}
       </div>
-      {collection.description && (
+      {description && (
         <div
           style={{
             fontSize: 11,
@@ -111,7 +125,7 @@ export function CollectionCard({ collection, sample, countLabel }: Props) {
             position: "relative",
           }}
         >
-          {collection.description}
+          {description}
         </div>
       )}
 
@@ -149,6 +163,16 @@ export function CollectionCard({ collection, sample, countLabel }: Props) {
           {countLabel}
         </span>
       </div>
+    </>
+  );
+
+  return href ? (
+    <Link href={href as Route} className="vr-lift" style={shellStyle}>
+      {body}
     </Link>
+  ) : (
+    <button type="button" onClick={onClick} className="vr-lift" style={shellStyle}>
+      {body}
+    </button>
   );
 }

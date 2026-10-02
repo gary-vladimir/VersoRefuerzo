@@ -161,6 +161,9 @@ export const T = {
     sourcePickVerses: "Elige los versos que quieres practicar",
     sourceNoCollections: "Aún no tienes colecciones.",
     sourceByBook: "Por libro",
+    allBooks: "Todos los libros",
+    bookGroupsLabel: "Grupos",
+    booksLabel: "Libros",
     sourceNoVerses: "Aún no tienes versos.",
     sourceSelectedCount: (n: number) =>
       n === 1 ? "1 verso elegido" : `${n} versos elegidos`,
@@ -351,6 +354,9 @@ export const T = {
     sourcePickVerses: "Pick the verses you want to practice",
     sourceNoCollections: "You have no collections yet.",
     sourceByBook: "By book",
+    allBooks: "All books",
+    bookGroupsLabel: "Groups",
+    booksLabel: "Books",
     sourceNoVerses: "You have no verses yet.",
     sourceSelectedCount: (n: number) =>
       n === 1 ? "1 verse selected" : `${n} verses selected`,

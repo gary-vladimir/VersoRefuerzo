@@ -16,12 +16,13 @@ import {
   bibleTextCache,
 } from "@/db/schema";
 import { T } from "@/lib/i18n/strings";
+import { isBookGroup } from "@/lib/bible/groups";
 import { LibraryView } from "./_view";
 
 export default async function LibraryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; q?: string }>;
+  searchParams: Promise<{ tab?: string; q?: string; book?: string }>;
 }) {
   const user = await getServerUser();
   if (!user) redirect("/login");
@@ -104,6 +105,7 @@ export default async function LibraryPage({
   const sp = await searchParams;
   const initialTab: "collections" | "all" = sp.tab === "all" ? "all" : "collections";
   const initialQuery = sp.q ?? "";
+  const initialBook = sp.book && isBookGroup(sp.book) ? sp.book : null;
 
   return (
     <main
@@ -161,6 +163,7 @@ export default async function LibraryPage({
         locale={locale}
         initialTab={initialTab}
         initialQuery={initialQuery}
+        initialBook={initialBook}
         collections={collectionsWithSamples}
         verses={verseRows}
         strings={{
@@ -188,6 +191,11 @@ export default async function LibraryPage({
           sortLeastMastered: t.sortLeastMastered,
           noResults: t.noResults,
           filterUngrouped: t.filterUngrouped,
+          yourCollections: t.yourCollections,
+          byBook: t.sourceByBook,
+          allBooks: t.allBooks,
+          bookGroupsLabel: t.bookGroupsLabel,
+          booksLabel: t.booksLabel,
           newCollection: t.newCollection,
           collectionSheet: {
             title: t.newCollection,

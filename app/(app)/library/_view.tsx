@@ -22,6 +22,7 @@ import {
   type CollectionSheetStrings,
 } from "@/components/verse/CollectionSheet";
 import { T } from "@/lib/i18n/strings";
+import { groupLabel, groupsPresent, inGroup, testamentOf } from "@/lib/bible/groups";
 
 type Strings = {
   collections: string;
@@ -48,6 +49,11 @@ type Strings = {
   sortLeastMastered: string;
   noResults: string;
   filterUngrouped: string;
+  yourCollections: string;
+  byBook: string;
+  allBooks: string;
+  bookGroupsLabel: string;
+  booksLabel: string;
   newCollection: string;
   collectionSheet: CollectionSheetStrings;
 };
@@ -70,6 +76,8 @@ type Props = {
   locale: "es" | "en";
   initialTab: "collections" | "all";
   initialQuery: string;
+  // Book group to pre-filter the verse list with (a `?book=` deep link).
+  initialBook: string | null;
   collections: CollectionEntry[];
   verses: VerseEntry[];
   strings: Strings;
@@ -79,6 +87,7 @@ export function LibraryView({
   locale,
   initialTab,
   initialQuery,
+  initialBook,
   collections,
   verses,
   strings: t,
@@ -95,6 +104,23 @@ export function LibraryView({
   const [sort, setSort] = useState<Sort>("recent");
   // null == no collection constraint. Tapping the active chip clears it.
   const [collectionFilter, setCollectionFilter] = useState<string | null>(null);
+  // Automatic book group filter (lib/bible/groups.ts); null == any book.
+  const [bookFilter, setBookFilter] = useState<string | null>(initialBook);
+  const groups = useMemo(
+    () => groupsPresent(verses.map((v) => v.verse.canonicalRef)),
+    [verses],
+  );
+
+  // A book card on the Colecciones tab is a shortcut into the verse list
+  // filtered to that book, not a separate page.
+  function openBook(book: string) {
+    setTab("all");
+    setBookFilter(book);
+    setCollectionFilter(null);
+    setStatus("all");
+    setQuery("");
+    window.scrollTo({ top: 0 });
+  }
 
   const q = query.trim().toLowerCase();
 
@@ -115,6 +141,7 @@ export function LibraryView({
     } else if (collectionFilter) {
       list = list.filter((v) => v.collectionIds.includes(collectionFilter));
     }
+    if (bookFilter) list = list.filter((v) => inGroup(v.verse.canonicalRef, bookFilter));
     if (status !== "all") list = list.filter((v) => v.verse.status === status);
     const sorted = [...list];
     if (sort === "alpha") {
@@ -129,7 +156,7 @@ export function LibraryView({
       sorted.sort((a, b) => b.verse.createdAt.getTime() - a.verse.createdAt.getTime());
     }
     return sorted;
-  }, [verses, q, status, sort, locale, collectionFilter]);
+  }, [verses, q, status, sort, locale, collectionFilter, bookFilter]);
 
   const hasUngrouped = useMemo(
     () => verses.some((v) => v.collectionIds.length === 0),
@@ -139,6 +166,24 @@ export function LibraryView({
   const filteredCollections = useMemo(
     () => (q ? collections.filter((c) => c.collection.name.toLowerCase().includes(q)) : collections),
     [collections, q],
+  );
+
+  // One card per book that has verses, in Bible order; the search box
+  // narrows them by book name like it narrows collections.
+  const bookCards = useMemo(
+    () =>
+      groups.books
+        .map((g) => ({
+          book: g.group,
+          label: groupLabel(g.group, locale),
+          count: g.count,
+          sample: verses
+            .filter((v) => inGroup(v.verse.canonicalRef, g.group))
+            .slice(0, 3)
+            .map((v) => v.verse),
+        }))
+        .filter((b) => !q || b.label.toLowerCase().includes(q)),
+    [groups, verses, locale, q],
   );
 
   const filters: { id: Status; label: string }[] = [
@@ -267,11 +312,14 @@ export function LibraryView({
           style={{
             padding: "10px 20px 0",
             display: "flex",
+            flexWrap: "wrap",
             alignItems: "center",
             gap: 8,
           }}
         >
-          <div style={{ display: "flex", gap: 6, overflowX: "auto", flex: 1 }}>
+          {/* The chips keep at least ~240px; on a narrow phone the two
+              dropdowns wrap onto their own line instead of squeezing them. */}
+          <div style={{ display: "flex", gap: 6, overflowX: "auto", flex: "1 1 240px" }}>
             {filters.map((f) => {
               const sel = status === f.id;
               return (
@@ -299,23 +347,35 @@ export function LibraryView({
               );
             })}
           </div>
+          {/* Book filter: testaments and Gospels first, then only the books
+              that have verses, so the list stays short. */}
+          <select
+            value={bookFilter ?? ""}
+            onChange={(e) => setBookFilter(e.target.value || null)}
+            aria-label={t.allBooks}
+            style={selectStyle}
+          >
+            <option value="">{t.allBooks}</option>
+            <optgroup label={t.bookGroupsLabel}>
+              {groups.broad.map((g) => (
+                <option key={g.group} value={g.group}>
+                  {groupLabel(g.group, locale)} ({g.count})
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label={t.booksLabel}>
+              {groups.books.map((g) => (
+                <option key={g.group} value={g.group}>
+                  {groupLabel(g.group, locale)} ({g.count})
+                </option>
+              ))}
+            </optgroup>
+          </select>
           <select
             value={sort}
             onChange={(e) => setSort(e.target.value as Sort)}
             aria-label={t.sortRecent}
-            style={{
-              flexShrink: 0,
-              padding: "8px 10px",
-              borderRadius: "var(--r-md)",
-              border: "none",
-              boxShadow: "inset 0 0 0 1.5px var(--c-line)",
-              background: "#fff",
-              fontSize: 12,
-              fontWeight: 700,
-              color: "var(--c-text)",
-              fontFamily: "var(--font-sans)",
-              cursor: "pointer",
-            }}
+            style={selectStyle}
           >
             <option value="recent">{t.sortRecent}</option>
             <option value="alpha">{t.sortAlpha}</option>
@@ -415,30 +475,62 @@ export function LibraryView({
       )}
 
       {tab === "collections" ? (
-        collections.length === 0 ? (
-          <EmptyCard
-            title={t.emptyCollectionsTitle}
-            body={t.emptyCollectionsBody}
-            ctaLabel={t.createFirst}
-            onCta={() => setCreating(true)}
-          />
-        ) : filteredCollections.length === 0 ? (
-          <NoResults text={t.noResults} />
-        ) : (
-          <section
-            className="vr-stagger vr-collection-grid"
-            style={{ padding: 20, display: "grid", gap: 12 }}
-          >
-            {filteredCollections.map((entry) => (
-              <CollectionCard
-                key={entry.collection.id}
-                collection={entry.collection}
-                sample={entry.sample}
-                countLabel={T[locale].versesCount(entry.count)}
-              />
-            ))}
-          </section>
-        )
+        <>
+          {bookCards.length > 0 && collections.length > 0 && (
+            <SectionLabel text={t.yourCollections} />
+          )}
+          {collections.length === 0 ? (
+            <EmptyCard
+              title={t.emptyCollectionsTitle}
+              body={t.emptyCollectionsBody}
+              ctaLabel={t.createFirst}
+              onCta={() => setCreating(true)}
+            />
+          ) : filteredCollections.length === 0 ? (
+            q && bookCards.length > 0 ? null : <NoResults text={t.noResults} />
+          ) : (
+            <section
+              className="vr-stagger vr-collection-grid"
+              style={{ padding: "12px 20px 20px", display: "grid", gap: 12 }}
+            >
+              {filteredCollections.map((entry) => (
+                <CollectionCard
+                  key={entry.collection.id}
+                  href={`/library/collections/${entry.collection.id}`}
+                  name={entry.collection.name}
+                  description={entry.collection.description}
+                  colorKey={entry.collection.colorKey}
+                  sample={entry.sample}
+                  countLabel={T[locale].versesCount(entry.count)}
+                />
+              ))}
+            </section>
+          )}
+
+          {/* Automatic book groups: every verse shows up under its book
+              whether or not it was filed into a collection. */}
+          {bookCards.length > 0 && (
+            <>
+              <SectionLabel text={t.byBook} />
+              <section
+                className="vr-collection-grid"
+                style={{ padding: "12px 20px 20px", display: "grid", gap: 12 }}
+              >
+                {bookCards.map((b) => (
+                  <CollectionCard
+                    key={b.book}
+                    onClick={() => openBook(b.book)}
+                    name={b.label}
+                    description={groupLabel(testamentOf(b.book), locale)}
+                    colorKey={testamentOf(b.book) === "OT" ? "amber" : "sky"}
+                    sample={b.sample}
+                    countLabel={T[locale].versesCount(b.count)}
+                  />
+                ))}
+              </section>
+            </>
+          )}
+        </>
       ) : verses.length === 0 ? (
         <EmptyCard title={t.emptyAll} body="" ctaLabel={t.addVerse} ctaHref="/verses/new" />
       ) : (
@@ -474,6 +566,38 @@ export function LibraryView({
         </section>
       )}
     </>
+  );
+}
+
+const selectStyle: React.CSSProperties = {
+  flexShrink: 0,
+  maxWidth: 150,
+  padding: "8px 10px",
+  borderRadius: "var(--r-md)",
+  border: "none",
+  boxShadow: "inset 0 0 0 1.5px var(--c-line)",
+  background: "#fff",
+  fontSize: 12,
+  fontWeight: 700,
+  color: "var(--c-text)",
+  fontFamily: "var(--font-sans)",
+  cursor: "pointer",
+};
+
+function SectionLabel({ text }: { text: string }) {
+  return (
+    <h2
+      style={{
+        margin: "18px 20px 0",
+        fontSize: 11,
+        fontWeight: 800,
+        letterSpacing: 0.6,
+        textTransform: "uppercase",
+        color: "var(--c-muted)",
+      }}
+    >
+      {text}
+    </h2>
   );
 }
 
