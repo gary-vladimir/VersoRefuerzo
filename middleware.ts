@@ -43,5 +43,7 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  // The app icons (app/icon.png, app/apple-icon.png, app/favicon.ico) must
+  // load for signed-out visitors too, or the login tab has no favicon.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.png|apple-icon.png).*)"],
 };
