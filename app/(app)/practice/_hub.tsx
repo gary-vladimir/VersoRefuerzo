@@ -22,11 +22,13 @@ import {
   type PracticeSource,
 } from "@/lib/practice/source";
 import { ModeIcon, type ModeName } from "@/components/practice/ModeIcons";
+import { groupLabel, groupsPresent } from "@/lib/bible/groups";
 import { Chevron } from "@/components/icons/UiIcons";
 import { T } from "@/lib/i18n/strings";
 
 export type HubCollection = { id: string; name: string; colorKey: string; count: number };
-export type HubVerse = { id: string; label: string; color: string };
+// `ref` is the canonical reference; the hub derives the book groups from it.
+export type HubVerse = { id: string; label: string; color: string; ref: string };
 
 export type HubTile = {
   title: string;
@@ -47,6 +49,7 @@ export type HubStrings = {
   sourcePickCollection: string;
   sourcePickVerses: string;
   sourceNoCollections: string;
+  sourceByBook: string;
   sourceNoVerses: string;
   sourceClearSelection: string;
   sourceSelectAll: string;
@@ -73,22 +76,41 @@ export function PracticeHub({
 }) {
   const [kind, setKind] = useState<Kind>("all");
   const [collectionId, setCollectionId] = useState<string | null>(null);
+  // A collection and a book group are alternative picks under the same
+  // tab; choosing one clears the other.
+  const [bookGroup, setBookGroup] = useState<string | null>(null);
+  const bookGroups = useMemo(() => {
+    const present = groupsPresent(verses.map((v) => v.ref));
+    return [...present.broad, ...present.books];
+  }, [verses]);
+
+  function pickCollection(id: string | null) {
+    setCollectionId(id);
+    setBookGroup(null);
+  }
+  function pickBookGroup(group: string | null) {
+    setBookGroup(group);
+    setCollectionId(null);
+  }
   const [picked, setPicked] = useState<string[]>([]);
 
   const source: PracticeSource = useMemo(() => {
     if (kind === "collection" && collectionId) {
       return { kind: "collection", collectionId };
     }
+    if (kind === "collection" && bookGroup) {
+      return { kind: "book", group: bookGroup };
+    }
     if (kind === "custom" && picked.length > 0) {
       return { kind: "custom", verseIds: picked };
     }
     return ALL_VERSES;
-  }, [kind, collectionId, picked]);
+  }, [kind, collectionId, bookGroup, picked]);
 
   // The pool is "incomplete" when the user chose a mode that needs a
   // follow-up choice they have not made yet.
   const blockedReason =
-    kind === "collection" && !collectionId
+    kind === "collection" && !collectionId && !bookGroup
       ? s.sourceNeedsCollection
       : kind === "custom" && picked.length === 0
         ? s.sourceNeedsPick
@@ -211,59 +233,56 @@ export function PracticeHub({
           </div>
 
           {kind === "collection" && (
-            <div style={{ marginTop: 12 }}>
-              {collections.length === 0 ? (
-                <Empty text={s.sourceNoCollections} />
-              ) : (
-                <>
-                  <FieldLabel text={s.sourcePickCollection} />
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                    {collections.map((c) => {
-                      const palette =
-                        COLLECTION_COLORS.find((p) => p.id === c.colorKey) ??
-                        COLLECTION_COLORS[0]!;
-                      const on = collectionId === c.id;
-                      return (
-                        <button
-                          key={c.id}
-                          type="button"
-                          aria-pressed={on}
-                          onClick={() => setCollectionId(on ? null : c.id)}
-                          className="vr-press"
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 7,
-                            border: "1px solid",
-                            borderColor: on ? palette.dot : "var(--c-line)",
-                            background: on ? palette.bg : "#fff",
-                            color: on ? palette.fg : "var(--c-text)",
-                            borderRadius: "var(--r-full)",
-                            padding: "7px 12px",
-                            fontSize: 13,
-                            fontWeight: 600,
-                            cursor: "pointer",
-                          }}
-                        >
-                          <span
-                            aria-hidden
-                            style={{
-                              width: 8,
-                              height: 8,
-                              borderRadius: "50%",
-                              background: palette.dot,
-                              flexShrink: 0,
-                            }}
+            <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 12 }}>
+              <div>
+                {collections.length === 0 ? (
+                  <Empty text={s.sourceNoCollections} />
+                ) : (
+                  <>
+                    <FieldLabel text={s.sourcePickCollection} />
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                      {collections.map((c) => {
+                        const palette =
+                          COLLECTION_COLORS.find((p) => p.id === c.colorKey) ??
+                          COLLECTION_COLORS[0]!;
+                        const on = collectionId === c.id;
+                        return (
+                          <GroupChip
+                            key={c.id}
+                            label={c.name}
+                            count={c.count}
+                            on={on}
+                            palette={palette}
+                            onClick={() => pickCollection(on ? null : c.id)}
                           />
-                          {c.name}
-                          <span style={{ color: "var(--c-muted)", fontWeight: 500 }}>
-                            {c.count}
-                          </span>
-                        </button>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Automatic groups (lib/bible/groups.ts): every verse is in
+                  its book and testament without being filed anywhere. */}
+              {bookGroups.length > 0 && (
+                <div>
+                  <FieldLabel text={s.sourceByBook} />
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    {bookGroups.map((g) => {
+                      const on = bookGroup === g.group;
+                      return (
+                        <GroupChip
+                          key={g.group}
+                          label={groupLabel(g.group, locale)}
+                          count={g.count}
+                          on={on}
+                          palette={BOOK_PALETTE}
+                          onClick={() => pickBookGroup(on ? null : g.group)}
+                        />
                       );
                     })}
                   </div>
-                </>
+                </div>
               )}
             </div>
           )}
@@ -399,6 +418,60 @@ export function PracticeHub({
         ))}
       </section>
     </>
+  );
+}
+
+// Neutral chip color for automatic book groups, so they read as a different
+// kind of thing than the user's own colored collections.
+const BOOK_PALETTE = { bg: "var(--c-indigo-50)", fg: "var(--c-indigo-700)", dot: "var(--c-indigo-400)" };
+
+function GroupChip({
+  label,
+  count,
+  on,
+  palette,
+  onClick,
+}: {
+  label: string;
+  count: number;
+  on: boolean;
+  palette: { bg: string; fg: string; dot: string };
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={on}
+      onClick={onClick}
+      className="vr-press"
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 7,
+        border: "1px solid",
+        borderColor: on ? palette.dot : "var(--c-line)",
+        background: on ? palette.bg : "#fff",
+        color: on ? palette.fg : "var(--c-text)",
+        borderRadius: "var(--r-full)",
+        padding: "7px 12px",
+        fontSize: 13,
+        fontWeight: 600,
+        cursor: "pointer",
+      }}
+    >
+      <span
+        aria-hidden
+        style={{
+          width: 8,
+          height: 8,
+          borderRadius: "50%",
+          background: palette.dot,
+          flexShrink: 0,
+        }}
+      />
+      {label}
+      <span style={{ color: "var(--c-muted)", fontWeight: 500 }}>{count}</span>
+    </button>
   );
 }
 

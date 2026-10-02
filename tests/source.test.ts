@@ -143,3 +143,19 @@ describe("practice scope", () => {
     ).toBe("?source=collection&collectionId=11111111-1111-4111-8111-111111111111&scope=all");
   });
 });
+
+describe("book group sources", () => {
+  it("round-trips a book group through the query string", () => {
+    const src = parsePracticeSource({ source: "book", book: "PRO" });
+    expect(src).toEqual({ kind: "book", group: "PRO" });
+    expect(practiceSourceSearch(src)).toBe("?source=book&book=PRO");
+    expect(parsePracticeSource({ source: "book", book: "GOSPELS" })).toEqual({
+      kind: "book",
+      group: "GOSPELS",
+    });
+  });
+
+  it("falls back to the whole library on an unknown group", () => {
+    expect(parsePracticeSource({ source: "book", book: "XYZ" })).toEqual(ALL_VERSES);
+  });
+});

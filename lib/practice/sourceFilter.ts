@@ -8,10 +8,11 @@
 // call site can spread it in unconditionally.
 
 import "server-only";
-import { eq, inArray, type SQL } from "drizzle-orm";
+import { eq, inArray, sql, type SQL } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { verses as versesTable, verseCollections as vcTable } from "@/db/schema";
 import type { PracticeSource } from "./source";
+import { booksInGroup } from "@/lib/bible/groups";
 
 type Db = ReturnType<typeof getDb>;
 
@@ -28,6 +29,13 @@ export function sourceFilter(db: Db, source: PracticeSource): SQL | undefined {
           .select({ id: vcTable.verseId })
           .from(vcTable)
           .where(eq(vcTable.collectionId, source.collectionId)),
+      );
+    case "book":
+      // The book is the first dotted segment of the canonical ref, so a
+      // range like ROM.8.28-ROM.8.30 still counts as Romans.
+      return inArray(
+        sql`split_part(${versesTable.canonicalRef}, '.', 1)`,
+        [...booksInGroup(source.group)],
       );
     case "custom":
       return inArray(versesTable.id, source.verseIds);

@@ -95,6 +95,7 @@ export default async function PracticeHubPage() {
     id: v.id,
     label: formatDisplay(v.canonicalRef, locale),
     color: v.color,
+    ref: v.canonicalRef,
   }));
 
   const tiles: HubTile[] = [
@@ -188,6 +189,7 @@ export default async function PracticeHubPage() {
           sourcePickCollection: t.sourcePickCollection,
           sourcePickVerses: t.sourcePickVerses,
           sourceNoCollections: t.sourceNoCollections,
+          sourceByBook: t.sourceByBook,
           sourceNoVerses: t.sourceNoVerses,
           sourceClearSelection: t.sourceClearSelection,
           sourceSelectAll: t.sourceSelectAll,

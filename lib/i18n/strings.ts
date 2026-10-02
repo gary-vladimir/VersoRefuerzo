@@ -160,6 +160,7 @@ export const T = {
     sourcePickCollection: "Elige una colección",
     sourcePickVerses: "Elige los versos que quieres practicar",
     sourceNoCollections: "Aún no tienes colecciones.",
+    sourceByBook: "Por libro",
     sourceNoVerses: "Aún no tienes versos.",
     sourceSelectedCount: (n: number) =>
       n === 1 ? "1 verso elegido" : `${n} versos elegidos`,
@@ -167,7 +168,7 @@ export const T = {
     sourceSelectAll: "Elegir todos",
     sourceMaxReached: (n: number) => `Máximo ${n} versos`,
     sourceNeedsPick: "Elige al menos un verso para continuar.",
-    sourceNeedsCollection: "Elige una colección para continuar.",
+    sourceNeedsCollection: "Elige una colección o un libro para continuar.",
     practiceThisCollection: "Practicar esta colección",
     practiceModeWordScramble: "Palabras revueltas",
     practiceModeMatch: "Empareja versos",
@@ -349,6 +350,7 @@ export const T = {
     sourcePickCollection: "Pick a collection",
     sourcePickVerses: "Pick the verses you want to practice",
     sourceNoCollections: "You have no collections yet.",
+    sourceByBook: "By book",
     sourceNoVerses: "You have no verses yet.",
     sourceSelectedCount: (n: number) =>
       n === 1 ? "1 verse selected" : `${n} verses selected`,
@@ -356,7 +358,7 @@ export const T = {
     sourceSelectAll: "Select all",
     sourceMaxReached: (n: number) => `${n} verses max`,
     sourceNeedsPick: "Pick at least one verse to continue.",
-    sourceNeedsCollection: "Pick a collection to continue.",
+    sourceNeedsCollection: "Pick a collection or a book to continue.",
     practiceThisCollection: "Practice this collection",
     practiceModeWordScramble: "Word scramble",
     practiceModeMatch: "Verse match",

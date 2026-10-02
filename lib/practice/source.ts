@@ -9,9 +9,14 @@
 // a reload, or a shared link all keep the same pool. `all` serialises to no
 // params at all, which keeps the common /practice/classic URL clean.
 
+import { isBookGroup } from "@/lib/bible/groups";
+
 export type PracticeSource =
   | { kind: "all" }
   | { kind: "collection"; collectionId: string }
+  // An automatic book group (lib/bible/groups.ts): a book code such as
+  // "PRO", or "OT" / "NT" / "GOSPELS".
+  | { kind: "book"; group: string }
   | { kind: "custom"; verseIds: string[] };
 
 export const ALL_VERSES: PracticeSource = { kind: "all" };
@@ -39,6 +44,10 @@ export function parsePracticeSource(sp: RawSearchParams): PracticeSource {
         ? { kind: "collection", collectionId }
         : ALL_VERSES;
     }
+    case "book": {
+      const group = one(sp.book);
+      return isBookGroup(group) ? { kind: "book", group } : ALL_VERSES;
+    }
     case "custom": {
       const verseIds = one(sp.verses)
         .split(",")
@@ -59,6 +68,8 @@ export function practiceSourceQuery(
   switch (src.kind) {
     case "collection":
       return { source: "collection", collectionId: src.collectionId };
+    case "book":
+      return { source: "book", book: src.group };
     case "custom":
       return { source: "custom", verses: src.verseIds.join(",") };
     default:
@@ -97,6 +108,7 @@ export function isSameSource(a: PracticeSource, b: PracticeSource): boolean {
   if (a.kind === "collection" && b.kind === "collection") {
     return a.collectionId === b.collectionId;
   }
+  if (a.kind === "book" && b.kind === "book") return a.group === b.group;
   if (a.kind === "custom" && b.kind === "custom") {
     return (
       a.verseIds.length === b.verseIds.length &&
