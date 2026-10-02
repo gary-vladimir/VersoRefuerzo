@@ -7,9 +7,16 @@
 // in place to satisfy AC-1 / AC-22. Rendered by app/(auth)/login/page.tsx,
 // which handles the signed-in-already redirect.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { signInWithPopup, signOut } from "firebase/auth";
+import {
+  getRedirectResult,
+  signInWithPopup,
+  signInWithRedirect,
+  signOut,
+  type Auth,
+  type User,
+} from "firebase/auth";
 import { getClientAuth, googleProvider } from "@/lib/auth/firebase-client";
 import { T } from "@/lib/i18n/strings";
 import { BrandLogo } from "@/components/ui/BrandLogo";
@@ -34,50 +41,111 @@ const STARS: Array<[number, number, number, number]> = [
   [64, 90, 2, 1.1],
 ];
 
+// Set just before handing the page to Google, so the login screen can show
+// "signing in" while it finishes the redirect instead of an idle button.
+const REDIRECT_FLAG = "vr-signin-redirect";
+
+// Phones get a full-page redirect: their browsers block a sign-in popup that
+// does not open instantly on the tap, and a popup is awkward on a small
+// screen anyway. Desktops keep the popup, which avoids a page reload.
+function prefersRedirect(): boolean {
+  return window.matchMedia("(pointer: coarse)").matches;
+}
+
 export default function LoginClient() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const t = T.es;
+
+  // Create the Firebase auth instance as soon as the screen mounts. Done
+  // lazily inside the click handler, its setup ran before the popup opened,
+  // so mobile Safari no longer counted the popup as a response to the tap
+  // and blocked it. This is also where a redirect sign-in comes back.
+  useEffect(() => {
+    let auth: Auth;
+    try {
+      auth = getClientAuth();
+    } catch (e) {
+      console.error(e);
+      return;
+    }
+    let returning = false;
+    try {
+      returning = sessionStorage.getItem(REDIRECT_FLAG) === "1";
+      sessionStorage.removeItem(REDIRECT_FLAG);
+    } catch {
+      /* storage unavailable: fall through, getRedirectResult still works */
+    }
+    if (returning) setLoading(true);
+    getRedirectResult(auth)
+      .then((credential) => {
+        if (credential) return finishSignIn(auth, credential.user);
+        if (returning) setLoading(false);
+      })
+      .catch((e) => fail(e));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Trade the Firebase ID token for the server session cookie, then leave
+  // the client SDK signed out: the httpOnly cookie is the source of truth.
+  async function finishSignIn(auth: Auth, user: User) {
+    const idToken = await user.getIdToken();
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const res = await fetch("/api/auth/session", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ idToken, timezone }),
+    });
+    await signOut(auth);
+    if (!res.ok) throw new Error(`session POST returned ${res.status}`);
+    const data = (await res.json()) as { user: { hasCompletedOnboarding: boolean } };
+    // Hard navigation so server components re-fetch with the new cookie.
+    window.location.href = data.user.hasCompletedOnboarding ? "/" : "/onboarding";
+  }
+
+  function fail(e: unknown) {
+    setLoading(false);
+    // Closing the Google popup is a choice, not a failure.
+    const code = (e as { code?: string } | null)?.code;
+    if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") {
+      return;
+    }
+    console.error(e);
+    setError(t.signInError);
+  }
+
+  async function redirectToGoogle(auth: Auth) {
+    try {
+      sessionStorage.setItem(REDIRECT_FLAG, "1");
+    } catch {
+      /* only drives the loading state on return */
+    }
+    await signInWithRedirect(auth, googleProvider);
+  }
 
   async function handleSignIn() {
     setLoading(true);
     setError(null);
     try {
       const auth = getClientAuth();
-      const credential = await signInWithPopup(auth, googleProvider);
-      const idToken = await credential.user.getIdToken();
-      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-      const res = await fetch("/api/auth/session", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ idToken, timezone }),
-      });
-
-      // We sign out of the client SDK regardless — the server-side session
-      // cookie is the source of truth from here on.
-      await signOut(auth);
-
-      if (!res.ok) {
-        throw new Error(`session POST returned ${res.status}`);
-      }
-      const data = (await res.json()) as {
-        user: { hasCompletedOnboarding: boolean };
-      };
-
-      // Hard navigation so server components re-fetch with the new cookie.
-      window.location.href = data.user.hasCompletedOnboarding
-        ? "/"
-        : "/onboarding";
-    } catch (e) {
-      setLoading(false);
-      // Closing the Google popup is a choice, not a failure.
-      const code = (e as { code?: string } | null)?.code;
-      if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") {
+      if (prefersRedirect()) {
+        await redirectToGoogle(auth);
         return;
       }
-      console.error(e);
-      setError(t.signInError);
+      try {
+        const credential = await signInWithPopup(auth, googleProvider);
+        await finishSignIn(auth, credential.user);
+      } catch (e) {
+        // A browser that still blocks the popup gets the redirect instead
+        // of an error message.
+        if ((e as { code?: string } | null)?.code === "auth/popup-blocked") {
+          await redirectToGoogle(auth);
+          return;
+        }
+        throw e;
+      }
+    } catch (e) {
+      fail(e);
     }
   }
 

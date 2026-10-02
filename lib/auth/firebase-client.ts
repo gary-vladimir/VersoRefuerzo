@@ -1,6 +1,7 @@
 // Firebase Web SDK — client-only. Used by the login page to obtain an ID token
-// from a Google sign-in popup. After we POST the ID token to /api/auth/session,
-// we sign out of the client SDK and rely solely on the httpOnly server session.
+// from Google sign-in (a popup on desktop, a full-page redirect on phones).
+// After we POST the ID token to /api/auth/session, we sign out of the client
+// SDK and rely solely on the httpOnly server session.
 
 "use client";
 
@@ -17,7 +18,26 @@ function readConfig() {
       "Firebase web env vars missing: set NEXT_PUBLIC_FIREBASE_API_KEY, NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN, NEXT_PUBLIC_FIREBASE_PROJECT_ID, NEXT_PUBLIC_FIREBASE_APP_ID",
     );
   }
-  return { apiKey, authDomain, projectId, appId };
+  return { apiKey, authDomain: authDomainFor(authDomain), projectId, appId };
+}
+
+// Where Firebase's sign-in helper pages (/__/auth/handler) are loaded from.
+//
+// Out of the box that is <project>.firebaseapp.com, a different site from
+// the app. Phone browsers partition storage per site (Safari ITP, Chrome
+// storage partitioning), so the helper could not see the sign-in state the
+// app started and failed with "missing initial state". On a deployed HTTPS
+// origin the app proxies /__/auth/* to firebaseapp.com (next.config.ts), so
+// we point Firebase at the app's own host and the whole flow stays on one
+// site. Local development keeps the configured domain, since the proxied
+// handler URL is only registered for the deployed hosts.
+function authDomainFor(configured: string): string {
+  if (typeof window === "undefined") return configured;
+  const { protocol, hostname, host } = window.location;
+  if (protocol === "https:" && hostname !== "localhost" && hostname !== "127.0.0.1") {
+    return host;
+  }
+  return configured;
 }
 
 let cachedApp: FirebaseApp | null = null;

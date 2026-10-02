@@ -21,6 +21,8 @@ const PUBLIC_PATHS: RegExp[] = [
   /^\/terms(\/|$)/,
   /^\/api\/auth(\/|$)/,
   /^\/api\/health(\/|$)/,
+  // Firebase sign-in helper pages, proxied to firebaseapp.com (next.config.ts).
+  /^\/__\/auth(\/|$)/,
   /^\/_next(\/|$)/,
   /^\/favicon\.ico$/,
 ];
