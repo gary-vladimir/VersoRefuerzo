@@ -150,7 +150,7 @@ export const T = {
     firstLetterDesc: "Recita usando la primera letra de cada palabra",
     classicTitle: "Clásico",
     classicHubDesc: "Memorización por repetición espaciada",
-    practiceHubTitle: "Modos de práctica",
+    practiceHubTitle: "Mini Juegos Para Practicar",
     practiceHubSubline: "Elige cómo quieres practicar hoy",
     miniGameComingSoon: "Próximamente",
     // Source pool selector (§6.4)
@@ -344,7 +344,7 @@ export const T = {
     firstLetterDesc: "Recite using the first letter of each word",
     classicTitle: "Classic",
     classicHubDesc: "Spaced-repetition memorization",
-    practiceHubTitle: "Practice modes",
+    practiceHubTitle: "Practice Mini Games",
     practiceHubSubline: "Pick how to practice today",
     miniGameComingSoon: "Coming soon",
     // Source pool selector (§6.4)

@@ -13,8 +13,14 @@ const PATHS: Record<NavName, ReactNode> = {
       <path d="M6 10v9a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-9" />
     </>
   ),
+  // Game controller: the practice tab is where the mini-games live.
+  // Buttons are zero-length strokes, which round caps turn into dots.
   practice: (
-    <path d="M12 3l1.8 6.2L20 11l-6.2 1.8L12 19l-1.8-6.2L4 11l6.2-1.8L12 3z" />
+    <>
+      <path d="M7 7h10a5 5 0 0 1 4.9 6l-.9 4.2a2.3 2.3 0 0 1-3.9 1.1L14.8 16H9.2l-2.3 2.3A2.3 2.3 0 0 1 3 17.2L2.1 13A5 5 0 0 1 7 7z" />
+      <path d="M7.5 10v4M5.5 12h4" />
+      <path d="M15.5 10.6h.01M17.8 13h.01" />
+    </>
   ),
   library: (
     <>
