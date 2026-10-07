@@ -1,8 +1,8 @@
 // API.Bible integration. Server-only — never exposes the API key to clients.
 //
 // Two responsibilities:
-//   1. enumerate the runtime-available versions: intersection of the spec
-//      allowlist {NBLA, NVI, RVR1960} and what the deployed key actually
+//   1. enumerate the runtime-available versions: intersection of the
+//      allowlist in lib/catalog.ts (VERSION_IDS) and what the deployed key actually
 //      licenses (specs.md §9.2). Configured via env: APIBIBLE_ID_<VERSION>.
 //   2. fetch verse text for a given (canonicalRef, version) pair, going through
 //      bibleTextCache so the same passage is fetched **at most once** across
@@ -17,15 +17,15 @@ import { and, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { bibleTextCache } from "@/db/schema";
 import { isValidUsfmRef } from "./reference";
+import { VERSION_IDS, type VersionId } from "@/lib/catalog";
 
-export type VersionKey = "NBLA" | "NVI" | "RVR1960";
-export const VERSION_KEYS: VersionKey[] = ["NBLA", "NVI", "RVR1960"];
+export type VersionKey = VersionId;
+export const VERSION_KEYS: readonly VersionKey[] = VERSION_IDS;
 
-const ENV_VAR: Record<VersionKey, string> = {
-  NBLA: "APIBIBLE_ID_NBLA",
-  NVI: "APIBIBLE_ID_NVI",
-  RVR1960: "APIBIBLE_ID_RVR1960",
-};
+// Each version is enabled by its own env var holding the API.Bible id.
+function envVarFor(key: VersionKey): string {
+  return `APIBIBLE_ID_${key}`;
+}
 
 export type AvailableVersion = { key: VersionKey; bibleId: string };
 
@@ -34,7 +34,7 @@ export type AvailableVersion = { key: VersionKey; bibleId: string };
 export function availableVersions(): AvailableVersion[] {
   const out: AvailableVersion[] = [];
   for (const key of VERSION_KEYS) {
-    const id = process.env[ENV_VAR[key]];
+    const id = process.env[envVarFor(key)];
     if (id && id.trim()) out.push({ key, bibleId: id.trim() });
   }
   return out;
@@ -42,7 +42,7 @@ export function availableVersions(): AvailableVersion[] {
 
 export function bibleIdFor(key: string): string | null {
   if (!(VERSION_KEYS as readonly string[]).includes(key)) return null;
-  const id = process.env[ENV_VAR[key as VersionKey]];
+  const id = process.env[envVarFor(key as VersionKey)];
   return id?.trim() || null;
 }
 

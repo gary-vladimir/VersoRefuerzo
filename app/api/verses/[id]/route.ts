@@ -24,7 +24,7 @@ import {
   INITIAL_SRS_STATE,
 } from "@/db/schema";
 import { PatchVerseInput } from "@/lib/validation/schemas";
-import { availableVersions, getVerseText } from "@/lib/bible/apibible";
+import { availableVersions, getVerseText, type VersionKey } from "@/lib/bible/apibible";
 
 export const runtime = "nodejs";
 
@@ -207,7 +207,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   // Best-effort prime when the (ref, version) pair changed.
   if (identityChanged) {
     const ref = (parsed.data.canonicalRef ?? verse.canonicalRef) as string;
-    const ver = (parsed.data.version ?? verse.version) as "NBLA" | "NVI" | "RVR1960";
+    const ver = (parsed.data.version ?? verse.version) as VersionKey;
     try {
       await getVerseText(ref, ver);
     } catch (err) {

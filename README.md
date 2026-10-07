@@ -206,7 +206,7 @@ Open `.env` and fill in:
 | `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | Web app config `projectId` |
 | `NEXT_PUBLIC_FIREBASE_APP_ID` | Web app config `appId` |
 | `APIBIBLE_KEY` | API.Bible dashboard |
-| `APIBIBLE_ID_NBLA` / `_NVI` / `_RVR1960` | API.Bible Bible IDs (leave blank to hide a version) |
+| `APIBIBLE_ID_NBLA` / `_NTV` / `_NVI` / `_RVR1960` | API.Bible Bible IDs (leave blank to hide a version). NBLA is the default when set. Check the ID's language before using it: the English NIV is not the Spanish NVI. |
 | `SESSION_SECRET` | `openssl rand -base64 48` (reserved for future signed-cookie use; not read yet) |
 
 **About `FIREBASE_PRIVATE_KEY`:** the value contains newlines. In a `.env`

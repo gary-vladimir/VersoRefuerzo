@@ -6,14 +6,15 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { getServerUser } from "@/lib/auth/session";
-import { getVerseText, VERSION_KEYS } from "@/lib/bible/apibible";
+import { getVerseText } from "@/lib/bible/apibible";
+import { VERSION_IDS } from "@/lib/catalog";
 import { isValidUsfmRef } from "@/lib/bible/reference";
 
 export const runtime = "nodejs";
 
 const QuerySchema = z.object({
   ref: z.string().refine(isValidUsfmRef),
-  version: z.enum(VERSION_KEYS as [string, ...string[]]),
+  version: z.enum(VERSION_IDS),
 });
 
 export async function GET(req: NextRequest) {
@@ -33,7 +34,7 @@ export async function GET(req: NextRequest) {
   try {
     const result = await getVerseText(
       params.data.ref,
-      params.data.version as "NBLA" | "NVI" | "RVR1960",
+      params.data.version,
     );
     return NextResponse.json({
       canonicalRef: result.canonicalRef,

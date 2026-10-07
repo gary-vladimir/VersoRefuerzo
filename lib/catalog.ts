@@ -69,16 +69,24 @@ export function isCollectionColor(s: string): s is CollectionColorId {
   return (COLLECTION_COLOR_IDS as readonly string[]).includes(s);
 }
 
+// Bible versions the app supports (specs.md §9.2), in the order the New
+// Verse picker lists them. The first one the deployed API.Bible key serves
+// is the default for a user who has not picked a version yet, so NBLA leads.
+// A version only appears when its APIBIBLE_ID_<KEY> is configured.
+export const VERSION_IDS = ["NBLA", "NTV", "NVI", "RVR1960"] as const;
+export type VersionId = (typeof VERSION_IDS)[number];
+
 // Language each Bible version's text is written in. Every v1 version is
 // Spanish, so text-level logic (cloze stopwords, distractor pools) must key
 // off the version, never off the UI locale: an English UI still practices
 // Spanish verses.
-const VERSION_TEXT_LOCALE: Record<string, "es" | "en"> = {
+const VERSION_TEXT_LOCALE: Record<VersionId, "es" | "en"> = {
   NBLA: "es",
+  NTV: "es",
   NVI: "es",
   RVR1960: "es",
 };
 
 export function textLocaleForVersion(version: string): "es" | "en" {
-  return VERSION_TEXT_LOCALE[version] ?? "es";
+  return VERSION_TEXT_LOCALE[version as VersionId] ?? "es";
 }

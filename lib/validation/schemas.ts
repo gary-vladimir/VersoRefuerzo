@@ -5,10 +5,15 @@
 // in lockstep without hand-rolled "Body" interfaces.
 
 import { z } from "zod";
-import { CARD_COLOR_IDS, VERSE_ICON_IDS, COLLECTION_COLOR_IDS } from "@/lib/catalog";
+import {
+  CARD_COLOR_IDS,
+  VERSE_ICON_IDS,
+  COLLECTION_COLOR_IDS,
+  VERSION_IDS,
+} from "@/lib/catalog";
 import { isValidUsfmRef } from "@/lib/bible/reference";
 
-const VersionEnum = z.enum(["NBLA", "NVI", "RVR1960"]);
+const VersionEnum = z.enum(VERSION_IDS);
 export type Version = z.infer<typeof VersionEnum>;
 export const VersionInput = VersionEnum;
 
