@@ -21,7 +21,8 @@ import { getClientAuth } from "@/lib/auth/firebase-client";
 import { setSoundEnabled, play } from "@/lib/sounds/player";
 import { T, type Locale } from "@/lib/i18n/strings";
 import { deriveEffectiveStreak } from "@/lib/streak/streak";
-import { Flame } from "@/components/icons/UiIcons";
+import { Bulb, Flame } from "@/components/icons/UiIcons";
+import { GUIDE } from "@/lib/i18n/guide";
 import type { User } from "@/db/schema";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 
@@ -301,6 +302,23 @@ export function ProfileSheet({ user, open, onClose }: Props) {
             marginTop: 20,
           }}
         >
+          <Link
+            href="/guide"
+            onClick={onClose}
+            className="vr-press"
+            style={{
+              ...primaryActionStyle,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              textDecoration: "none",
+              background: "var(--c-indigo-50)",
+              color: "var(--c-indigo-700)",
+            }}
+          >
+            <Bulb size={16} /> {GUIDE[locale].title}
+          </Link>
           <button
             type="button"
             onClick={handleSignOut}

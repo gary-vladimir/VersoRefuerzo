@@ -29,6 +29,8 @@ import { VerseOfTheDay } from "@/components/home/VerseOfTheDay";
 import { VerseRow } from "@/components/verse/VerseRow";
 import { HeaderAvatar } from "@/components/layout/HeaderAvatar";
 import { BrandLogo } from "@/components/ui/BrandLogo";
+import { HowItWorksCard } from "@/components/home/HowItWorksCard";
+import { GUIDE } from "@/lib/i18n/guide";
 
 export default async function Home() {
   const user = await getServerUser();
@@ -36,6 +38,7 @@ export default async function Home() {
 
   const locale: "es" | "en" = user.locale === "en" ? "en" : "es";
   const t = T[locale];
+  const guide = GUIDE[locale];
   const firstName = user.displayName.split(" ")[0] ?? user.displayName;
   const db = getDb();
 
@@ -142,6 +145,18 @@ export default async function Home() {
           <HeaderAvatar user={user} />
         </div>
       </header>
+
+      {/* What the app is and how to use it, until the user dismisses it. */}
+      <section style={{ padding: "14px 20px 0" }}>
+        <HowItWorksCard
+          strings={{
+            title: guide.cardTitle,
+            steps: guide.cardSteps,
+            cta: guide.cardCta,
+            dismiss: guide.cardDismiss,
+          }}
+        />
+      </section>
 
       {/* Hero / empty states (§17.2 + §16.1) */}
       <section style={{ padding: "14px 20px 0" }}>
