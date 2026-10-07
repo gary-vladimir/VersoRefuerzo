@@ -76,6 +76,15 @@ export function isCollectionColor(s: string): s is CollectionColorId {
 export const VERSION_IDS = ["NBLA", "NTV", "NVI", "RVR1960"] as const;
 export type VersionId = (typeof VERSION_IDS)[number];
 
+// Full names for the version dropdown, so "NTV" means something to a new
+// user.
+export const VERSION_NAMES: Record<VersionId, string> = {
+  NBLA: "Nueva Biblia de las Américas",
+  NTV: "Nueva Traducción Viviente",
+  NVI: "Nueva Versión Internacional",
+  RVR1960: "Reina-Valera 1960",
+};
+
 // Language each Bible version's text is written in. Every v1 version is
 // Spanish, so text-level logic (cloze stopwords, distractor pools) must key
 // off the version, never off the UI locale: an English UI still practices
