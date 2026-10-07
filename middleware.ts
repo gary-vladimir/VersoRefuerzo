@@ -1,8 +1,9 @@
-// Edge middleware. Two jobs:
-//   1. Redirect unauthenticated HTML requests to /login. API routes are NOT
+// Edge middleware. Three jobs:
+//   1. Redirect visits to the raw Cloud Run URL to the main address.
+//   2. Redirect unauthenticated HTML requests to /login. API routes are NOT
 //      redirected — they return 401 JSON via getServerUser() so XHR clients
 //      get a parseable response instead of HTML.
-//   2. Forward the current pathname as `x-pathname` so server components can
+//   3. Forward the current pathname as `x-pathname` so server components can
 //      read it via `headers()`. Used by app/(app)/layout.tsx to skip the
 //      onboarding redirect when already on /onboarding.
 //
@@ -14,6 +15,10 @@
 // indefinitely (login → home → fail verify → login).
 
 import { NextResponse, type NextRequest } from "next/server";
+
+// The app's main address (Firebase Hosting in front of Cloud Run). Change
+// this when a custom domain is connected.
+const CANONICAL_HOST = "versorefuerzo.web.app";
 
 const PUBLIC_PATHS: RegExp[] = [
   /^\/login(\/|$)/,
@@ -28,7 +33,18 @@ const PUBLIC_PATHS: RegExp[] = [
 ];
 
 export function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
+  const { pathname, search } = req.nextUrl;
+
+  // One public address. Visitors who open a raw Cloud Run URL are sent to
+  // the canonical host with a permanent redirect. Firebase Hosting reaches
+  // this same service through the run.app host too, so the check reads
+  // X-Forwarded-Host: it is the visitor-facing host (versorefuerzo.web.app)
+  // for Hosting traffic and the run.app name itself for direct visits,
+  // which keeps Hosting requests from looping.
+  const publicHost = req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? "";
+  if (publicHost.endsWith(".run.app")) {
+    return NextResponse.redirect(new URL(`${pathname}${search}`, `https://${CANONICAL_HOST}`), 308);
+  }
   const sessionCookie = req.cookies.get("__session");
   const isPublic = PUBLIC_PATHS.some((rx) => rx.test(pathname));
   const isApi = pathname.startsWith("/api/");
