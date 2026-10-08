@@ -17,6 +17,7 @@ import { and, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { bibleTextCache } from "@/db/schema";
 import { isValidUsfmRef } from "./reference";
+import { cleanPassageText } from "./text";
 import { VERSION_IDS, type VersionId } from "@/lib/catalog";
 
 export type VersionKey = VersionId;
@@ -145,7 +146,7 @@ async function doGetVerseText(
   const json = (await res.json()) as {
     data?: { content?: string; copyright?: string };
   };
-  const text = (json.data?.content ?? "").replace(/\s+/g, " ").trim();
+  const text = cleanPassageText(json.data?.content ?? "");
   if (!text) {
     throw new Error(`API.Bible returned empty content for ${canonicalRef} ${version}`);
   }
