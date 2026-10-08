@@ -1,483 +1,166 @@
-# VersoRefuerzo
+<p align="center">
+  <img src="assets/brand/logo-gradient.png" alt="VersoRefuerzo logo" width="96" />
+</p>
 
-A free, ad-free, bilingual (ES/EN) web app for memorizing Bible verses with
-science-based spaced repetition. Built with Next.js (App Router), Firebase
-Authentication, Neon Postgres (Drizzle ORM), and deployed to Google Cloud Run.
+<h1 align="center">VersoRefuerzo</h1>
 
-The product spec is `specs.md`; the implementation plan is `PLAN.md`. Read
-those if you want context. To **run the app**, follow this README top to
-bottom.
+<p align="center">
+  <strong>Memorize Bible verses with spaced repetition and mini games.</strong><br />
+  Memoriza versículos bíblicos con repetición espaciada y mini juegos.
+</p>
 
----
+<p align="center">
+  <a href="https://versorefuerzo.web.app"><strong>Open the app: versorefuerzo.web.app</strong></a><br />
+  Free, no ads, Spanish and English, works on phone and desktop.
+</p>
 
-## 1. What's implemented
-
-All eight milestones in `PLAN.md` (M0 through M7) are landed. The app covers
-the full v1 feature surface:
-
-- **Auth.** Google sign-in via Firebase, server-verified `__session` cookie,
-  per-account locale / sound / streak persistence, first-run onboarding, hard
-  account delete (`DELETE /api/me`).
-- **Verses & collections.** Add a verse by reference (`Juan 14:6`), pick a
-  Bible version (NBLA / NVI / RVR1960 — the picker hides versions your
-  API.Bible key does not serve), color, icon, hint, and one or more
-  collections. Edit, soft-delete with 5-second undo, restore.
-- **Bible text cache.** Each `(canonicalRef, version)` is fetched from
-  API.Bible at most once across all users; persisted to `bible_text_cache`
-  and never invalidated. Account deletion leaves cache rows intact.
-- **SRS engine.** SM-2 with four quality buttons (`Otra vez`, `Difícil`,
-  `Bien`, `Fácil`), interleaved due-today queue, long-verse chunking, mastery
-  status with a 30-day unaided full-verse recall guard, timezone-aware
-  streaks.
-- **Practice source pool.** The hub's `Practicar desde` selector scopes every
-  mode to **Todos**, **a single collection**, or a **hand-picked set of
-  verses** (specs §6.4). The choice rides in the query string
-  (`?source=collection&collectionId=…`), so a mode page stays a server
-  component and a copied link reproduces the pool. Collection detail pages
-  link straight into a scoped Classic session.
-- **Practice modes.**
-  - **Classic** (recall + quality grade)
-  - **First-letter** (Classic shell with first-letter rendering)
-  - **Typed recall** (auto-graded with override) — accessible from Classic
-  - **Word Scramble** (recognition; 25-word segmentation for long verses)
-  - **Verse Match** (recognition; reference ↔ hint/preview)
-  - **Fill the Gap** (recognition at low density, promoted to recall once
-    blank density crosses 50%)
-- **Home.** Hero CTA showing `X versos para hoy`, streak chip, recent
-  verses; empty states for new accounts and zero-due days; mobile FAB +
-  desktop sidebar for `Agregar verso`.
-- **Profile sheet.** Locale toggle (ES↔EN, re-renders without page reload),
-  sound toggle, sign out, delete account.
-- **Sound effects.** Five named cues (`flip`, `pluck`, `thud`, `chime`,
-  `flame`) **synthesized at runtime with the Web Audio API** — no binary
-  assets to ship. Wired to reveal, grade, round resolution, session complete,
-  and streak extension. Default ON; toggle in the profile sheet. See
-  `public/sounds/README.md`.
-- **Accessibility.** Reduced-motion compliance (looping animations
-  disabled; flip card cross-fades; transitional helpers play at reduced
-  amplitude); responsive switch at 1024px between mobile bottom tab bar and
-  desktop sidebar; ProfileSheet is a focus-trapped modal with scroll-lock
-  and focus restore; keyboard-only focus rings; privacy / terms links on
-  login and profile (specs §10.5).
-- **Visual / UX pass.** Refreshed design tokens and a micro-interaction
-  animation layer (press, hover-lift, reveal, count-pop, shake, skeleton);
-  safe-area insets via a `viewport` export; SVG glyphs replacing emoji
-  throughout; richer Home (time-of-day greeting, progress insights strip,
-  verse-of-the-day); Library search across both tabs plus status filters,
-  collection filter chips, and a sort control; practice keyboard shortcuts;
-  collection delete with undo.
-- **Resilience.** Route-level `error`, `global-error`, `not-found`, and a
-  streaming `loading` skeleton for the authed shell, so a Neon timeout or an
-  API.Bible outage degrades to a recoverable card instead of a blank page.
-- **CI.** `.github/workflows/ci.yml` runs the migration-metadata check,
-  lint, unit + route tests, build, and typecheck on every push and PR.
-- **Deploy.** `Dockerfile` (Next.js standalone output), Cloud Build config,
-  and a one-shot `scripts/deploy.sh` that builds, pushes, and deploys to
-  Cloud Run with secrets from Secret Manager.
-
-Known polish items still open:
-
-- The session row + verse SRS update in `POST /api/practice/sessions` are now
-  written atomically with `db.batch`; the streak update remains a separate
-  follow-up write (a missed bump self-heals on the next session).
-- Word Scramble / Verse Match chips are tap-to-place, not drag-and-drop.
-- Word Scramble segments break at the nearest punctuation inside the word
-  window, which can yield uneven rounds (a 3-word round next to a 10-word
-  one). Within spec — §6.4.2 only caps the segment size — but worth evening
-  out.
-- Move-to-collection is reachable via a verse's *Editar* → *Colecciones*
-  (no dedicated quick-move dialog yet); bulk verse add is not implemented.
-- The error / not-found boundaries render Spanish regardless of the user's
-  locale toggle: they run outside any session, so there is no user row to
-  read the preference from.
+<p align="center">
+  <img src="docs/screenshots/mobile.jpg" alt="VersoRefuerzo on a phone: Home, a Classic practice card and the Library" width="860" />
+</p>
 
 ---
 
-## 2. Prerequisites
+## What it is
 
-You only need **one** of:
+VersoRefuerzo turns each Bible verse you want to learn into a flashcard and
+tells you when to review it, right before you would forget it. You type a
+citation such as `Juan 3:16`, the app fetches the text for you, and you
+practice a few minutes a day through a classic flashcard mode and four
+mini games.
 
-- **VS Code + Docker Desktop** (recommended — the project ships a
-  devcontainer that pins Node, pnpm, and toolchain versions).
-- **GitHub Codespaces** (uses the same devcontainer in the cloud, zero
-  local setup).
-- **A native toolchain:** Node 20+, [pnpm 9.15+](https://pnpm.io/installation), git.
+It is a non-profit project: free to use, no ads, no tracking, and every
+user's library is private.
 
-You will also need accounts on three free-tier services:
+## Screenshots
 
-- **Firebase** — Google sign-in.
-- **Neon** — Postgres database.
-- **API.Bible** — verse text.
-
----
-
-## 3. Get the code
-
-```bash
-git clone <repo-url> versorefuerzo
-cd versorefuerzo
-```
-
----
-
-## 4. Open the dev environment
-
-### Option A — Devcontainer (recommended)
-
-The repo includes `.devcontainer/devcontainer.json` based on Microsoft's
-official Node 20 / Bookworm image, plus features for `pnpm` and `gh`. VS
-Code extensions for ESLint, Prettier, MDX, and a Postgres client are
-pre-installed.
-
-1. Open the folder in VS Code.
-2. When prompted, click **Reopen in Container** (or run *Dev Containers:
-   Reopen in Container* from the command palette).
-3. The first build takes a few minutes. `pnpm install` runs automatically
-   as `postCreateCommand`.
-
-GitHub Codespaces works identically — just click *Code → Codespaces →
-Create*.
-
-### Option B — Native install
-
-```bash
-corepack enable
-corepack prepare pnpm@9.15.0 --activate
-pnpm install --frozen-lockfile
-```
-
----
-
-## 5. Set up external services
-
-### 5.1 Firebase (auth)
-
-1. Go to <https://console.firebase.google.com/> and create a project (or
-   reuse one). Disable Google Analytics if asked — it's not used.
-2. **Enable Google sign-in:** *Authentication → Sign-in method → Google →
-   Enable*. Save.
-3. **Authorize your dev origin:** *Authentication → Settings → Authorized
-   domains*. Confirm `localhost` is listed (it is, by default). Add your
-   production domain when you have one.
-4. **Register a Web app:** *Project settings (gear icon) → General → Your
-   apps → Add app → Web (`</>`)*. Give it a nickname; skip Firebase
-   Hosting. Copy the config object — you'll need `apiKey`, `authDomain`,
-   `projectId`, `appId`.
-5. **Generate an Admin SDK service account:** *Project settings → Service
-   accounts → Generate new private key*. A JSON file downloads. Open it
-   and grab `project_id`, `client_email`, `private_key`.
-
-### 5.2 Neon (Postgres)
-
-1. Go to <https://console.neon.tech/> and create a project. The free tier
-   is enough.
-2. *Connection Details → Pooled connection → URL*. Copy it. It must end
-   with `?sslmode=require`.
-3. The default `main` branch is fine for development. You can create a
-   separate `dev` branch later if you want isolated data.
-
-### 5.3 API.Bible
-
-1. Request a free key at <https://scripture.api.bible/>.
-2. After approval, find the Bible IDs you have access to (typically NBLA
-   and NVI; RVR1960 is conditional — see `specs.md` §9.2). Note each
-   version's `id` value. The `/api/bible/versions` route intersects the
-   spec allowlist with the IDs you provide, so versions without an ID are
-   simply hidden in the UI.
-
----
-
-## 6. Configure environment variables
-
-```bash
-cp .env.example .env
-```
-
-Open `.env` and fill in:
-
-| Variable | Source |
+| | |
 | --- | --- |
-| `DATABASE_URL` | Neon pooled connection string (ends with `?sslmode=require`) |
-| `FIREBASE_PROJECT_ID` | Service account JSON `project_id` |
-| `FIREBASE_CLIENT_EMAIL` | Service account JSON `client_email` |
-| `FIREBASE_PRIVATE_KEY` | Service account JSON `private_key`, **as a single line with `\n` escapes preserved** |
-| `NEXT_PUBLIC_FIREBASE_API_KEY` | Web app config `apiKey` |
-| `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` | Web app config `authDomain` |
-| `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | Web app config `projectId` |
-| `NEXT_PUBLIC_FIREBASE_APP_ID` | Web app config `appId` |
-| `APIBIBLE_KEY` | API.Bible dashboard |
-| `APIBIBLE_ID_NBLA` / `_NTV` / `_NVI` / `_RVR1960` | API.Bible Bible IDs (leave blank to hide a version). NBLA is the default when set. Check the ID's language before using it: the English NIV is not the Spanish NVI. |
-| `SESSION_SECRET` | `openssl rand -base64 48` (reserved for future signed-cookie use; not read yet) |
+| ![Home](docs/screenshots/home.jpg) | ![New verse with live preview](docs/screenshots/new-verse.jpg) |
+| **Home.** How many verses are due today, the streak, progress counts, a verse of the day and the recent list. | **Add a verse.** Type a citation, pick a version and the text is previewed live before saving. |
+| ![Classic card, front](docs/screenshots/classic-front.jpg) | ![Classic card, revealed](docs/screenshots/classic-reveal.jpg) |
+| **Classic practice.** Read the citation, recite the verse from memory, then reveal it. | **Grade yourself.** Otra vez, Difícil, Bien or Fácil decides when the card comes back. |
+| ![Library collections](docs/screenshots/library-collections.jpg) | ![Library verse list](docs/screenshots/library-verses.jpg) |
+| **Library.** Your own collections plus automatic groups by book, testament and the Gospels. | **All verses.** Search, filter by status or collection, sorted in Bible order. |
+| ![Practice hub](docs/screenshots/practice-hub.jpg) | ![Word scramble game](docs/screenshots/game-scramble.jpg) |
+| **Mini Juegos Para Practicar.** Choose a mode and which verses to use. | **Palabras revueltas.** Rebuild the verse by tapping the words in order. |
+| ![Verse match game](docs/screenshots/game-match.jpg) | ![How it works guide](docs/screenshots/guide.jpg) |
+| **Empareja versos.** Match each citation with its hint or opening words. | **Cómo funciona.** A built-in guide to the steps, grades and modes. |
 
-**About `FIREBASE_PRIVATE_KEY`:** the value contains newlines. In a `.env`
-file, keep it on a single line and replace each real newline with the two
-characters `\n`. The loader in `lib/auth/firebase-admin.ts` converts them
-back. Wrap the value in double quotes if your editor mangles the
-backslashes.
+## Features
 
-`.env` is git-ignored. Never commit it.
+- **Add verses by citation.** Type `Filipenses 4:13`, `Sal 23:1` or a range
+  like `Romanos 8:28-30`. The text is loaded from API.Bible and previewed
+  before you save. No copy and paste.
+- **Bible versions.** NBLA (default) and NTV. NVI and RVR1960 are supported
+  and appear automatically when the API key serves them.
+- **Visual memory cues.** Each card gets one of 8 colors, one of 18 icons
+  and an optional personal hint that stays hidden until you ask for it.
+- **Spaced repetition.** An SM-2 scheduler picks the verses due today. Four
+  honest grades control the next review; "Otra vez" brings the card back in
+  the same session.
+- **Five practice modes.**
+  - Clásico: recite, reveal and grade. Also lets you type the verse
+    ("Escribirlo") and auto-grades it.
+  - Primera letra: only the first letter of each word as support.
+  - Palabras revueltas: put the shuffled words back in order.
+  - Empareja versos: connect citations with hints.
+  - Completa el verso: choose the missing words; more blanks as you improve.
+- **Practice any set.** All verses, one collection, one book group or a
+  hand-picked list.
+- **Library that organizes itself.** Collections you create, plus automatic
+  groups for each book, the Old and New Testament and the Gospels. Bible
+  order everywhere.
+- **Daily streak**, verse of the day and progress counts (new, learning,
+  mastered).
+- **Spanish and English** interface, switchable from the profile sheet.
+- **Built for phones and desktops.** Bottom tab bar on phones, sidebar on
+  desktop, reduced motion support, synthesized sound effects you can mute.
+- **Private by design.** Google sign-in, one private library per account,
+  full account deletion.
 
----
+## How the memorization works
 
-## 7. Initialize the database
+1. **Add** a verse and personalize it with a color, an icon and a hint.
+2. **Practice** what is due. Recite it out loud, reveal it and grade
+   yourself honestly.
+3. **The scheduler adapts.** Easy cards come back after days, then weeks,
+   then months. Hard ones come back sooner. A verse counts as mastered only
+   after a long unaided recall of the full text.
 
-The schema lives in `db/schema.ts`; reviewed migrations under
-`db/migrations/`.
+The mini games add variety and reinforcement. Classic and Primera letra are
+the modes that move the schedule forward.
 
-For a **fresh** database, apply the committed migrations:
+## Tech stack
+
+| Area | Technology |
+| --- | --- |
+| Frontend and backend | Next.js 15 (App Router, server components, route handlers), React 19, TypeScript |
+| Styling | Hand-written CSS with design tokens and a small animation layer (no UI framework) |
+| Authentication | Firebase Authentication (Google), Firebase Admin SDK, HttpOnly session cookie |
+| Database | Neon serverless Postgres with Drizzle ORM and versioned SQL migrations |
+| Bible data | API.Bible for verse text, `bible-passage-reference-parser` for citations |
+| Validation and time | Zod at every API boundary, Day.js with time zones for streaks and due dates |
+| Audio | Web Audio API (sound effects are synthesized, no audio files) |
+| Testing and quality | Vitest (unit and route tests), ESLint, Prettier, TypeScript strict mode |
+| CI | GitHub Actions: migration check, lint, tests, build and typecheck on every push |
+| Hosting | Docker image built with Cloud Build, served by Google Cloud Run behind Firebase Hosting, secrets in Secret Manager |
+| Dev environment | VS Code devcontainer (Node 20, pnpm) |
+
+## Architecture at a glance
+
+```mermaid
+flowchart LR
+  user([Browser]) --> hosting[Firebase Hosting<br/>versorefuerzo.web.app]
+  hosting --> run[Cloud Run<br/>Next.js container]
+  run --> neon[(Neon Postgres)]
+  run --> bible[API.Bible]
+  run --> admin[Firebase Admin<br/>token check]
+  user -. Google sign-in .-> auth[Firebase Auth]
+```
+
+Each verse text is fetched from API.Bible at most once and cached in
+Postgres for every user, so the app stays fast and well within free tiers.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full picture.
+
+## Run it locally
+
+You need Node 20 and pnpm (or just Docker with the included devcontainer),
+plus free accounts on Firebase, Neon and API.Bible.
 
 ```bash
+git clone https://github.com/gary-vladimir/VersoRefuerzo.git
+cd VersoRefuerzo
+pnpm install
+cp .env.example .env      # fill in the values, see docs/DEVELOPMENT.md
 pnpm db:migrate
+pnpm dev                  # http://localhost:3000
 ```
 
-For a **scratch / dev** branch where you don't care about migration
-history:
+The step by step setup, including how to get each key, is in
+[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
-```bash
-pnpm db:push
-```
+## Documentation
 
-`db:push` is idempotent and faster, but skips the migration history.
-Prefer it only on personal Neon dev branches; never on production.
-
-To inspect data: `pnpm db:studio` (opens Drizzle Studio in your browser).
-
-**When you change `db/schema.ts`:** `pnpm db:generate` writes *two* files —
-`db/migrations/NNNN_name.sql` **and** `db/migrations/meta/NNNN_snapshot.json`.
-Commit both. The snapshot is the baseline the next `db:generate` diffs
-against; committing only the `.sql` makes the following migration re-emit
-every change since the last surviving snapshot. `pnpm check:migrations`
-(also a CI step) fails the build when a snapshot is missing or the
-`prevId` chain is broken.
-
----
-
-## 8. Run locally
-
-```bash
-pnpm dev
-```
-
-Open <http://localhost:3000>. You should be redirected to `/login`. Sign
-in with Google → first run sends you to `/onboarding` → land on Home with
-the `X versos para hoy` hero (zero until you add a verse) → tap the `+`
-FAB or `Agregar verso` to add your first verse.
-
-### Other scripts
-
-| Command | What it does |
+| Document | What it covers |
 | --- | --- |
-| `pnpm dev` | Next.js dev server on port 3000 |
-| `pnpm test` | Vitest unit tests (pure helpers) |
-| `pnpm test:watch` | Vitest in watch mode |
-| `pnpm lint` | ESLint (Next config) |
-| `pnpm typecheck` | `tsc --noEmit` |
-| `pnpm build` | Production build (standalone output) |
-| `pnpm start` | Run the production build locally |
-| `pnpm format` | Prettier write |
-| `pnpm db:migrate` | Apply Drizzle migrations |
-| `pnpm db:push` | Sync schema to Neon (dev branches only) |
-| `pnpm db:generate` | Generate a new migration from schema diff |
-| `pnpm db:studio` | Open Drizzle Studio |
-| `pnpm check:migrations` | Verify the migration journal, SQL files, and snapshot chain agree |
+| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | Local setup, external services, environment variables, database, scripts, troubleshooting |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | How the app is built: auth, Bible text cache, scheduler, practice modes, data model, folder layout |
+| [docs/TESTING.md](docs/TESTING.md) | Automated tests and a manual test plan for every feature |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Production on Cloud Run and Firebase Hosting, sign-in setup, deploys and rollbacks |
+| [specs.md](specs.md) | The original product and engineering specification |
+| [PLAN.md](PLAN.md) | The milestone plan used to build v1 (historical) |
+| [about.md](about.md) | The original idea, in Spanish |
 
----
+## Project status
 
-## 9. Smoke test the v1 flow
+v1 is complete and live at <https://versorefuerzo.web.app>. Known
+limitations are listed in [docs/TESTING.md](docs/TESTING.md#known-limitations).
 
-1. Open an Incognito window at <http://localhost:3000/> → expect redirect
-   to `/login` (night-gradient screen).
-2. Click *Continuar con Google* → choose an account → expect onboarding on
-   first sign-in only, then Home.
-3. Add a verse: `Juan 14:6`, version `NBLA`, pick a color/icon, save.
-4. From Home, tap the `1 verso para hoy` hero → Classic session opens →
-   reveal → grade with `Bien` → session summary appears.
-5. From Practice hub, run Word Scramble, Verse Match, and Fill the Gap on
-   the same verse — recognition modes record outcomes without advancing
-   the SM-2 interval.
-6. Open the avatar → ProfileSheet → toggle language to EN; the UI
-   re-renders in English without a full reload.
-7. Toggle sound off, then back on; toggle reduces or restores audio
-   feedback on subsequent interactions.
-8. Open DevTools → Application → Cookies; confirm the `HttpOnly`
-   `__session` cookie is present.
-9. Delete account from ProfileSheet → land on `/login` → sign in again
-   with the same Google account → library is empty (cache rows survive).
+## Copyright and credits
 
----
+Bible text is provided by [API.Bible](https://scripture.api.bible/) and
+shown with each version's copyright notice. Citations are parsed with
+[Bible Passage Reference Parser](https://github.com/openbibleinfo/Bible-Passage-Reference-Parser).
 
-## 10. Production deploy (Cloud Run)
-
-The app builds into a single container described by `Dockerfile` (Next.js
-standalone output on Alpine). One-shot deploy lives in
-`scripts/deploy.sh`, backed by `scripts/cloudbuild.yaml`.
-
-### 10.1 One-time GCP setup
-
-```bash
-gcloud auth login
-gcloud config set project <PROJECT_ID>
-
-# Enable required APIs
-gcloud services enable run.googleapis.com \
-                       artifactregistry.googleapis.com \
-                       cloudbuild.googleapis.com \
-                       secretmanager.googleapis.com
-
-# Artifact Registry repo (Docker images live here)
-gcloud artifacts repositories create versorefuerzo \
-  --repository-format=docker --location=us-central1
-
-# Secrets — names must match those referenced in scripts/deploy.sh
-for s in DATABASE_URL FIREBASE_CLIENT_EMAIL FIREBASE_PRIVATE_KEY APIBIBLE_KEY; do
-  printf '%s' "${!s}" | gcloud secrets create "$s" --data-file=-
-done
-```
-
-### 10.2 Build and test the image locally (optional)
-
-```bash
-docker build -t versorefuerzo .
-docker run --rm -p 3000:3000 --env-file .env versorefuerzo
-```
-
-### 10.3 Deploy
-
-The deploy script reads `NEXT_PUBLIC_*` (build-time, baked into the
-client bundle), `FIREBASE_PROJECT_ID`, `APIBIBLE_ID_*` from your shell
-environment, and resolves the four server secrets from Secret Manager.
-
-```bash
-export PROJECT_ID=your-gcp-project
-export REGION=us-central1                 # default
-# Plus every NEXT_PUBLIC_* and FIREBASE_PROJECT_ID from your .env
-./scripts/deploy.sh
-```
-
-After deploy, copy the printed Cloud Run URL into
-*Firebase → Authentication → Settings → Authorized domains*, otherwise
-Google sign-in will fail in production.
-
----
-
-## 11. Project layout
-
-```text
-.devcontainer/        VS Code / Codespaces config
-.github/workflows/    CI (migration check, lint, tests, build, typecheck)
-app/
-  error.tsx           Route error boundary (reset action)
-  global-error.tsx    Boundary for failures in the root layout itself
-  not-found.tsx       404 / notFound()
-  (auth)/login/       Login page (Google sign-in)
-  (app)/              Authenticated shell — every route here requires a session
-    layout.tsx        Verifies session, enforces first-run onboarding, mounts AppShell
-    page.tsx          Home (hero CTA, streak chip, recent verses, mobile FAB)
-    loading.tsx       Streaming skeleton for every authed route
-    onboarding/       First-run-only onboarding screen
-    practice/         page.tsx (hub) + _hub.tsx (source selector + mode tiles),
-                      classic/, first-letter/, scramble/, match/, gap/, summary/
-    library/          page.tsx (Colecciones | Todos) + collections/[id]/
-    verses/           new/, [id]/ (Card View), [id]/edit/
-  api/
-    auth/session/     POST mint cookie · DELETE clear cookie
-    me/               GET / PATCH / DELETE current user
-    bible/versions/   GET — runtime intersection of allowlist and API.Bible key
-    bible/text/       GET — cache lookup, fetch + persist on miss
-    verses/           GET / POST · [id] GET / PATCH / DELETE · [id]/restore POST
-    collections/      GET / POST · [id] PATCH / DELETE
-    practice/queue/   GET — interleaved due-today queue
-    practice/sessions/POST — record attempt, apply SM-2 / recognition touch, update streak
-    stats/home/       GET — aggregate counts for Home
-    health/           Liveness probe
-  layout.tsx          Root HTML, fonts, providers
-  globals.css         Imports tokens.css + animations.css; responsive helpers
-components/
-  ui/                 VerseCard, Toast, MessageScreen (error / not-found card)
-  icons/              VerseIcons, UiIcons
-  verse/              VerseRow, VerseForm, ColorPicker, IconPicker, CollectionPicker, CollectionCard
-  practice/           ClassicSession, FirstLetterSession (in route), TypedRecall, WordScramble,
-                      VerseMatch, FillTheGap, QualityButtons, HintButton, SkipLink, SessionSummary
-  layout/             AppShell, BottomTabBar, DesktopSidebar, HeaderAvatar, ProfileSheet,
-                      TimezoneSync
-  home/               StreakChip, TodayCTA
-lib/
-  auth/               Firebase admin/client, session cookie helpers, getServerUser
-  bible/              reference parser wrapper, apibible fetcher (in-flight dedupe),
-                      tokenize (first-letter / cloze), compare (tolerant typed recall),
-                      fallback-distractors, smart-default catalog
-  srs/                sm2, mastery, queue, chunk, cloze, scramble
-  streak/             tz-aware streak engine (current / best / effective)
-  practice/           loadClassicQueue, loadMiniGameVerses,
-                      source (the §6.4 pool + its query vocabulary),
-                      sourceFilter (pool -> Drizzle clause, server-only)
-  i18n/strings.ts     ES/EN string table with locale-aware helpers
-  sounds/player.ts    Web Audio synthesizer, five named cues
-  validation/         zod schemas for verse / collection bodies, IANA timezone guard
-  constants.ts        UNDO_WINDOW_MS, etc.
-db/
-  schema.ts           Drizzle tables (users, collections, verses, verse_collections,
-                      bible_text_cache, practice_sessions)
-  client.ts           Neon connection
-  migrations/         0000_init, 0001_practice_sessions, 0002_was_full_verse,
-                      0003_last_practiced_at, 0004_collection_soft_delete
-styles/               Design tokens + animations (ported from DesignBundle)
-public/sounds/        README only — the cues are synthesized, no assets to ship
-middleware.ts         Edge auth gate + pathname forwarder
-scripts/              deploy.sh, cloudbuild.yaml, check-migrations.mjs
-tests/                Vitest suites: the pure helpers above, plus route tests for
-                      practice/sessions, stats/home, and me (helpers/fakeDb.ts)
-Dockerfile            Cloud Run container (standalone output)
-```
-
-`DesignBundle/` (committed) is the **canonical visual reference** — see
-`specs.md` §18.
-
----
-
-## 12. Troubleshooting
-
-**`Firebase admin env vars missing`** — your `.env` is missing or
-unloaded. Run from the repo root, ensure the file is named exactly
-`.env`, and restart `pnpm dev`.
-
-**`Failed to parse private key`** — `FIREBASE_PRIVATE_KEY` lost its
-newlines. Re-paste the value from the JSON, keep `\n` escapes literal,
-wrap in double quotes.
-
-**Sign-in popup closes immediately / `auth/unauthorized-domain`** — your
-origin isn't in *Firebase → Authentication → Settings → Authorized
-domains*. Add `localhost` (or your prod URL) and retry.
-
-**Login redirects, then redirects again** — clear the `__session` cookie
-in DevTools and try again; report the repro if it persists.
-
-**`DATABASE_URL is not set`** — Drizzle commands need `.env` loaded. The
-dev server loads it automatically; for raw `node` invocations use
-`dotenv-cli` or `pnpm exec`.
-
-**A Bible version is missing from the New Verse dropdown** — your
-`APIBIBLE_ID_*` for that version is empty or the upstream key does not
-serve it. Fill the ID in `.env` and restart.
-
-**No audio in practice sessions** — there are no audio files to install;
-the five cues are synthesized at runtime with the Web Audio API
-(`lib/sounds/player.ts`). Check the sound toggle in the profile sheet, then
-that the browser exposes `AudioContext` and the tab is not muted. The
-player no-ops silently when either is unavailable. See
-`public/sounds/README.md`.
-
-**`pnpm install` is slow or fails offline** — confirm the devcontainer
-has internet and that pnpm's store cache (`.pnpm-store/`) is on a
-writable volume.
-
-**Production build fails on `next/font`** — Next.js fetches Google fonts
-at build time; ensure your Cloud Build / CI environment has outbound
-HTTPS.
-
----
-
-## 13. License & contributing
-
-This is a non-commercial project. License TBD. Open issues / PRs on the
-repo.
+Created by Gary Vladimir Núñez López. This is a non-commercial project; a
+license has not been chosen yet.
