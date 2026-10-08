@@ -1,0 +1,102 @@
+VERSOREFUERZO - LINKEDIN ANNOUNCEMENT POST
+===========================================
+
+Two versions are below, English and Spanish. Post the one that fits your
+audience, or post the English one and add the Spanish one as the first
+comment.
+
+Suggested images for the post: docs/screenshots/mobile.jpg first, then
+home.jpg, new-verse.jpg, classic-reveal.jpg and game-scramble.jpg
+(LinkedIn shows them as a gallery).
+
+Tip: LinkedIn shows more reach for posts without an outside link in the
+body. If you want, remove the link line and put
+https://versorefuerzo.web.app in the first comment instead.
+
+
+-----------------------------------------------------------------------
+ENGLISH VERSION  (about 1,600 characters)
+-----------------------------------------------------------------------
+
+I just launched VersoRefuerzo, a free app to memorize Bible verses.
+
+For a long time I wanted a simple way to keep Scripture in my memory, not
+just read it once and forget it. So I built one.
+
+VersoRefuerzo uses spaced repetition, the same science-based method behind
+the best flashcard apps. You type a citation like "Juan 3:16", the app
+brings the verse text for you, and every day it shows you the verses you
+are about to forget. A few minutes a day is enough.
+
+What you can do:
+- Add verses by citation and see the text before saving
+- Personalize each card with a color, an icon and a private hint
+- Practice with classic flashcards and four mini games: first letter,
+  word scramble, verse match and fill in the blank
+- Organize verses in collections, plus automatic groups by book and
+  testament
+- Keep a daily streak and watch verses move from new to mastered
+
+It is 100% free, has no ads, and every library is private. It works on
+your phone and your computer, in Spanish and English.
+
+On the technical side, I designed and built it end to end: Next.js,
+React and TypeScript, PostgreSQL on Neon, Firebase Authentication, an
+SM-2 scheduling algorithm, 180+ automated tests, and deployment on Google
+Cloud Run with Firebase Hosting, all running within free tiers.
+
+Try it here: https://versorefuerzo.web.app
+
+If you know someone who wants to memorize Scripture, please share it with
+them. I would love to hear your feedback.
+
+"Thy word have I hid in mine heart." Psalm 119:11
+
+#SoftwareEngineering #WebDevelopment #NextJS #TypeScript #GoogleCloud
+#SideProject #Faith #Bible
+
+
+-----------------------------------------------------------------------
+VERSIÓN EN ESPAÑOL  (unos 1,700 caracteres)
+-----------------------------------------------------------------------
+
+Acabo de lanzar VersoRefuerzo, una app gratuita para memorizar versículos
+de la Biblia.
+
+Desde hace tiempo quería una forma sencilla de guardar la Palabra en mi
+memoria, no solo leerla una vez y olvidarla. Así que la construí.
+
+VersoRefuerzo usa repetición espaciada, el mismo método respaldado por la
+ciencia que usan las mejores apps de tarjetas de memoria. Escribes una
+cita como "Juan 3:16", la app trae el texto del versículo por ti y cada
+día te muestra los versos que estás a punto de olvidar. Unos minutos al
+día son suficientes.
+
+Lo que puedes hacer:
+- Agregar versos por su cita y ver el texto antes de guardarlo
+- Personalizar cada tarjeta con un color, un ícono y una pista privada
+- Practicar con tarjetas clásicas y cuatro mini juegos: primera letra,
+  palabras revueltas, empareja versos y completa el verso
+- Organizar tus versos en colecciones, además de grupos automáticos por
+  libro y testamento
+- Mantener una racha diaria y ver cómo tus versos pasan de nuevos a
+  dominados
+
+Es 100% gratis, sin anuncios, y cada biblioteca es privada. Funciona en tu
+celular y en tu computadora, en español e inglés.
+
+En la parte técnica, la diseñé y construí de principio a fin: Next.js,
+React y TypeScript, PostgreSQL en Neon, Firebase Authentication, un
+algoritmo de repetición espaciada SM-2, más de 180 pruebas automatizadas
+y despliegue en Google Cloud Run con Firebase Hosting, todo dentro de los
+niveles gratuitos.
+
+Pruébala aquí: https://versorefuerzo.web.app
+
+Si conoces a alguien que quiera memorizar la Biblia, compártesela. Me
+encantaría recibir tus comentarios.
+
+"En mi corazón he atesorado Tu palabra." Salmos 119:11
+
+#DesarrolloDeSoftware #DesarrolloWeb #NextJS #TypeScript #GoogleCloud
+#Fe #Biblia

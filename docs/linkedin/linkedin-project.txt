@@ -1,0 +1,171 @@
+VERSOREFUERZO - LINKEDIN PROJECT SECTION
+=========================================
+
+How to use this file: on your LinkedIn profile go to Add profile section >
+Recommended > Add projects, then copy each field below into the matching
+box. The images are in the repository under docs/screenshots/. Add them in
+the Media part of the form and paste the title and description listed for
+each one.
+
+
+-----------------------------------------------------------------------
+PROJECT NAME
+-----------------------------------------------------------------------
+
+VersoRefuerzo - Free Bible Verse Memorization App
+
+
+-----------------------------------------------------------------------
+PROJECT URL
+-----------------------------------------------------------------------
+
+https://versorefuerzo.web.app
+
+Source code: https://github.com/gary-vladimir/VersoRefuerzo
+
+
+-----------------------------------------------------------------------
+DATES
+-----------------------------------------------------------------------
+
+Start: April 2026
+End: October 2026
+
+
+-----------------------------------------------------------------------
+DESCRIPTION  (about 1,700 characters, LinkedIn allows 2,000)
+-----------------------------------------------------------------------
+
+VersoRefuerzo is a free, ad-free web app that helps people memorize Bible
+verses using spaced repetition, the same science-based technique behind
+modern flashcard apps. I designed, built and deployed it end to end as a
+non-profit project for the Spanish-speaking Christian community.
+
+How it works: the user types a citation such as "Juan 3:16", the app
+fetches and previews the verse text, and the user personalizes the card
+with a color, an icon and a private hint. An SM-2 scheduler then decides
+which verses to review each day, right before they would be forgotten.
+
+Highlights:
+- Five practice modes: classic flashcards with self-grading, first-letter
+  recall, word scramble, verse matching and fill in the blank.
+- Smart library: user collections plus automatic groups by book, Old and
+  New Testament and the Gospels, always in Bible order.
+- Live verse preview, multiple Bible versions, daily streaks and progress.
+- Spanish and English interface, designed mobile first, accessible, with
+  synthesized sound effects.
+- Google sign-in with a private library per user.
+
+Engineering:
+- Full-stack Next.js 15 and React 19 in TypeScript, Postgres on Neon with
+  Drizzle ORM, Firebase Authentication with server-verified session
+  cookies.
+- Shared, permanent cache of Bible text from API.Bible, so each verse is
+  fetched only once for all users.
+- Dockerized and deployed on Google Cloud Run behind Firebase Hosting, with
+  Cloud Build, Artifact Registry and Secret Manager.
+- 180+ automated tests with Vitest and a GitHub Actions pipeline for lint,
+  tests, build and type checks.
+- Built to run within free cloud tiers.
+
+Try it free at versorefuerzo.web.app
+
+
+-----------------------------------------------------------------------
+SKILLS
+-----------------------------------------------------------------------
+
+Top 5 to add in the Skills box:
+1. Next.js
+2. TypeScript
+3. Google Cloud Platform (GCP)
+4. PostgreSQL
+5. Full-Stack Development
+
+All skills and technologies used (for reference or other sections):
+- Languages: TypeScript, JavaScript, SQL, HTML, CSS
+- Frontend: React 19, Next.js 15 (App Router, Server Components),
+  responsive and mobile-first design, CSS design tokens and animations,
+  accessibility (reduced motion, keyboard focus), internationalization
+  (Spanish and English), Web Audio API
+- Backend: Next.js Route Handlers, REST API design, Zod validation,
+  Edge Middleware
+- Database: PostgreSQL, Neon serverless Postgres, Drizzle ORM, database
+  migrations, data modeling
+- Authentication: Firebase Authentication, Google OAuth, Firebase Admin
+  SDK, secure HttpOnly session cookies
+- Cloud and DevOps: Google Cloud Run, Firebase Hosting, Cloud Build,
+  Artifact Registry, Secret Manager, IAM, Docker, GitHub Actions CI
+- Testing and quality: Vitest, unit and API route testing, ESLint,
+  Prettier, TypeScript strict mode
+- Algorithms: SM-2 spaced repetition scheduling, time-zone aware streaks,
+  text tokenizing and fuzzy answer comparison
+- Third-party APIs: API.Bible, Bible Passage Reference Parser
+- Product: UX/UI design, product specification, end-to-end ownership
+  from idea to production
+
+
+-----------------------------------------------------------------------
+MEDIA  (11 images, in the order to upload them)
+-----------------------------------------------------------------------
+
+1. File: docs/screenshots/mobile.jpg
+   Title: VersoRefuerzo on mobile
+   Description: Designed mobile first. Home with today's verses and
+   streak, a classic practice card, and the library organized by
+   collections and Bible books.
+
+2. File: docs/screenshots/home.jpg
+   Title: Home: what to review today
+   Description: The home screen shows how many verses are due today, the
+   daily streak, progress counts (new, learning, mastered), a verse of the
+   day and a quick "how it works" introduction.
+
+3. File: docs/screenshots/new-verse.jpg
+   Title: Add a verse with a live preview
+   Description: Type a citation such as "Salmos 119:105", pick a Bible
+   version from the dropdown and the app previews the real verse text
+   before saving. No copying and pasting.
+
+4. File: docs/screenshots/classic-front.jpg
+   Title: Classic flashcard practice
+   Description: The front of the card shows only the citation, color and
+   icon. The user recites the verse from memory, out loud, before
+   revealing it.
+
+5. File: docs/screenshots/classic-reveal.jpg
+   Title: Self-grading with spaced repetition
+   Description: After revealing the verse, four grades (Again, Hard, Good,
+   Easy) feed an SM-2 algorithm that schedules the next review, from
+   minutes to months later.
+
+6. File: docs/screenshots/practice-hub.jpg
+   Title: Five ways to practice
+   Description: Classic, first letter, word scramble, verse match and fill
+   in the blank. Each mode can use all verses, one collection, one Bible
+   book or a custom selection.
+
+7. File: docs/screenshots/game-scramble.jpg
+   Title: Mini game: word scramble
+   Description: Rebuild the verse by tapping the shuffled words in the
+   right order, with three lives per round.
+
+8. File: docs/screenshots/game-match.jpg
+   Title: Mini game: verse match
+   Description: Match each citation with its hint or opening words to
+   reinforce the link between the reference and the text.
+
+9. File: docs/screenshots/library-collections.jpg
+   Title: A library that organizes itself
+   Description: Custom collections like "Promesas", plus automatic groups
+   for every Bible book, the Old and New Testament and the Gospels.
+
+10. File: docs/screenshots/library-verses.jpg
+    Title: All verses in Bible order
+    Description: Search, filter by progress or collection, and see each
+    verse's mastery, always sorted in canonical Bible order.
+
+11. File: docs/screenshots/guide.jpg
+    Title: Built-in "how it works" guide
+    Description: A friendly guide explains the three steps, what each grade
+    means and every practice mode, so new users get started in minutes.
