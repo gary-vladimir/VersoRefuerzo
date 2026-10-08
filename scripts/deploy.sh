@@ -34,7 +34,7 @@ IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/${SERVICE}:$(date -u +%Y%m
 
 # Server-only secrets resolved at runtime from Secret Manager. The names
 # on the LHS are the env vars the app reads; RHS is the Secret Manager
-# secret name. Keep these in sync with README §6 and lib/auth/firebase-admin.
+# secret name. Keep these in sync with docs/DEPLOYMENT.md and lib/auth/firebase-admin.
 SECRETS="DATABASE_URL=DATABASE_URL:latest,"
 SECRETS+="FIREBASE_CLIENT_EMAIL=FIREBASE_CLIENT_EMAIL:latest,"
 SECRETS+="FIREBASE_PRIVATE_KEY=FIREBASE_PRIVATE_KEY:latest,"
