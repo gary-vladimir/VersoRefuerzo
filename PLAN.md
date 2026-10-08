@@ -2,6 +2,8 @@
 
 > Companion to `specs.md`. The spec governs **what** and **why**; this plan governs **how** and **in what order**. Read `specs.md` first.
 
+> **Status: historical.** All milestones in this plan are done and v1 is live at <https://versorefuerzo.web.app>. The plan is kept as a record of how the app was built; for the current state see `README.md` and `docs/`.
+
 ## Context
 
 `/Users/gary/Documents/VersoRefuerzo` currently contains `specs.md` (the binding 920-line product+engineering spec, sections 1–18), `about.md`, and `DesignBundle/` (12 prototype files: HTML/CSS/JSX). There is **zero application code, build tooling, or infrastructure** — confirmed blank slate.
