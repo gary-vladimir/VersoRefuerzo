@@ -188,6 +188,11 @@ div::-webkit-scrollbar {
   padding-top: env(safe-area-inset-top);
   padding-bottom: var(--tabbar-h);
 }
+/* Practice sessions hide the tab bar (lib/layout/focus.ts), so they do not
+   need its gutter either. */
+.vr-app-main-focus {
+  padding-bottom: 0;
+}
 @media (min-width: 1024px) {
   .vr-app-main {
     padding-left: 240px;

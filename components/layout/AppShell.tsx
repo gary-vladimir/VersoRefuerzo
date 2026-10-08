@@ -16,8 +16,10 @@
 // inside it.
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { usePathname } from "next/navigation";
 import { setSoundEnabled } from "@/lib/sounds/player";
 import { T } from "@/lib/i18n/strings";
+import { isFocusRoute } from "@/lib/layout/focus";
 import type { User } from "@/db/schema";
 import { ProfileSheet } from "./ProfileSheet";
 import { BottomTabBar } from "./BottomTabBar";
@@ -37,6 +39,7 @@ export function AppShell({ user, children }: Props) {
   const [profileOpen, setProfileOpen] = useState(false);
   const locale: "es" | "en" = user.locale === "en" ? "en" : "es";
   const t = T[locale];
+  const focus = isFocusRoute(usePathname() ?? "/");
 
   // Stable callbacks: ProfileSheet's focus-trap effect depends on onClose,
   // so a fresh function on every render (e.g. the router.refresh after a
@@ -70,11 +73,14 @@ export function AppShell({ user, children }: Props) {
       {/* min-height + the mobile tab-bar gutter + the desktop sidebar
           gutter all live in app/globals.css under .vr-app-main so the
           desktop media-query wins (M7 review #1). */}
-      <div className="vr-app-main">{children}</div>
+      <div className={focus ? "vr-app-main vr-app-main-focus" : "vr-app-main"}>{children}</div>
 
-      <BottomTabBar
-        strings={{ home: t.home, practice: t.practice, library: t.library }}
-      />
+      {/* Hidden during practice sessions; see lib/layout/focus.ts. */}
+      {!focus && (
+        <BottomTabBar
+          strings={{ home: t.home, practice: t.practice, library: t.library }}
+        />
+      )}
 
       <ProfileSheet
         user={user}
