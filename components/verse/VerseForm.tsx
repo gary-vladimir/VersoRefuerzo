@@ -15,6 +15,7 @@ import {
   isVerseIcon,
   VERSION_NAMES,
   type VersionId,
+  textLocaleForVersion,
 } from "@/lib/catalog";
 import { defaultColorForIndex, defaultIconForBook } from "@/lib/bible/defaults";
 import { VerseCard } from "@/components/ui/VerseCard";
@@ -83,6 +84,13 @@ export function VerseForm({
       ? initialVersion
       : versions[0] ?? "",
   );
+  // Switching the interface language re-renders the page with that
+  // language's default version (NIV for English); follow it without
+  // clearing what the user already typed.
+  useEffect(() => {
+    if (initialVersion && versions.includes(initialVersion)) setVersion(initialVersion);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialVersion]);
   const [color, setColor] = useState<CardColorId>(
     initialColor ?? defaultColorForIndex(existingVerseCount),
   );
@@ -451,11 +459,22 @@ export function VerseForm({
                   cursor: "pointer",
                 }}
               >
-                {versions.map((v) => (
-                  <option key={v} value={v}>
-                    {v} · {VERSION_NAMES[v as VersionId] ?? v}
-                  </option>
-                ))}
+                {/* Grouped by the language of the text, the interface's
+                    language first, so an English verse is never picked by
+                    accident from a list of Spanish ones. */}
+                {(locale === "es" ? (["es", "en"] as const) : (["en", "es"] as const)).map((lang) => {
+                  const inLang = versions.filter((v) => textLocaleForVersion(v) === lang);
+                  if (inLang.length === 0) return null;
+                  return (
+                    <optgroup key={lang} label={msg.versionGroup[lang]}>
+                      {inLang.map((v) => (
+                        <option key={v} value={v}>
+                          {v} · {VERSION_NAMES[v as VersionId] ?? v}
+                        </option>
+                      ))}
+                    </optgroup>
+                  );
+                })}
               </select>
               <span
                 aria-hidden
@@ -726,6 +745,7 @@ const FORM_MESSAGES = {
     previewLoading: "Cargando el texto…",
     previewError: "No pudimos cargar el texto. Revisa la cita o inténtalo de nuevo.",
     versionUnavailable: "Esa versión ya no está disponible. Elige otra.",
+    versionGroup: { es: "Español", en: "Inglés" },
     invalidCollection: "Una de las colecciones ya no existe. Revisa tu selección.",
     notFound: "Este verso ya no existe.",
     network: "Sin conexión. Revisa tu internet e inténtalo de nuevo.",
@@ -743,6 +763,7 @@ const FORM_MESSAGES = {
     previewLoading: "Loading the text…",
     previewError: "We couldn't load the text. Check the citation or try again.",
     versionUnavailable: "That version is no longer available. Pick another one.",
+    versionGroup: { es: "Spanish", en: "English" },
     invalidCollection: "One of the collections no longer exists. Check your selection.",
     notFound: "This verse no longer exists.",
     network: "You're offline. Check your connection and try again.",
