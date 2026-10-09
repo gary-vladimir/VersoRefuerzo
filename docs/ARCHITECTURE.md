@@ -210,8 +210,12 @@ row is removed for good by a cleanup step on the next list read.
   in `styles/tokens.css`; animations are in `styles/animations.css`. The
   site forces a light color scheme so dark-mode extensions don't recolor
   it. The original visual reference is in `DesignBundle/`.
-- **Icons.** 18 verse icons and the navigation icons are hand-drawn SVG
-  components (`components/icons/`, `components/layout/NavIcons.tsx`).
+- **Icons.** 44 verse icons (`components/icons/VerseIcons.tsx`): the
+  original 18 hand-drawn ones plus 26 from Lucide, on the same 24-unit grid
+  and stroke so they read as one family (ISC license in
+  `components/icons/LUCIDE_LICENSE.txt`). The list of ids lives in
+  `lib/catalog.ts`. The navigation icons are in
+  `components/layout/NavIcons.tsx`.
 - **Language switch.** `components/i18n/LanguageToggle.tsx` is on every
   screen: in the desktop sidebar, and in each screen header on phones.
   Signed in, it saves `users.locale` and refreshes the page. Signed out, it

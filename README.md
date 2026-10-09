@@ -54,8 +54,10 @@ user's library is private.
 - **Bible versions.** Spanish: NBLA (the default in Spanish) and NTV.
   English: NIV (the default in English). NVI and RVR1960 are supported and
   appear automatically when the API key serves them.
-- **Visual memory cues.** Each card gets one of 8 colors, one of 18 icons
-  and an optional personal hint that stays hidden until you ask for it.
+- **Visual memory cues.** Each card gets one of 8 colors, one of 44 icons
+  (from a Bible, a dove and a lion to a triangle for the Trinity, a church,
+  scales of justice and a broken heart) and an optional personal hint that
+  stays hidden until you ask for it.
 - **Spaced repetition.** An SM-2 scheduler picks the verses due today. Four
   honest grades control the next review; "Otra vez" brings the card back in
   the same session.
