@@ -24,7 +24,7 @@ ship a new version and how to roll back.
 | Container images | Artifact Registry repository `versorefuerzo` in `us-central1` |
 | Database | Neon Postgres (connection string in Secret Manager) |
 | Secrets | Secret Manager: `DATABASE_URL`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`, `APIBIBLE_KEY` |
-| Plain settings | `FIREBASE_PROJECT_ID`, `APIBIBLE_ID_NBLA`, `APIBIBLE_ID_NTV` (and NVI / RVR1960 when available) |
+| Plain settings | `FIREBASE_PROJECT_ID`, `APIBIBLE_ID_NBLA`, `APIBIBLE_ID_NTV`, `APIBIBLE_ID_NIV` (and NVI / RVR1960 when available) |
 
 ```mermaid
 flowchart LR

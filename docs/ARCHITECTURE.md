@@ -104,9 +104,12 @@ flowchart LR
   in `bible_text_cache` with its copyright line. The cache is shared by all
   users and never invalidated, so after the first request a verse loads
   instantly for everyone.
-- **Versions.** `lib/catalog.ts` lists NBLA, NTV, NVI and RVR1960. A version
-  is offered only when its `APIBIBLE_ID_*` is set, and
-  `GET /api/bible/versions` returns the available list.
+- **Versions.** `lib/catalog.ts` lists the Spanish NBLA, NTV, NVI and
+  RVR1960 and the English NIV, with the language of each. A version is
+  offered only when its `APIBIBLE_ID_*` is set. The New Verse form groups
+  the dropdown by language and pre-selects with `defaultVersionFor`: the
+  last version the user saved if it is in the interface language, otherwise
+  NBLA in Spanish and NIV in English.
 - **Preview.** The New Verse form calls `GET /api/bible/text` 450 ms after
   the user stops typing a valid citation, so the text is cached before the
   verse is even saved.
@@ -209,6 +212,14 @@ row is removed for good by a cleanup step on the next list read.
   it. The original visual reference is in `DesignBundle/`.
 - **Icons.** 18 verse icons and the navigation icons are hand-drawn SVG
   components (`components/icons/`, `components/layout/NavIcons.tsx`).
+- **Language switch.** `components/i18n/LanguageToggle.tsx` is on every
+  screen: in the desktop sidebar, and in each screen header on phones.
+  Signed in, it saves `users.locale` and refreshes the page. Signed out, it
+  saves the choice on the device (`lib/i18n/device-locale.ts`, in
+  localStorage, because Firebase Hosting only forwards the `__session`
+  cookie), and the login, legal, not-found and error screens render it on
+  the client. A choice made before signing in becomes the account language
+  at sign in.
 - **Language.** All interface text is in `lib/i18n/` (Spanish and English);
   the user's choice is stored on their account.
 - **Sound.** `lib/sounds/player.ts` synthesizes five short cues with the

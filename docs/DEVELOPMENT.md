@@ -83,12 +83,12 @@ pnpm install --frozen-lockfile
 
 1. Request a free key at <https://scripture.api.bible/>.
 2. Find the Bible IDs your key can use. The app knows four Spanish
-   versions: NBLA, NTV, NVI and RVR1960.
-3. **Check the language of every ID.** The English NIV is a different Bible
-   from the Spanish NVI, and an English ID will make the app show English
-   text under a Spanish label.
+   versions (NBLA, NTV, NVI, RVR1960) and one English version (NIV).
+3. **Check the language of every ID.** The English NIV and the Spanish NVI
+   are different Bibles with similar names. Put each ID in the matching
+   variable, or verses will show in the wrong language.
 4. A version with no ID is simply hidden in the New Verse dropdown. The
-   production key currently serves NBLA and NTV.
+   production key currently serves NBLA, NTV and NIV.
 
 ## 4. Environment variables
 
@@ -107,7 +107,8 @@ cp .env.example .env
 | `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | Web app config `projectId` |
 | `NEXT_PUBLIC_FIREBASE_APP_ID` | Web app config `appId` |
 | `APIBIBLE_KEY` | API.Bible dashboard |
-| `APIBIBLE_ID_NBLA`, `APIBIBLE_ID_NTV`, `APIBIBLE_ID_NVI`, `APIBIBLE_ID_RVR1960` | API.Bible Bible IDs. Leave a value empty to hide that version. NBLA is the default when it is set. |
+| `APIBIBLE_ID_NBLA`, `APIBIBLE_ID_NTV`, `APIBIBLE_ID_NVI`, `APIBIBLE_ID_RVR1960` | Spanish Bible IDs from API.Bible. Leave a value empty to hide that version. NBLA is the default in Spanish. |
+| `APIBIBLE_ID_NIV` | English NIV Bible ID, the default when the interface is in English |
 | `SESSION_SECRET` | `openssl rand -base64 48`. Reserved for future signed cookies; not read yet. |
 
 **`FIREBASE_PRIVATE_KEY`** contains newlines. Keep it on a single line and

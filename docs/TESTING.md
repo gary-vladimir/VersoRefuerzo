@@ -19,6 +19,7 @@ use an in-memory fake (`tests/helpers/fakeDb.ts`).
 | Area | Suites |
 | --- | --- |
 | Scheduler | `sm2`, `queue`, `chunk`, `cloze`, `mastery`, `streak` |
+| Catalog | `catalog` (default version per language) |
 | Bible text | `reference` (parsing and Bible order), `groups` (book groups), `text` (cleanup), `tokenize`, `compare` (typed answers), `defaults` |
 | Practice | `source` (source pools), `scramble`, `focus` (tab bar hidden in sessions) |
 | API routes | `practiceSessions.route`, `statsHome.route`, `me.route` |
@@ -38,7 +39,18 @@ Run these against `pnpm dev` (see [DEVELOPMENT.md](DEVELOPMENT.md)) or the
 live site. Each section takes one to three minutes. Use a test account, or
 delete what you add afterwards.
 
-### 1. Sign in
+### 1. Language before signing in
+
+1. Open the app in a private window. You land on `/login` in Spanish, with
+   an **ES / EN** switch in the top-right corner.
+2. Tap **EN**: the screen switches to English. Open **Privacy** and
+   **Terms**: they are in English too and have the same switch. Reload: the
+   choice is kept.
+3. Sign in. The account starts in English (Home says "Hi, ...").
+4. Switch back to **ES** from the sidebar (desktop) or any screen header
+   (phone), sign out, and the login screen is in Spanish.
+
+### 1b. Sign in
 
 1. Open the app in a private window. You land on `/login`, a dark night
    gradient screen with **Continuar con Google**.
@@ -66,7 +78,12 @@ delete what you add afterwards.
 3. Type `Filipenses 4:13`. A green check appears, and within a second the
    **Así dice el verso** preview shows the text and its copyright line.
 4. Change the version dropdown from **NBLA · Nueva Biblia de las Américas**
-   to **NTV · Nueva Traducción Viviente**. The preview updates.
+   to **NTV · Nueva Traducción Viviente**. The preview updates. The dropdown
+   groups versions under Español and Inglés.
+   Then switch the language to **EN** while the form is open: the version
+   changes to **NIV · New International Version**, the citation you typed is
+   kept, and the preview shows the English text. Back in **ES**, a new form
+   starts on NBLA again (or on the last Spanish version you saved with).
 5. Type something that is not a single verse, such as `Juan` or `hola`: no green check,
    no preview, the save button stays disabled.
 6. Pick a color and icon, add a hint, save. The verse appears on Home and in
@@ -137,6 +154,8 @@ delete what you add afterwards.
 
 1. Tap your avatar (or the user card in the desktop sidebar).
 2. Switch **ES / EN**: the interface changes language without a reload.
+   The same switch is on every screen, including inside practice sessions
+   and games (a game restarts its round in the new language).
 3. Turn **sound** off and on.
 4. **Cómo funciona** opens the guide.
 5. **Cerrar sesión** returns to `/login`. Signing in again skips onboarding.
@@ -178,7 +197,9 @@ delete what you add afterwards.
   uneven (a 3-word round next to a 10-word one).
 - Moving a verse between collections is done from *Editar*; there is no
   quick-move dialog and no bulk add.
-- The error and not-found screens are always in Spanish, because they render
-  outside a signed-in session.
-- Only NBLA and NTV are available with the current API.Bible key. NVI and
-  RVR1960 are supported by the code but need a key that serves them.
+- Only NBLA, NTV and NIV are available with the current API.Bible key. The
+  Spanish NVI and RVR1960 are supported by the code but need a key that
+  serves them.
+- Signed out, the language choice lives on the device, so a returning
+  English visitor can see the Spanish login screen for an instant before it
+  switches.

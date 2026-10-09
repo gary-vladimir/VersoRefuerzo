@@ -51,8 +51,9 @@ user's library is private.
 - **Add verses by citation.** Type `Filipenses 4:13`, `Sal 23:1` or a range
   like `Romanos 8:28-30`. The text is loaded from API.Bible and previewed
   before you save. No copy and paste.
-- **Bible versions.** NBLA (default) and NTV. NVI and RVR1960 are supported
-  and appear automatically when the API key serves them.
+- **Bible versions.** Spanish: NBLA (the default in Spanish) and NTV.
+  English: NIV (the default in English). NVI and RVR1960 are supported and
+  appear automatically when the API key serves them.
 - **Visual memory cues.** Each card gets one of 8 colors, one of 18 icons
   and an optional personal hint that stays hidden until you ask for it.
 - **Spaced repetition.** An SM-2 scheduler picks the verses due today. Four
@@ -72,7 +73,9 @@ user's library is private.
   order everywhere.
 - **Daily streak**, verse of the day and progress counts (new, learning,
   mastered).
-- **Spanish and English** interface, switchable from the profile sheet.
+- **Spanish and English** on every screen, including before signing in.
+  An ES / EN switch sits in the sidebar on desktop and in each screen's
+  header on phones.
 - **Built for phones and desktops.** Bottom tab bar on phones, sidebar on
   desktop, reduced motion support, synthesized sound effects you can mute.
 - **Private by design.** Google sign-in, one private library per account,
