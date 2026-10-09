@@ -118,12 +118,12 @@ export default async function Home() {
           justifyContent: "space-between",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
           {/* Phones have no sidebar, so the brand mark sits here. */}
           <span className="vr-mobile-only" style={{ alignItems: "center" }}>
             <BrandLogo size={36} priority />
           </span>
-          <div>
+          <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: 11, color: "var(--c-muted)", fontWeight: 600 }}>
               {t.greeting(hour)}
             </div>
@@ -135,6 +135,10 @@ export default async function Home() {
                 color: "var(--c-text)",
                 letterSpacing: "-0.5px",
                 marginTop: 1,
+                // One line next to the language switch; a long name trails off.
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
               }}
             >
               {t.helloName(firstName)}
