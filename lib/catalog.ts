@@ -1,5 +1,5 @@
-// User-facing catalogs: 8 verse-card colors and 18 verse icons.
-// Source: specs.md §7.3 / §7.4 (locked counts and IDs).
+// User-facing catalogs: 8 verse-card colors and 44 verse icons.
+// Source: specs.md §7.3 / §7.4 (the icon set was later extended).
 //
 // Color rendering uses CSS variables already defined in styles/tokens.css
 // (`--card-{id}-bg`, `-solid`, `-tint`). This file holds the canonical IDs
@@ -26,11 +26,17 @@ export const CARD_COLORS: Array<{
   { id: "midnight", labelEs: "Medianoche",  labelEn: "Midnight" },
 ];
 
-// 18 verse icons (specs §7.4). The svg components live in components/icons.
+// Verse icons: the original 18 (specs §7.4), then 26 more drawn from Lucide.
+// The svg components live in components/icons/VerseIcons.tsx.
 export const VERSE_ICON_IDS = [
   "bible", "cross", "dove", "sheep", "lion", "fishLoaves",
   "crown", "flameSmall", "heart", "mountain", "water", "sun",
   "door", "shield", "handPray", "anchor", "seed", "book",
+  "triangle", "church", "music", "messageCircle", "ear", "lightbulb",
+  "brain", "graduationCap", "shieldCheck", "shieldAlert", "lock", "swords",
+  "handHeart", "users", "house", "gift", "keyRound", "trophy",
+  "scale", "gem", "leaf", "hourglass", "refresh", "heartCrack",
+  "cloudRain", "megaphone",
 ] as const;
 export type VerseIconId = (typeof VERSE_ICON_IDS)[number];
 
