@@ -11,6 +11,7 @@ import { usePathname } from "next/navigation";
 import type { User } from "@/db/schema";
 import { NavIcon, type NavName } from "./NavIcons";
 import { UserAvatar } from "@/components/ui/UserAvatar";
+import { LanguageToggle } from "@/components/i18n/LanguageToggle";
 import { BrandLogo } from "@/components/ui/BrandLogo";
 
 type Strings = {
@@ -19,6 +20,7 @@ type Strings = {
   library: string;
   addVerse: string;
   appName: string;
+  language: string;
 };
 
 type NavItem = {
@@ -163,6 +165,18 @@ export function DesktopSidebar({ user, onProfileClick, strings: t }: Props) {
       </nav>
 
       <div style={{ flex: 1 }} />
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "0 6px 12px 12px",
+        }}
+      >
+        <span style={{ fontSize: 12, fontWeight: 700, color: "var(--c-muted)" }}>{t.language}</span>
+        <LanguageToggle />
+      </div>
 
       <button
         type="button"

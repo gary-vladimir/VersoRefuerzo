@@ -25,6 +25,7 @@ import { ProfileSheet } from "./ProfileSheet";
 import { BottomTabBar } from "./BottomTabBar";
 import { DesktopSidebar } from "./DesktopSidebar";
 import { TimezoneSync } from "./TimezoneSync";
+import { LocaleProvider } from "@/components/i18n/LanguageToggle";
 
 type ProfileSheetApi = { open: () => void };
 const ProfileSheetContext = createContext<ProfileSheetApi>({ open: () => {} });
@@ -55,38 +56,41 @@ export function AppShell({ user, children }: Props) {
   }, [user.soundEnabled]);
 
   return (
-    <ProfileSheetContext.Provider value={sheetApi}>
-      <TimezoneSync current={user.timezone} />
+    <LocaleProvider locale={locale}>
+      <ProfileSheetContext.Provider value={sheetApi}>
+        <TimezoneSync current={user.timezone} />
 
-      <DesktopSidebar
-        user={user}
-        onProfileClick={openProfile}
-        strings={{
-          home: t.home,
-          practice: t.practice,
-          library: t.library,
-          addVerse: t.addVerse,
-          appName: t.appName,
-        }}
-      />
-
-      {/* min-height + the mobile tab-bar gutter + the desktop sidebar
-          gutter all live in app/globals.css under .vr-app-main so the
-          desktop media-query wins (M7 review #1). */}
-      <div className={focus ? "vr-app-main vr-app-main-focus" : "vr-app-main"}>{children}</div>
-
-      {/* Hidden during practice sessions; see lib/layout/focus.ts. */}
-      {!focus && (
-        <BottomTabBar
-          strings={{ home: t.home, practice: t.practice, library: t.library }}
+        <DesktopSidebar
+          user={user}
+          onProfileClick={openProfile}
+          strings={{
+            home: t.home,
+            practice: t.practice,
+            library: t.library,
+            addVerse: t.addVerse,
+            appName: t.appName,
+            language: t.language,
+          }}
         />
-      )}
 
-      <ProfileSheet
-        user={user}
-        open={profileOpen}
-        onClose={closeProfile}
-      />
-    </ProfileSheetContext.Provider>
+        {/* min-height + the mobile tab-bar gutter + the desktop sidebar
+            gutter all live in app/globals.css under .vr-app-main so the
+            desktop media-query wins (M7 review #1). */}
+        <div className={focus ? "vr-app-main vr-app-main-focus" : "vr-app-main"}>{children}</div>
+
+        {/* Hidden during practice sessions; see lib/layout/focus.ts. */}
+        {!focus && (
+          <BottomTabBar
+            strings={{ home: t.home, practice: t.practice, library: t.library }}
+          />
+        )}
+
+        <ProfileSheet
+          user={user}
+          open={profileOpen}
+          onClose={closeProfile}
+        />
+      </ProfileSheetContext.Provider>
+    </LocaleProvider>
   );
 }

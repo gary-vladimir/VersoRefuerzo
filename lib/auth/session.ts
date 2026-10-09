@@ -66,6 +66,7 @@ export const getServerUser = cache(async (): Promise<User | null> => {
 export async function upsertUserFromIdToken(
   idToken: string,
   timezone: string | null,
+  locale: "es" | "en" | null = null,
 ): Promise<User> {
   const decoded = await adminAuth().verifyIdToken(idToken);
   const db = getDb();
@@ -73,13 +74,14 @@ export async function upsertUserFromIdToken(
   // Single upsert keyed on the Firebase uid. A select-then-insert let two
   // concurrent first sign-ins (double tap, two tabs) both miss and the
   // second insert hit the unique index as a 500. Profile fields refresh on
-  // every sign-in; the timezone only moves when the browser reported one.
+  // every sign-in; the timezone only moves when the browser reported one,
+  // and the language only when one was chosen on this device.
   const email = decoded.email ?? "";
   const displayName = decoded.name ?? decoded.email?.split("@")[0] ?? "User";
   const photoUrl = decoded.picture ?? null;
   const rows = await db
     .insert(users)
-    .values({ googleSub: decoded.uid, email, displayName, photoUrl, timezone })
+    .values({ googleSub: decoded.uid, email, displayName, photoUrl, timezone, ...(locale ? { locale } : {}) })
     .onConflictDoUpdate({
       target: users.googleSub,
       set: {
@@ -87,6 +89,7 @@ export async function upsertUserFromIdToken(
         ...(decoded.name ? { displayName } : {}),
         ...(decoded.picture ? { photoUrl } : {}),
         ...(timezone ? { timezone } : {}),
+        ...(locale ? { locale } : {}),
         updatedAt: new Date(),
       },
     })

@@ -15,6 +15,9 @@ const Body = z.object({
   // A browser that reports a zone Intl can't resolve simply signs in
   // without one; the streak helpers fall back to UTC.
   timezone: TimeZoneInput.optional().catch(undefined),
+  // The language picked on this device before signing in, if any. It
+  // becomes the account's language so the choice survives the sign-in.
+  locale: z.enum(["es", "en"]).optional().catch(undefined),
 });
 
 export async function POST(req: NextRequest) {
@@ -28,6 +31,7 @@ export async function POST(req: NextRequest) {
     const user = await upsertUserFromIdToken(
       parsed.data.idToken,
       parsed.data.timezone ?? null,
+      parsed.data.locale ?? null,
     );
     const sessionCookie = await createSessionCookie(parsed.data.idToken);
     await setSessionCookie(sessionCookie);
