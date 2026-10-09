@@ -70,10 +70,9 @@ export function isCollectionColor(s: string): s is CollectionColorId {
 }
 
 // Bible versions the app supports (specs.md §9.2), in the order the New
-// Verse picker lists them. The first one the deployed API.Bible key serves
-// is the default for a user who has not picked a version yet, so NBLA leads.
-// A version only appears when its APIBIBLE_ID_<KEY> is configured.
-export const VERSION_IDS = ["NBLA", "NTV", "NVI", "RVR1960"] as const;
+// Verse picker lists them: the Spanish versions first, then English. A
+// version only appears when its APIBIBLE_ID_<KEY> is configured.
+export const VERSION_IDS = ["NBLA", "NTV", "NVI", "RVR1960", "NIV"] as const;
 export type VersionId = (typeof VERSION_IDS)[number];
 
 // Full names for the version dropdown, so "NTV" means something to a new
@@ -83,18 +82,40 @@ export const VERSION_NAMES: Record<VersionId, string> = {
   NTV: "Nueva Traducción Viviente",
   NVI: "Nueva Versión Internacional",
   RVR1960: "Reina-Valera 1960",
+  NIV: "New International Version",
 };
 
-// Language each Bible version's text is written in. Every v1 version is
-// Spanish, so text-level logic (cloze stopwords, distractor pools) must key
-// off the version, never off the UI locale: an English UI still practices
-// Spanish verses.
+// Language each Bible version's text is written in. Text-level logic (cloze
+// stopwords, distractor pools) must key off the version, never off the UI
+// locale: a verse keeps the language of its version whatever the UI shows.
 const VERSION_TEXT_LOCALE: Record<VersionId, "es" | "en"> = {
   NBLA: "es",
   NTV: "es",
   NVI: "es",
   RVR1960: "es",
+  NIV: "en",
 };
+
+// The version each interface language starts with on the New Verse form.
+const PREFERRED_VERSION: Record<"es" | "en", VersionId> = { es: "NBLA", en: "NIV" };
+
+// Version pre-selected on the New Verse form. The last version the user
+// saved with wins when it is in the interface's language, so a Spanish user
+// who prefers NTV keeps NTV. Otherwise the language's preferred version
+// (NBLA for Spanish, NIV for English), then any available version in that
+// language, then whatever is available.
+export function defaultVersionFor(
+  locale: "es" | "en",
+  available: readonly string[],
+  lastVersion?: string | null,
+): string | undefined {
+  const inLocale = (v: string) => textLocaleForVersion(v) === locale;
+  if (lastVersion && available.includes(lastVersion) && inLocale(lastVersion)) {
+    return lastVersion;
+  }
+  if (available.includes(PREFERRED_VERSION[locale])) return PREFERRED_VERSION[locale];
+  return available.find(inLocale) ?? available[0];
+}
 
 export function textLocaleForVersion(version: string): "es" | "en" {
   return VERSION_TEXT_LOCALE[version as VersionId] ?? "es";

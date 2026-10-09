@@ -47,7 +47,8 @@ SET_ENV="FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID},"
 SET_ENV+="APIBIBLE_ID_NBLA=${APIBIBLE_ID_NBLA:-},"
 SET_ENV+="APIBIBLE_ID_NTV=${APIBIBLE_ID_NTV:-},"
 SET_ENV+="APIBIBLE_ID_NVI=${APIBIBLE_ID_NVI:-},"
-SET_ENV+="APIBIBLE_ID_RVR1960=${APIBIBLE_ID_RVR1960:-}"
+SET_ENV+="APIBIBLE_ID_RVR1960=${APIBIBLE_ID_RVR1960:-},"
+SET_ENV+="APIBIBLE_ID_NIV=${APIBIBLE_ID_NIV:-}"
 
 # One substitutions string passed via a single --substitutions flag.
 # `gcloud builds submit` rejects multiple --substitutions flags and

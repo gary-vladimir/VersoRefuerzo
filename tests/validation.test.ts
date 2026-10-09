@@ -55,11 +55,11 @@ describe("NewVerseInput", () => {
 });
 
 describe("version allowlist", () => {
-  it("accepts NTV alongside the original versions and rejects unknown ones", () => {
+  it("accepts every catalog version, including the English NIV, and rejects unknown ones", () => {
     const base = { canonicalRef: "JHN.3.16", icon: "bible", color: "indigo" };
-    for (const version of ["NBLA", "NTV", "NVI", "RVR1960"]) {
+    for (const version of ["NBLA", "NTV", "NVI", "RVR1960", "NIV"]) {
       expect(NewVerseInput.safeParse({ ...base, version }).success).toBe(true);
     }
-    expect(NewVerseInput.safeParse({ ...base, version: "NIV" }).success).toBe(false);
+    expect(NewVerseInput.safeParse({ ...base, version: "KJV" }).success).toBe(false);
   });
 });

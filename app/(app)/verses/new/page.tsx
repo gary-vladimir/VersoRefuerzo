@@ -11,6 +11,7 @@ import { getDb } from "@/db/client";
 import { collections as collectionsTable, verses as versesTable } from "@/db/schema";
 import { availableVersions } from "@/lib/bible/apibible";
 import { T } from "@/lib/i18n/strings";
+import { defaultVersionFor } from "@/lib/catalog";
 import { VerseForm } from "@/components/verse/VerseForm";
 
 type SearchParams = Promise<{ ref?: string; collection?: string }>;
@@ -40,10 +41,7 @@ export default async function NewVersePage({
   ]);
 
   const versions = availableVersions().map((v) => v.key);
-  const initialVersion =
-    user.lastVersion && versions.includes(user.lastVersion as (typeof versions)[number])
-      ? user.lastVersion
-      : versions[0];
+  const initialVersion = defaultVersionFor(locale, versions, user.lastVersion);
 
   const sp = await searchParams;
   const initialReference = sp?.ref ?? "";
