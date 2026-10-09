@@ -31,6 +31,7 @@ import type { Verse } from "@/db/schema";
 import type { BlankPlan } from "@/lib/srs/cloze";
 import { seededShuffle } from "@/lib/random";
 import { T } from "@/lib/i18n/strings";
+import { MobileLanguageToggle } from "@/components/i18n/LanguageToggle";
 
 const STARTING_INTENTOS = 3;
 
@@ -268,6 +269,7 @@ export function FillTheGap({
             ),
           )}
         </span>
+        <MobileLanguageToggle />
       </header>
 
       {/* Verse render — show every token, replacing blank tokens with

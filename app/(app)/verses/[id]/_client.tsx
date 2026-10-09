@@ -19,6 +19,7 @@ import { Pencil, Trash, Eye, Refresh, Bulb, Check } from "@/components/icons/UiI
 import type { Quality } from "@/lib/srs/sm2";
 import type { Verse } from "@/db/schema";
 import { T } from "@/lib/i18n/strings";
+import { MobileLanguageToggle } from "@/components/i18n/LanguageToggle";
 
 type Strings = {
   back: string;
@@ -192,7 +193,8 @@ export function CardViewClient({
         >
           ←
         </Link>
-        <div style={{ display: "flex", gap: 6 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <MobileLanguageToggle />
           <Link
             href={`/verses/${verse.id}/edit`}
             aria-label={t.edit}

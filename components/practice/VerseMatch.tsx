@@ -23,6 +23,7 @@ import { play } from "@/lib/sounds/player";
 import type { Verse } from "@/db/schema";
 import { T } from "@/lib/i18n/strings";
 import { seededShuffle } from "@/lib/random";
+import { MobileLanguageToggle } from "@/components/i18n/LanguageToggle";
 
 const STARTING_INTENTOS = 3;
 
@@ -220,29 +221,32 @@ export function VerseMatch({ verses, seed, locale, strings: t }: Props) {
         >
           <Close size={18} />
         </button>
-        <span
-          style={{
-            background: "#fff",
-            padding: "8px 12px",
-            borderRadius: 999,
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            boxShadow: "var(--shadow-xs)",
-            fontFamily: "var(--font-display)",
-            fontWeight: 800,
-            fontSize: 13,
-            color: "var(--c-text)",
-          }}
-        >
-          {Array.from({ length: STARTING_INTENTOS }, (_, i) =>
-            i < intentos ? (
-              <HeartFilled key={i} size={15} color="var(--c-rose-500)" />
-            ) : (
-              <Heart key={i} size={15} color="var(--c-soft)" />
-            ),
-          )}
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <MobileLanguageToggle />
+          <span
+            style={{
+              background: "#fff",
+              padding: "8px 12px",
+              borderRadius: 999,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              boxShadow: "var(--shadow-xs)",
+              fontFamily: "var(--font-display)",
+              fontWeight: 800,
+              fontSize: 13,
+              color: "var(--c-text)",
+            }}
+          >
+            {Array.from({ length: STARTING_INTENTOS }, (_, i) =>
+              i < intentos ? (
+                <HeartFilled key={i} size={15} color="var(--c-rose-500)" />
+              ) : (
+                <Heart key={i} size={15} color="var(--c-soft)" />
+              ),
+            )}
+          </span>
+        </div>
       </header>
 
       <section

@@ -31,6 +31,7 @@ import { HeaderAvatar } from "@/components/layout/HeaderAvatar";
 import { BrandLogo } from "@/components/ui/BrandLogo";
 import { HowItWorksCard } from "@/components/home/HowItWorksCard";
 import { GUIDE } from "@/lib/i18n/guide";
+import { MobileLanguageToggle } from "@/components/i18n/LanguageToggle";
 
 export default async function Home() {
   const user = await getServerUser();
@@ -141,6 +142,7 @@ export default async function Home() {
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <MobileLanguageToggle />
           <StreakChip current={effStreak} ariaLabel={t.streakLabel(effStreak)} />
           <HeaderAvatar user={user} />
         </div>

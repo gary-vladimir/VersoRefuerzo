@@ -19,6 +19,7 @@ import {
 } from "@/lib/catalog";
 import { defaultColorForIndex, defaultIconForBook } from "@/lib/bible/defaults";
 import { VerseCard } from "@/components/ui/VerseCard";
+import { MobileLanguageToggle } from "@/components/i18n/LanguageToggle";
 import { ColorPicker } from "./ColorPicker";
 import { IconPicker } from "./IconPicker";
 import { CollectionPicker } from "./CollectionPicker";
@@ -251,26 +252,29 @@ export function VerseForm({
           justifyContent: "space-between",
         }}
       >
-        <button
-          type="button"
-          onClick={() => router.back()}
-          aria-label={t.cancel}
-          className="vr-press"
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: 12,
-            background: "var(--c-bg)",
-            border: "none",
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            cursor: "pointer",
-            color: "var(--c-text)",
-          }}
-        >
-          <Close size={18} />
-        </button>
+        {/* Equal-width side slots keep the title centered. */}
+        <div style={{ width: 88 }}>
+          <button
+            type="button"
+            onClick={() => router.back()}
+            aria-label={t.cancel}
+            className="vr-press"
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 12,
+              background: "var(--c-bg)",
+              border: "none",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              color: "var(--c-text)",
+            }}
+          >
+            <Close size={18} />
+          </button>
+        </div>
         <h1
           style={{
             margin: 0,
@@ -283,7 +287,9 @@ export function VerseForm({
         >
           {headerTitle ?? t.newVerse}
         </h1>
-        <span style={{ width: 36 }} aria-hidden />
+        <div style={{ width: 88, display: "flex", justifyContent: "flex-end" }}>
+          <MobileLanguageToggle />
+        </div>
       </header>
 
       {/* Live preview */}

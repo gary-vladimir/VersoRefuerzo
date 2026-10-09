@@ -4,6 +4,7 @@
 // pool, so the call to action changes with it.
 
 import Link from "next/link";
+import { CornerLanguageToggle } from "@/components/i18n/LanguageToggle";
 
 type Props = {
   message: string;
@@ -21,8 +22,10 @@ export function PracticeEmptyState({ message, ctaLabel, ctaHref }: Props) {
         alignItems: "center",
         justifyContent: "center",
         padding: 24,
+        position: "relative",
       }}
     >
+      <CornerLanguageToggle mobileOnly />
       <div
         style={{
           background: "#fff",

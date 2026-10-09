@@ -20,6 +20,7 @@ import {
   Plus,
   Sparkles,
 } from "@/components/icons/UiIcons";
+import { MobileLanguageToggle } from "@/components/i18n/LanguageToggle";
 
 // Same gradients the practice hub gives each mode, so a mode looks the same
 // here and there.
@@ -66,19 +67,24 @@ export default async function GuidePage() {
           borderBottom: "1px solid var(--c-line)",
         }}
       >
-        <h1
-          style={{
-            margin: 0,
-            fontFamily: "var(--font-display)",
-            fontWeight: 800,
-            fontSize: 26,
-            letterSpacing: "-0.6px",
-            color: "var(--c-text)",
-          }}
-        >
-          {g.title}
-        </h1>
-        <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--c-muted)" }}>{g.subtitle}</p>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h1
+              style={{
+                margin: 0,
+                fontFamily: "var(--font-display)",
+                fontWeight: 800,
+                fontSize: 26,
+                letterSpacing: "-0.6px",
+                color: "var(--c-text)",
+              }}
+            >
+              {g.title}
+            </h1>
+            <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--c-muted)" }}>{g.subtitle}</p>
+          </div>
+          <MobileLanguageToggle />
+        </div>
       </header>
 
       <div

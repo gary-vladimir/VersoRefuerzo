@@ -8,6 +8,7 @@ import { T } from "@/lib/i18n/strings";
 import { BrandLogo } from "@/components/ui/BrandLogo";
 import { firstVerseHref } from "@/lib/bible/defaults";
 import OnboardingActions from "./_actions";
+import { CornerLanguageToggle } from "@/components/i18n/LanguageToggle";
 
 export default async function OnboardingPage() {
   const user = await getServerUser();
@@ -26,8 +27,10 @@ export default async function OnboardingPage() {
         padding: "var(--s-7)",
         background: "var(--c-bg)",
         textAlign: "center",
+        position: "relative",
       }}
     >
+      <CornerLanguageToggle />
       <div className="vr-card-rise" style={{ marginBottom: "var(--s-6)" }}>
         <BrandLogo
           size={112}

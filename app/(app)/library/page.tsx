@@ -18,6 +18,7 @@ import {
 import { T } from "@/lib/i18n/strings";
 import { isBookGroup } from "@/lib/bible/groups";
 import { LibraryView } from "./_view";
+import { MobileLanguageToggle } from "@/components/i18n/LanguageToggle";
 
 export default async function LibraryPage({
   searchParams,
@@ -142,20 +143,23 @@ export default async function LibraryPage({
           >
             {t.library}
           </h1>
-          <Link
-            href="/verses/new"
-            style={{
-              padding: "8px 14px",
-              borderRadius: 999,
-              background: "var(--c-indigo-50)",
-              color: "var(--c-indigo-700)",
-              fontSize: 12,
-              fontWeight: 700,
-              textDecoration: "none",
-            }}
-          >
-            + {t.addVerse}
-          </Link>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <MobileLanguageToggle />
+            <Link
+              href="/verses/new"
+              style={{
+                padding: "8px 14px",
+                borderRadius: 999,
+                background: "var(--c-indigo-50)",
+                color: "var(--c-indigo-700)",
+                fontSize: 12,
+                fontWeight: 700,
+                textDecoration: "none",
+              }}
+            >
+              + {t.addVerse}
+            </Link>
+          </div>
         </div>
       </header>
 

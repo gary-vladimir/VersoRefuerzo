@@ -11,6 +11,7 @@ import Link from "next/link";
 import type { Route } from "next";
 import { play } from "@/lib/sounds/player";
 import { Flame, Sparkles } from "@/components/icons/UiIcons";
+import { CornerLanguageToggle } from "@/components/i18n/LanguageToggle";
 
 type Strings = {
   title: string;
@@ -78,6 +79,7 @@ export function SessionSummary({
         overflow: "hidden",
       }}
     >
+      <CornerLanguageToggle tone="dark" mobileOnly />
       <div aria-hidden style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
         {sparkles.map((sp, i) => (
           <span

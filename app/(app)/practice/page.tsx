@@ -27,6 +27,7 @@ import {
   type HubTile,
   type HubVerse,
 } from "./_hub";
+import { MobileLanguageToggle } from "@/components/i18n/LanguageToggle";
 
 export default async function PracticeHubPage() {
   const user = await getServerUser();
@@ -157,27 +158,32 @@ export default async function PracticeHubPage() {
           borderBottom: "1px solid var(--c-line)",
         }}
       >
-        <h1
-          style={{
-            margin: 0,
-            fontFamily: "var(--font-display)",
-            fontWeight: 800,
-            fontSize: 26,
-            letterSpacing: "-0.6px",
-            color: "var(--c-text)",
-          }}
-        >
-          {t.practiceHubTitle}
-        </h1>
-        <p
-          style={{
-            margin: "4px 0 0",
-            fontSize: 13,
-            color: "var(--c-muted)",
-          }}
-        >
-          {t.practiceHubSubline}
-        </p>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h1
+              style={{
+                margin: 0,
+                fontFamily: "var(--font-display)",
+                fontWeight: 800,
+                fontSize: 26,
+                letterSpacing: "-0.6px",
+                color: "var(--c-text)",
+              }}
+            >
+              {t.practiceHubTitle}
+            </h1>
+            <p
+              style={{
+                margin: "4px 0 0",
+                fontSize: 13,
+                color: "var(--c-muted)",
+              }}
+            >
+              {t.practiceHubSubline}
+            </p>
+          </div>
+          <MobileLanguageToggle />
+        </div>
       </header>
 
       <PracticeHub

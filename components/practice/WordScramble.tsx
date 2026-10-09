@@ -22,6 +22,7 @@ import { play } from "@/lib/sounds/player";
 import type { Verse } from "@/db/schema";
 import { T } from "@/lib/i18n/strings";
 import { seededShuffle } from "@/lib/random";
+import { MobileLanguageToggle } from "@/components/i18n/LanguageToggle";
 
 const STARTING_INTENTOS = 3;
 
@@ -282,6 +283,7 @@ export function WordScramble({ verse, text, seed, copyright, locale, strings: t 
             ),
           )}
         </span>
+        <MobileLanguageToggle />
       </header>
 
       {segments.length > 1 && (

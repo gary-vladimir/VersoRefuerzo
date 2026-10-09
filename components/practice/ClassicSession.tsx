@@ -30,6 +30,7 @@ import { SkipLink } from "./SkipLink";
 import { TypedRecall } from "./TypedRecall";
 import { T } from "@/lib/i18n/strings";
 import type { Quality } from "@/lib/srs/sm2";
+import { CornerLanguageToggle, MobileLanguageToggle } from "@/components/i18n/LanguageToggle";
 
 export type QueueItem = {
   id: string;
@@ -211,8 +212,10 @@ export function ClassicSession({
           alignItems: "center",
           justifyContent: "center",
           padding: 24,
+          position: "relative",
         }}
       >
+        <CornerLanguageToggle mobileOnly />
         <div
           style={{
             background: "#fff",
@@ -443,6 +446,7 @@ export function ClassicSession({
           <div style={{ fontSize: 12, fontWeight: 700, color: "var(--c-text)" }}>
             {pos + 1}/{queue.length}
           </div>
+          <MobileLanguageToggle />
         </div>
         <div
           style={{

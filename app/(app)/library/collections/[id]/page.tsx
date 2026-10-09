@@ -19,6 +19,7 @@ import { compareRefs } from "@/lib/bible/reference";
 import { T } from "@/lib/i18n/strings";
 import { VerseRow } from "@/components/verse/VerseRow";
 import { CollectionActions } from "@/components/verse/CollectionActions";
+import { MobileLanguageToggle } from "@/components/i18n/LanguageToggle";
 
 export default async function CollectionDetailPage({
   params,
@@ -99,20 +100,29 @@ export default async function CollectionDetailPage({
           borderBottom: "1px solid var(--c-line)",
         }}
       >
-        <Link
-          href="/library"
+        <div
           style={{
-            display: "inline-block",
-            color: "var(--c-muted)",
-            fontFamily: "var(--font-display)",
-            fontWeight: 700,
-            fontSize: 12,
-            textDecoration: "none",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
             marginBottom: 8,
           }}
         >
-          ← {t.library}
-        </Link>
+          <Link
+            href="/library"
+            style={{
+              display: "inline-block",
+              color: "var(--c-muted)",
+              fontFamily: "var(--font-display)",
+              fontWeight: 700,
+              fontSize: 12,
+              textDecoration: "none",
+            }}
+          >
+            ← {t.library}
+          </Link>
+          <MobileLanguageToggle />
+        </div>
         <div
           style={{
             display: "flex",
