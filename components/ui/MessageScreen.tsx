@@ -1,12 +1,16 @@
+"use client";
+
 // Shared full-screen message card for the error / not-found boundaries.
 //
-// Copy is pinned to Spanish because these render outside any user session —
-// an error boundary has no database access and 404s hit signed-out visitors
-// too — and `es` is both the default locale (specs.md §6.8) and what the
-// root layout declares as `lang`.
+// These render outside any signed-in shell (an error boundary has no
+// database access and 404s hit signed-out visitors too), so the text follows
+// the language remembered on this device, which the signed-in shell keeps in
+// step with the account. The card has its own language switch.
 
 import Link from "next/link";
 import { BrandLogo } from "./BrandLogo";
+import { T } from "@/lib/i18n/strings";
+import { LanguageToggle, useLocale } from "@/components/i18n/LanguageToggle";
 
 const primaryButton: React.CSSProperties = {
   display: "inline-block",
@@ -39,20 +43,21 @@ const secondaryButton: React.CSSProperties = {
 };
 
 export function MessageScreen({
-  title,
-  body,
+  kind,
   detail,
-  action,
-  homeLabel,
+  onRetry,
 }: {
-  title: string;
-  body: string;
+  kind: "error" | "notFound";
   // Only rendered in development — production users get the friendly copy
   // and nothing about the internals.
   detail?: string | null;
-  action?: { label: string; onClick: () => void };
-  homeLabel: string;
+  onRetry?: () => void;
 }) {
+  const t = T[useLocale()];
+  const title = kind === "error" ? t.errorTitle : t.notFoundTitle;
+  const body = kind === "error" ? t.errorBody : t.notFoundBody;
+  const homeLabel = t.errorHome;
+  const action = onRetry ? { label: t.errorRetry, onClick: onRetry } : undefined;
   return (
     <main
       style={{
@@ -62,8 +67,18 @@ export function MessageScreen({
         alignItems: "center",
         justifyContent: "center",
         padding: 24,
+        position: "relative",
       }}
     >
+      <div
+        style={{
+          position: "absolute",
+          top: "calc(16px + env(safe-area-inset-top))",
+          right: 16,
+        }}
+      >
+        <LanguageToggle />
+      </div>
       <div
         style={{
           background: "#fff",

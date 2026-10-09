@@ -7,6 +7,12 @@
 // hence the literal colors below rather than design tokens.
 
 import { useEffect } from "react";
+import { useDeviceLocale, writeDeviceLocale } from "@/lib/i18n/device-locale";
+
+const COPY = {
+  es: { title: "Algo salió mal", body: "No pudimos cargar la aplicación. Vuelve a intentarlo.", retry: "Reintentar" },
+  en: { title: "Something went wrong", body: "We couldn't load the app. Please try again.", retry: "Try again" },
+};
 
 export default function GlobalError({
   error,
@@ -22,8 +28,12 @@ export default function GlobalError({
     });
   }, [error]);
 
+  // The language remembered on this device (lib/i18n/device-locale.ts).
+  const locale = useDeviceLocale();
+  const c = COPY[locale];
+
   return (
-    <html lang="es">
+    <html lang={locale}>
       <body
         style={{
           margin: 0,
@@ -40,10 +50,10 @@ export default function GlobalError({
       >
         <div style={{ textAlign: "center", maxWidth: 380 }}>
           <h1 style={{ fontSize: 20, fontWeight: 800, margin: "0 0 8px" }}>
-            Algo salió mal
+            {c.title}
           </h1>
           <p style={{ fontSize: 14, lineHeight: 1.5, color: "#6b6880", margin: "0 0 20px" }}>
-            No pudimos cargar la aplicación. Vuelve a intentarlo.
+            {c.body}
           </p>
           <button
             type="button"
@@ -59,8 +69,29 @@ export default function GlobalError({
               cursor: "pointer",
             }}
           >
-            Reintentar
+            {c.retry}
           </button>
+          <div style={{ marginTop: 16, fontSize: 13 }}>
+            {(["es", "en"] as const).map((l) => (
+              <button
+                key={l}
+                type="button"
+                onClick={() => writeDeviceLocale(l)}
+                aria-pressed={l === locale}
+                style={{
+                  margin: "0 4px",
+                  padding: "4px 10px",
+                  borderRadius: 999,
+                  border: "1px solid #e4e2ee",
+                  background: l === locale ? "#fff" : "transparent",
+                  fontWeight: l === locale ? 800 : 500,
+                  cursor: "pointer",
+                }}
+              >
+                {l.toUpperCase()}
+              </button>
+            ))}
+          </div>
         </div>
       </body>
     </html>

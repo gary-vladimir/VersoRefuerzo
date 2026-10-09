@@ -9,7 +9,6 @@
 // usually enough for a transient database hiccup.
 
 import { useEffect } from "react";
-import { T } from "@/lib/i18n/strings";
 import { MessageScreen } from "@/components/ui/MessageScreen";
 
 export default function AppError({
@@ -25,15 +24,11 @@ export default function AppError({
     console.error("route error", { digest: error.digest, message: error.message });
   }, [error]);
 
-  const t = T.es;
-
   return (
     <MessageScreen
-      title={t.errorTitle}
-      body={t.errorBody}
+      kind="error"
       detail={process.env.NODE_ENV === "development" ? error.message : null}
-      action={{ label: t.errorRetry, onClick: reset }}
-      homeLabel={t.errorHome}
+      onRetry={reset}
     />
   );
 }

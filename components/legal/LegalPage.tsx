@@ -1,19 +1,24 @@
-// Shared shell for the static Privacy / Terms pages (spec §10.5). Server
-// component, public (no auth gate) — see middleware PUBLIC_PATHS.
+"use client";
+
+// Shared shell for the static Privacy / Terms pages (spec §10.5). Public (no
+// auth gate, see middleware PUBLIC_PATHS). It receives both languages and
+// renders the current one, so its language switch works signed out too.
 
 import Link from "next/link";
+import type { Locale } from "@/lib/i18n/strings";
+import { LanguageToggle, useLocale } from "@/components/i18n/LanguageToggle";
 
 export function LegalPage({
-  title,
-  paragraphs,
+  content,
   backHref,
   backLabel,
 }: {
-  title: string;
-  paragraphs: string[];
+  content: Record<Locale, { title: string; paragraphs: string[] }>;
   backHref: "/" | "/login";
-  backLabel: string;
+  backLabel: Record<Locale, string>;
 }) {
+  const locale = useLocale();
+  const { title, paragraphs } = content[locale];
   return (
     <main
       style={{
@@ -23,21 +28,30 @@ export function LegalPage({
       }}
     >
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "0 24px" }}>
-        <Link
-          href={backHref}
-          className="vr-press"
+        <div
           style={{
-            display: "inline-block",
-            color: "var(--c-muted)",
-            fontFamily: "var(--font-display)",
-            fontWeight: 700,
-            fontSize: 13,
-            textDecoration: "none",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
             marginBottom: 12,
           }}
         >
-          ← {backLabel}
-        </Link>
+          <Link
+            href={backHref}
+            className="vr-press"
+            style={{
+              display: "inline-block",
+              color: "var(--c-muted)",
+              fontFamily: "var(--font-display)",
+              fontWeight: 700,
+              fontSize: 13,
+              textDecoration: "none",
+            }}
+          >
+            ← {backLabel[locale]}
+          </Link>
+          <LanguageToggle />
+        </div>
         <h1
           style={{
             fontFamily: "var(--font-display)",

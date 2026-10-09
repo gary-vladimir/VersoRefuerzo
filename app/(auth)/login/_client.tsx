@@ -20,6 +20,8 @@ import {
 import { getClientAuth, googleProvider } from "@/lib/auth/firebase-client";
 import { T } from "@/lib/i18n/strings";
 import { BrandLogo } from "@/components/ui/BrandLogo";
+import { LanguageToggle, useLocale } from "@/components/i18n/LanguageToggle";
+import { readDeviceLocale } from "@/lib/i18n/device-locale";
 
 // Star field as [left %, top %, size px, delay s]. Percentages so the stars
 // spread over the whole screen; fixed pixels bunched them into the top-left
@@ -54,8 +56,10 @@ function prefersRedirect(): boolean {
 
 export default function LoginClient() {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const t = T.es;
+  // A flag rather than the message, so the error follows a language switch.
+  const [error, setError] = useState(false);
+  // Signed out, so the language is the one chosen on this device.
+  const t = T[useLocale()];
 
   // Create the Firebase auth instance as soon as the screen mounts. Done
   // lazily inside the click handler, its setup ran before the popup opened,
@@ -94,7 +98,7 @@ export default function LoginClient() {
     const res = await fetch("/api/auth/session", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ idToken, timezone }),
+      body: JSON.stringify({ idToken, timezone, locale: readDeviceLocale() ?? undefined }),
     });
     await signOut(auth);
     if (!res.ok) throw new Error(`session POST returned ${res.status}`);
@@ -111,7 +115,7 @@ export default function LoginClient() {
       return;
     }
     console.error(e);
-    setError(t.signInError);
+    setError(true);
   }
 
   async function redirectToGoogle(auth: Auth) {
@@ -125,7 +129,7 @@ export default function LoginClient() {
 
   async function handleSignIn() {
     setLoading(true);
-    setError(null);
+    setError(false);
     try {
       const auth = getClientAuth();
       if (prefersRedirect()) {
@@ -165,6 +169,17 @@ export default function LoginClient() {
         overflow: "hidden",
       }}
     >
+      <div
+        style={{
+          position: "absolute",
+          top: "calc(16px + env(safe-area-inset-top))",
+          right: 16,
+          zIndex: 3,
+        }}
+      >
+        <LanguageToggle tone="dark" />
+      </div>
+
       {STARS.map(([x, y, s, d], i) => (
         <span
           key={i}
@@ -281,7 +296,7 @@ export default function LoginClient() {
             zIndex: 2,
           }}
         >
-          {error}
+          {t.signInError}
         </p>
       )}
 
